@@ -1,6 +1,10 @@
-# v0.1.0 隔离验收 / Isolated acceptance
+# v0.1.0 发布包验收 / Release package acceptance
 
-日期：2026-11-16。测试仅在电脑上的独立 QEMU 虚拟机进行，未访问或修改任何实体家庭路由器。
+日期：2026-11-16。本文记录 **v0.1.0 通用 APK 的安装、升级和卸载验收**。本次发布包验收在电脑上的独立 QEMU 虚拟机进行，未连接或修改已有实体路由器。
+
+LaneKeep 此前已有真实 OpenWrt 设备的部署和使用记录，六个页面也完成过实机浏览器检查。本次开源版在此前功能基础上完成去个人化，并新增通用软件包的首次启用、升级和卸载处理。因此需要分别记录：**此前版本的实机运行与页面验收**，以及**本次通用 APK 的虚拟机生命周期验收**。通用 APK 尚未在该实体设备上执行全新安装、升级和卸载流程。
+
+Earlier deployed versions have run on real OpenWrt hardware and passed six-page browser checks. This report specifically covers lifecycle testing of the generic v0.1.0 APK in QEMU. The package lifecycle has not been exercised on that physical device.
 
 环境：OpenWrt 25.12.6 x86_64、Linux 6.12.112、Xray 26.10.21；QEMU 用户网络，无物理桥接或 TAP。浏览器为本机无头 Edge。测试客户端位于虚拟机的独立网络命名空间，经 veth 接入模拟 LAN。测试 VLESS REALITY 节点使用临时凭据和受控响应；这些凭据未进入仓库或软件包。
 

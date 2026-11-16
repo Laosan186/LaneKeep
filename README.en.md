@@ -44,7 +44,7 @@ Xray access, error and DNS logs are disabled. Monitoring retains numbers, aggreg
 
 ## Requirements
 
-- OpenWrt **25.12**, fw4 / nftables and LuCI. The release test platform is an isolated 25.12.6 x86_64 VM with Xray 26.10.21; other architectures and hardware need separate validation.
+- OpenWrt **25.12**, fw4 / nftables and LuCI. The generic APK lifecycle was tested in an isolated 25.12.6 x86_64 VM with Xray 26.10.21. Earlier versions have run on physical devices and passed six-page browser checks; installation, upgrade and removal of this generic APK on other architectures and physical devices still need separate validation.
 - The router is the IPv4 gateway and DHCP server for one selected logical LAN interface with one IPv4 subnet. The default logical interface is `lan`; its device and addresses are discovered.
 - Static DHCP reservations before assigning devices. IPv6 must be disabled on the selected LAN. Do not combine it with another transparent proxy using the same ports, marks or routing table.
 - Leave room for Xray, classification databases, upgrades and history. Memory use depends on connections, nodes and databases; a single device's measurements are not minimum requirements.
@@ -54,7 +54,7 @@ Dependencies: `luci-base`, `rpcd`, `rpcd-mod-ucode`, `uhttpd-mod-ubus`, `xray-co
 
 ## Install, upgrade and uninstall
 
-Download the APK and its SHA256 file from this repository's **Releases**, or use the delivered artifacts while the repository is private. Check the hash before copying it to your own test router. v0.1.0 is an unsigned standalone package; use `--allow-untrusted` only after verifying its source.
+Download the APK and its SHA256 file from this repository's **Releases**. Check the hash before copying it to your own test router. v0.1.0 is an unsigned standalone package; use `--allow-untrusted` only after verifying its source.
 
 ```sh
 sha256sum -c luci-app-lanekeep-0.1.0-r1.apk.sha256

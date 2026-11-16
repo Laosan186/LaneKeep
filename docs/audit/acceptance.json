@@ -180,5 +180,12 @@
   "immutable_mismatches": 0,
   "offline_release_tests": 4,
   "demo_images": 6,
-  "physical_router_accesses": 0
+  "physical_router_accesses": 0,
+  "scope": "Lifecycle acceptance of the generic v0.1.0 APK in an isolated VM; earlier hardware deployment evidence is recorded separately.",
+  "prior_hardware_evidence": {
+    "earlier_versions_deployed": true,
+    "six_page_browser_acceptance": true,
+    "generic_apk_lifecycle_tested_on_that_device": false,
+    "physical_device_accesses_during_release_work": 0
+  }
 }
