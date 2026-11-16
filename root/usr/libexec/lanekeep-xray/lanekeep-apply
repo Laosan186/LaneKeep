@@ -1,0 +1,391 @@
+#!/bin/sh
+# Step 3 candidate: first creation, no previous version. Not deployed.
+# Members/metadata never restart or stop Xray. Rules use the approved restart path.
+# Callers must confirm real network changes; staging is not authorization to apply.
+# The UI must supply a separate draft directory, never prewrite /etc/config/lanekeep.
+set -eu
+PATH=/usr/sbin:/usr/bin:/sbin:/bin
+export PATH
+umask 077
+
+fail() { printf 'LANEKEEP_APPLY_ERROR:%s\n' "$1" >&2; exit 1; }
+draft=; simulate=0; members_only=0; expected_uci=; expected_dhcp=; expected_nodes=
+while [ "$#" -gt 0 ]; do
+    case "$1" in
+        --draft-dir) [ "$#" -ge 2 ] || fail arguments; draft=$2; shift 2 ;;
+        --expected-uci-sha|--expected-dhcp-sha|--expected-nodes-sha)
+            [ "$#" -ge 2 ] || fail arguments
+            [ "${#2}" -eq 64 ] || fail expected_hash_format
+            case "$2" in *[!a-f0-9]*) fail expected_hash_format ;; esac
+            case "$1" in --expected-uci-sha) expected_uci=$2 ;; --expected-dhcp-sha) expected_dhcp=$2 ;; --expected-nodes-sha) expected_nodes=$2 ;; esac
+            shift 2 ;;
+        --simulate-wait-failure) simulate=1; shift ;;
+        --members-only) members_only=1; shift ;;
+        *) fail arguments ;;
+    esac
+done
+[ "$(id -u)" -eq 0 ] || fail root_required
+case "$draft" in /*) ;; *) fail absolute_draft_required ;; esac
+[ -d "$draft" ] && [ ! -L "$draft" ] && [ -f "$draft/lanekeep" ] && [ ! -L "$draft/lanekeep" ] || fail invalid_draft
+[ "$draft" != /etc/config ] && [ "$draft" != /etc/config/ ] || fail draft_must_be_separate
+code=$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)
+proxy=/etc/lanekeep-proxy
+versions=$proxy/versions
+helper=$code/lanekeep-apply-check.uc
+[ -f "$helper" ] && [ -x "$code/lanekeep-gen" ] || fail missing_generator
+for file in "$proxy/config.json" "$proxy/phone-pilot.nft" "$proxy/nodes.json" /etc/config/lanekeep /etc/config/dhcp "$proxy/template.json" "$proxy/panel-baseline.json"; do
+    [ -f "$file" ] && [ ! -L "$file" ] || fail missing_or_linked_input
+done
+[ ! -L /var/lock/lanekeep-apply.lock ] || fail linked_lock
+exec 9>/var/lock/lanekeep-apply.lock
+flock -n 9 || fail busy
+# Optional panel optimistic concurrency guard, checked while holding the existing lock.
+# Existing CLI callers without these flags keep the step-3 behavior unchanged.
+if [ -n "$expected_uci" ]; then
+    actual=$(sha256sum /etc/config/lanekeep) || fail expected_hash_read
+    [ "${actual%% *}" = "$expected_uci" ] || fail stale_uci_draft
+fi
+if [ -n "$expected_dhcp" ]; then
+    actual=$(sha256sum /etc/config/dhcp) || fail expected_hash_read
+    [ "${actual%% *}" = "$expected_dhcp" ] || fail stale_dhcp_draft
+fi
+if [ -n "$expected_nodes" ]; then
+    actual=$(sha256sum "$proxy/nodes.json") || fail expected_hash_read
+    [ "${actual%% *}" = "$expected_nodes" ] || fail stale_nodes_draft
+fi
+work=$(mktemp -d /tmp/lanekeep-apply.XXXXXX) || fail stage_create
+chmod 700 "$work"
+started=$(cut -d. -f1 /proc/uptime)
+stamp=$(date -u +%Y%m%dT%H%M%SZ)
+version=$stamp-$$
+snapshot=; changed=0; recovered=0; rollback_done=0; success=0
+member_changed=0; member_recovered=0; runtime_attempted=0; rules_nft_changed=0
+
+hash_file() { digest=$(sha256sum "$1") || return 1; printf '%s\n' "${digest%% *}"; }
+atomic_copy() {
+    src=$1; dest=$2
+    next=$(mktemp "$dest.lanekeep-apply.XXXXXX") || return 1
+    cp "$src" "$next" || return 1
+    chmod 600 "$next" || return 1
+    src_hash=$(hash_file "$src") || return 1
+    dest_hash=$(hash_file "$next") || return 1
+    [ "$src_hash" = "$dest_hash" ] || return 1
+    mv -f "$next" "$dest" || return 1
+}
+read_epoch() {
+    [ -f /tmp/lanekeep-dns-gate/epoch ] && [ ! -L /tmp/lanekeep-dns-gate/epoch ] || return 1
+    IFS= read -r current_epoch < /tmp/lanekeep-dns-gate/epoch || return 1
+    [ "${#current_epoch}" -eq 36 ] || return 1
+    case "$current_epoch" in *[!0-9a-f-]*) return 1 ;; esac
+    printf '%s\n' "$current_epoch"
+}
+capture_health() {
+    ubus -t 2 call service list '{"name":"lanekeep-xray"}' > "$work/service.json" 2>/dev/null || return 1
+    nft -j list set inet lanekeep_dns_gate healthy_data > "$work/lease.json" 2>/dev/null || return 1
+    cp /tmp/lanekeep-dns-gate/status "$work/gate-status" 2>/dev/null || return 1
+    cp /proc/uptime "$work/uptime" || return 1
+    read_epoch > "$work/epoch" || return 1
+    return 0
+}
+health() {
+    capture_health && ucode "$helper" health "$work" "$old_epoch" "$restart_at" >/dev/null 2>&1
+}
+stable_health() {
+    capture_health && ucode "$helper" "$stable_mode" "$work" "$work/stable-identity.json" >/dev/null 2>&1
+}
+live_members() {
+    nft -j list table inet lanekeep_phone > "$work/live-table.json" 2>/dev/null || return 1
+    ucode "$helper" members "$1/normalized-rules.json" "$work/live-table.json" >/dev/null 2>&1
+}
+inputs_unchanged() {
+    [ "$(hash_file "$proxy/config.json")" = "$config_hash" ] &&
+    [ "$(hash_file /etc/config/lanekeep)" = "$uci_hash" ] &&
+    [ "$(hash_file "$proxy/phone-pilot.nft")" = "$nft_hash" ] &&
+    [ "$(hash_file /etc/config/dhcp)" = "$dhcp_hash" ] &&
+    [ "$(hash_file "$proxy/nodes.json")" = "$nodes_hash" ]
+}
+wait_open() {
+    deadline=$((restart_at + 60))
+    while :; do
+        health && return 0
+        now=$(cut -d. -f1 /proc/uptime)
+        [ "$now" -lt "$deadline" ] || return 1
+        sleep 1 || return 1
+    done
+}
+snapshot_ok() {
+    [ -n "$snapshot" ] && [ -d "$snapshot" ] && [ ! -L "$snapshot" ] || return 1
+    [ "$(cat "$snapshot/owner" 2>/dev/null)" = lanekeep-panel-v1 ] || return 1
+    (cd "$snapshot" && sha256sum -c manifest.sha256 >/dev/null 2>&1)
+}
+record() {
+    outcome=$1
+    ended=$(cut -d. -f1 /proc/uptime)
+    ucode "$helper" record "$version" "$outcome" "$((ended - started))" "$work/new/summary.json" > "$work/log-entry" || return 1
+    [ ! -L "$proxy/panel-apply.log" ] && [ ! -L "$proxy/panel-apply.log.next" ] || return 1
+    { [ ! -f "$proxy/panel-apply.log" ] || cat "$proxy/panel-apply.log"; cat "$work/log-entry"; } | tail -n 50 > "$proxy/panel-apply.log.next" || return 1
+    chmod 600 "$proxy/panel-apply.log.next" || return 1
+    mv -f "$proxy/panel-apply.log.next" "$proxy/panel-apply.log" || return 1
+}
+stop_blocked() {
+    /etc/init.d/lanekeep-xray stop >/dev/null 2>&1 || :
+    nft flush set inet lanekeep_dns_gate healthy_data >/dev/null 2>&1 || :
+}
+rollback() {
+    [ "$recovered" -eq 0 ] || return 1
+    recovered=1
+    snapshot_ok || { stop_blocked; return 1; }
+    failed=$versions/failed-$version
+    # Draft archival must never prevent recovery of an already verified snapshot.
+    if mkdir -m 700 "$failed" &&
+       cp "$work/input/lanekeep" "$failed/lanekeep" &&
+       cp "$work/input/nodes.json" "$failed/nodes.json" &&
+       cp "$work/new/config.json" "$failed/config.json" &&
+       cp "$work/new/summary.json" "$failed/summary.json" &&
+       chmod 600 "$failed/lanekeep" "$failed/nodes.json" "$failed/config.json" "$failed/summary.json"; then
+        :
+    else
+        printf 'LANEKEEP_APPLY_WARNING:failed_draft_archive_failed_continuing_rollback\n' >&2
+    fi
+    atomic_copy "$snapshot/config.json" "$proxy/config.json" && atomic_copy "$snapshot/phone-pilot.nft" "$proxy/phone-pilot.nft" && atomic_copy "$snapshot/lanekeep" /etc/config/lanekeep && atomic_copy "$snapshot/nodes.json" "$proxy/nodes.json" || { stop_blocked; return 1; }
+    if [ "$rules_nft_changed" -eq 1 ]; then
+        nft -c -f "$snapshot/phone-pilot.nft" > "$work/nft-restore-check" 2>&1 && nft -f "$snapshot/phone-pilot.nft" > "$work/nft-restore" 2>&1 || { stop_blocked; return 1; }
+    fi
+    old_epoch=$(read_epoch) || old_epoch=unavailable
+    restart_at=$(cut -d. -f1 /proc/uptime)
+    if /etc/init.d/lanekeep-xray restart > "$work/rollback-restart-output" 2>&1 && wait_open && live_members "$work/old"; then
+        rollback_done=1
+        record rolled_back || printf 'LANEKEEP_APPLY_WARNING:log_write_failed\n' >&2
+        printf 'LANEKEEP_APPLY_ROLLED_BACK\n'
+        return 0
+    fi
+    stop_blocked
+    record failed_blocked || :
+    printf 'LANEKEEP_APPLY_FAILED_BLOCKED\n' >&2
+    return 1
+}
+on_exit() {
+    rc=$?
+    trap - 0 HUP INT TERM
+    if [ "$changed" -eq 1 ] && [ "$success" -eq 0 ] && [ "$recovered" -eq 0 ]; then
+        if rollback; then rc=20; else rc=21; fi
+    elif [ "$recovered" -eq 1 ] && [ "$rollback_done" -eq 0 ]; then
+        stop_blocked
+    fi
+    # Keep only RAM staging for diagnostics; credentials never enter stdout.
+    exit "$rc"
+}
+
+make_snapshot() {
+    [ ! -L "$versions" ] || fail linked_versions
+    if [ ! -d "$versions" ]; then mkdir -m 700 "$versions"; fi
+    snapshot=$versions/$version
+    mkdir -m 700 "$snapshot"
+    cp "$proxy/config.json" "$snapshot/config.json"
+    cp "$proxy/phone-pilot.nft" "$snapshot/phone-pilot.nft"
+    cp /etc/config/lanekeep "$snapshot/lanekeep"
+    cp "$proxy/nodes.json" "$snapshot/nodes.json"
+    printf 'lanekeep-panel-v1\n' > "$snapshot/owner"
+    (cd "$snapshot" && sha256sum config.json phone-pilot.nft lanekeep nodes.json > manifest.sha256)
+    chmod 600 "$snapshot/"*
+    snapshot_ok || fail snapshot_verification
+}
+member_rollback() {
+    [ "$member_recovered" -eq 0 ] || return 1
+    member_recovered=1
+    snapshot_ok || { printf 'LANEKEEP_MEMBERS_ROLLBACK_FAILED:snapshot_invalid\n' >&2; return 1; }
+    failed=$versions/failed-$version
+    if mkdir -m 700 "$failed" && cp "$work/input/lanekeep" "$failed/lanekeep" &&
+       cp "$work/input/nodes.json" "$failed/nodes.json" &&
+       cp "$work/new/summary.json" "$failed/summary.json" && chmod 600 "$failed/"*; then :
+    else printf 'LANEKEEP_APPLY_WARNING:failed_draft_archive_failed_continuing_rollback\n' >&2; fi
+    restore_errors=0
+    atomic_copy "$snapshot/phone-pilot.nft" "$proxy/phone-pilot.nft" || restore_errors=1
+    atomic_copy "$snapshot/lanekeep" /etc/config/lanekeep || restore_errors=1
+    atomic_copy "$snapshot/nodes.json" "$proxy/nodes.json" || restore_errors=1
+    [ "$(hash_file "$proxy/nodes.json")" = "$nodes_hash" ] || restore_errors=1
+    if [ "$runtime_attempted" -eq 1 ]; then
+        nft -f "$work/old/members.nft" > "$work/member-rollback-output" 2>&1 || restore_errors=1
+    fi
+    [ "$(hash_file "$proxy/config.json")" = "$config_hash" ] || restore_errors=1
+    [ "$(hash_file "$proxy/phone-pilot.nft")" = "$nft_hash" ] || restore_errors=1
+    [ "$(hash_file /etc/config/lanekeep)" = "$uci_hash" ] || restore_errors=1
+    live_members "$work/old" || restore_errors=1
+    stable_health || restore_errors=1
+    if [ "$restore_errors" -eq 0 ]; then
+        record members_rolled_back || printf 'LANEKEEP_APPLY_WARNING:log_write_failed\n' >&2
+        printf 'LANEKEEP_MEMBERS_ROLLED_BACK\n'
+        return 0
+    fi
+    record members_rollback_failed || :
+    printf 'LANEKEEP_MEMBERS_ROLLBACK_FAILED:no_restart_performed\n' >&2
+    return 1
+}
+on_member_exit() {
+    rc=$?
+    trap - 0 HUP INT TERM
+    if [ "$member_changed" -eq 1 ] && [ "$success" -eq 0 ] && [ "$member_recovered" -eq 0 ]; then
+        if member_rollback; then rc=20; else rc=21; fi
+    fi
+    exit "$rc"
+}
+apply_members() {
+    # Independent failure path: never reaches rollback(), stop_blocked() or restart.
+    trap on_member_exit 0
+    trap 'exit 130' HUP INT TERM
+    stable_mode=stable-health
+    # Unused node CRUD must remain possible while the current default is down.
+    # This branch changes no runtime configuration and still preserves process identity.
+    [ "$apply_kind" != metadata ] || stable_mode=stable-identity
+    capture_health || fail member_health_read
+    ucode "$helper" "$stable_mode" "$work" - > "$work/stable-identity.json" || fail member_health_not_open
+    
+if [ "$(uci -q get lanekeep_runtime.main.enabled)" != 1 ]; then
+    apply_kind=metadata
+    make_snapshot
+    failed=0
+    for name in config.json phone-pilot.nft; do atomic_copy "$work/new/$name" "$proxy/$name" || failed=1; done
+    atomic_copy "$work/input/lanekeep" /etc/config/lanekeep || failed=1
+    atomic_copy "$work/input/nodes.json" "$proxy/nodes.json" || failed=1
+    if [ "$failed" = 1 ]; then
+        for name in config.json phone-pilot.nft nodes.json; do atomic_copy "$snapshot/$name" "$proxy/$name"; done
+        atomic_copy "$snapshot/lanekeep" /etc/config/lanekeep
+        exit 1
+    fi
+    record applied
+    printf 'LANEKEEP_APPLY_INACTIVE restart_performed=false\n'
+    exit 0
+fi
+
+live_members "$work/old" || fail live_members_drift
+    if [ "$apply_kind" = members ]; then
+        nft -c -f "$work/old/members.nft" > "$work/old-member-check" 2>&1 || fail rollback_transaction_invalid
+        nft -c -f "$work/new/members.nft" > "$work/new-member-check" 2>&1 || fail member_transaction_invalid
+    fi
+    make_snapshot
+    inputs_unchanged && live_members "$work/old" && stable_health || fail concurrent_external_change
+    member_changed=1
+    if [ "$apply_kind" = members ]; then
+        atomic_copy "$work/new/phone-pilot.nft" "$proxy/phone-pilot.nft" || fail member_nft_replace
+    fi
+    atomic_copy "$work/input/lanekeep" /etc/config/lanekeep || fail member_uci_replace
+    atomic_copy "$work/input/nodes.json" "$proxy/nodes.json" || fail member_nodes_replace
+    if [ "$apply_kind" = members ]; then
+        runtime_attempted=1
+        nft -f "$work/new/members.nft" > "$work/member-apply-output" 2>&1 || fail member_transaction_failed
+    fi
+    [ "$(hash_file "$proxy/config.json")" = "$config_hash" ] || fail unexpected_config_change
+    [ "$(hash_file /etc/config/dhcp)" = "$dhcp_hash" ] || fail unexpected_dhcp_change
+    [ "$(hash_file /etc/config/lanekeep)" = "$(hash_file "$work/input/lanekeep")" ] || fail member_uci_readback
+    [ "$(hash_file "$proxy/phone-pilot.nft")" = "$(hash_file "$work/new/phone-pilot.nft")" ] || fail member_nft_readback
+    [ "$(hash_file "$proxy/nodes.json")" = "$(hash_file "$work/input/nodes.json")" ] || fail nodes_readback
+    live_members "$work/new" && stable_health || fail member_runtime_readback
+    success=1
+    record "${apply_kind}_applied" || printf 'LANEKEEP_APPLY_WARNING:log_write_failed\n' >&2
+    ucode "$helper" prune "$versions" >/dev/null 2>&1 || printf 'LANEKEEP_APPLY_WARNING:snapshot_prune_failed\n' >&2
+    ended=$(cut -d. -f1 /proc/uptime)
+    printf 'LANEKEEP_MEMBERS_OK kind=%s restart_performed=false elapsed_seconds=%s\n' "$apply_kind" "$((ended - started))"
+    exit 0
+}
+
+# Freeze drafts. The caller cannot replace DHCP bindings through this command.
+mkdir -m 700 "$work/input" "$work/current"
+cp "$draft/lanekeep" "$work/input/lanekeep"
+cp /etc/config/dhcp "$work/input/dhcp"
+cp /etc/config/lanekeep "$work/current/lanekeep"
+cp /etc/config/dhcp "$work/current/dhcp"
+cp "$proxy/nodes.json" "$work/current/nodes.json"
+if [ -e "$draft/nodes.json" ] || [ -L "$draft/nodes.json" ]; then
+    [ -f "$draft/nodes.json" ] && [ ! -L "$draft/nodes.json" ] || fail invalid_nodes_draft
+    cp "$draft/nodes.json" "$work/input/nodes.json"
+else
+    cp "$proxy/nodes.json" "$work/input/nodes.json"
+fi
+chmod 600 "$work/input/"* "$work/current/"*
+config_hash=$(hash_file "$proxy/config.json")
+uci_hash=$(hash_file /etc/config/lanekeep)
+nft_hash=$(hash_file "$proxy/phone-pilot.nft")
+dhcp_hash=$(hash_file /etc/config/dhcp)
+nodes_hash=$(hash_file "$proxy/nodes.json")
+[ "$(hash_file "$work/current/nodes.json")" = "$nodes_hash" ] || fail nodes_changed_during_freeze
+[ "$(hash_file "$work/current/lanekeep")" = "$uci_hash" ] || fail uci_changed_during_freeze
+[ "$(hash_file "$work/current/dhcp")" = "$dhcp_hash" ] || fail dhcp_changed_during_freeze
+# Recheck after sampling too: ordinary DHCP/UCI editors do not hold our lock.
+[ -z "$expected_uci" ] || [ "$uci_hash" = "$expected_uci" ] || fail stale_uci_draft
+[ -z "$expected_dhcp" ] || [ "$dhcp_hash" = "$expected_dhcp" ] || fail stale_dhcp_draft
+[ -z "$expected_nodes" ] || [ "$nodes_hash" = "$expected_nodes" ] || fail stale_nodes_draft
+
+# Check that the saved UCI actually describes the currently running config.
+# This prevents snapshotting an already overwritten draft as the rollback UCI.
+"$code/lanekeep-gen" --config-dir "$work/current" --output-dir "$work/old" > "$work/old-summary" 2>&1 || fail current_uci_rejected
+ucode "$helper" equal "$work/old/config.json" "$proxy/config.json" || fail current_uci_drift
+"$code/lanekeep-gen" --config-dir "$work/input" --output-dir "$work/new" --previous-dir "$work/current" > "$work/new-summary" 2>&1 || fail draft_rejected
+inputs_unchanged || fail concurrent_external_change
+[ "$(hash_file "$work/old/phone-pilot.nft")" = "$nft_hash" ] || fail current_persistent_nft_drift
+
+if [ "$(uci -q get lanekeep_runtime.main.enabled)" != 1 ]; then
+    apply_kind=metadata
+    make_snapshot
+    failed=0
+    for name in config.json phone-pilot.nft; do atomic_copy "$work/new/$name" "$proxy/$name" || failed=1; done
+    atomic_copy "$work/input/lanekeep" /etc/config/lanekeep || failed=1
+    atomic_copy "$work/input/nodes.json" "$proxy/nodes.json" || failed=1
+    if [ "$failed" = 1 ]; then
+        for name in config.json phone-pilot.nft nodes.json; do atomic_copy "$snapshot/$name" "$proxy/$name"; done
+        atomic_copy "$snapshot/lanekeep" /etc/config/lanekeep
+        exit 1
+    fi
+    record applied
+    printf 'LANEKEEP_APPLY_INACTIVE restart_performed=false\n'
+    exit 0
+fi
+
+live_members "$work/old" || fail live_members_drift
+apply_kind=$(ucode "$helper" kind "$work/old/normalized-rules.json" "$work/new/normalized-rules.json" "$work/old/config.json" "$work/new/config.json") || fail change_classification
+case "$apply_kind" in
+    mixed) fail mixed_rules_and_members_submit_separately ;;
+    rules) [ "$members_only" -eq 0 ] || fail members_only_rejects_rules ;;
+    members|metadata|unchanged) [ "$simulate" -eq 0 ] || fail simulation_requires_rules ;;
+    *) fail change_classification ;;
+esac
+case "$apply_kind" in
+    unchanged) printf 'LANEKEEP_APPLY_UNCHANGED restart_performed=false\n'; exit 0 ;;
+    members|metadata) apply_members ;;
+esac
+# Rules-only path. Member changes were rejected before any live mutation.
+[ "$(hash_file "$work/new/members.nft")" = "$(hash_file "$work/old/members.nft")" ] || fail rules_members_mismatch
+if [ "$(hash_file "$work/new/phone-pilot.nft")" != "$(hash_file "$work/old/phone-pilot.nft")" ]; then
+    rules_nft_changed=1
+    nft -c -f "$work/new/phone-pilot.nft" > "$work/nft-check" 2>&1 || fail rules_nft_invalid
+    nft -c -f "$work/old/phone-pilot.nft" > "$work/nft-rollback-check" 2>&1 || fail rollback_nft_invalid
+fi
+trap on_exit 0
+trap 'exit 130' HUP INT TERM
+
+make_snapshot
+inputs_unchanged && live_members "$work/old" || fail concurrent_external_change
+old_epoch=$(read_epoch) || fail missing_current_epoch
+changed=1
+atomic_copy "$work/new/config.json" "$proxy/config.json" || fail config_replace
+atomic_copy "$work/new/phone-pilot.nft" "$proxy/phone-pilot.nft" || fail nft_replace
+atomic_copy "$work/input/lanekeep" /etc/config/lanekeep || fail uci_replace
+atomic_copy "$work/input/nodes.json" "$proxy/nodes.json" || fail nodes_replace
+if [ "$rules_nft_changed" -eq 1 ]; then nft -f "$work/new/phone-pilot.nft" > "$work/nft-apply" 2>&1 || fail rules_nft_apply; fi
+restart_at=$(cut -d. -f1 /proc/uptime)
+if /etc/init.d/lanekeep-xray restart > "$work/restart-output" 2>&1 && [ "$simulate" -eq 0 ] && wait_open && live_members "$work/new" &&
+   [ "$(hash_file "$proxy/nodes.json")" = "$(hash_file "$work/input/nodes.json")" ] &&
+   [ "$(hash_file "$proxy/config.json")" = "$(hash_file "$work/new/config.json")" ] &&
+   [ "$(hash_file /etc/config/lanekeep)" = "$(hash_file "$work/input/lanekeep")" ]; then
+    success=1
+    record applied || printf 'LANEKEEP_APPLY_WARNING:log_write_failed\n' >&2
+    # Prune only this feature's verified snapshots; no recursive deletion.
+    ucode "$helper" prune "$versions" >/dev/null 2>&1 || printf 'LANEKEEP_APPLY_WARNING:snapshot_prune_failed\n' >&2
+    ended=$(cut -d. -f1 /proc/uptime)
+    printf 'LANEKEEP_APPLY_OK elapsed_seconds=%s\n' "$((ended - started))"
+    exit 0
+fi
+if rollback; then
+    ucode "$helper" prune "$versions" >/dev/null 2>&1 || :
+    exit 20
+fi
+exit 21

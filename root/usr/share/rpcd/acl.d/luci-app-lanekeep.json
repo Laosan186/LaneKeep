@@ -1,0 +1,40 @@
+{
+  "luci-app-lanekeep": {
+    "description": "管理员分流管理：仅专用状态、草稿校验和统一应用接口",
+    "read": {
+      "ubus": {
+        "lanekeep": [
+          "status",
+          "versions",
+          "nodes",
+          "capabilities",
+          "sub_list",
+          "sub_diff"
+        ],
+        "lanekeep_telemetry": [
+          "read",
+          "read_page"
+        ]
+      }
+    },
+    "write": {
+      "ubus": {
+        "lanekeep": [
+          "validate",
+          "apply",
+          "rollback",
+          "exit_check",
+          "node_validate",
+          "node_test",
+          "sub_save",
+          "sub_refresh",
+          "trial_confirm",
+          "lifecycle"
+        ],
+        "lanekeep_telemetry": [
+          "mark"
+        ]
+      }
+    }
+  }
+}

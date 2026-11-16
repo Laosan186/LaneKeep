@@ -1,0 +1,17 @@
+# SPDX-License-Identifier: GPL-3.0-only
+table inet lanekeep_dns_gate {
+    comment "lanekeep-owned-v1"
+    set healthy_data { type mark; flags timeout; timeout 8s; }
+    chain check_data {
+        meta mark @healthy_data return
+        counter drop
+    }
+    chain data_output {
+        type filter hook output priority -1; policy accept;
+        meta mark 0x7621 ct mark set 0x7621 jump check_data
+    }
+    chain data_input {
+        type filter hook input priority -2; policy accept;
+        ct mark 0x7621 meta mark set 0x7621 jump check_data
+    }
+}

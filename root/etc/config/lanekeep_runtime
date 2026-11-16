@@ -1,0 +1,3 @@
+config runtime 'main'
+	option enabled '0'
+	option lan_interface 'lan'

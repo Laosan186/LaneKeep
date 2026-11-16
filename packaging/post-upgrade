@@ -1,0 +1,4 @@
+#!/bin/sh
+set -eu
+[ -z "${IPKG_INSTROOT:-}" ] || exit 0
+exec /usr/libexec/lanekeep-panel/package-install

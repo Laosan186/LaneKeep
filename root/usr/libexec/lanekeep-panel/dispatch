@@ -1,0 +1,25 @@
+#!/bin/sh
+# Fixed entrypoint; never accepts a caller-supplied command or arbitrary path.
+set -eu
+umask 077
+PATH=/usr/sbin:/usr/bin:/sbin:/bin
+export PATH
+method=${1:-}; request=${2:-}
+case "$method" in status|validate|apply|versions|rollback|exit_check|nodes|node_validate|node_test|trial_confirm|capabilities|sub_list|sub_save|sub_refresh|sub_diff) ;; *) exit 64 ;; esac
+case "$request" in /tmp/lanekeep-panel-rpc.??????) ;; *) exit 64 ;; esac
+suffix=${request#/tmp/lanekeep-panel-rpc.}
+case "$suffix" in *[!A-Za-z0-9]*) exit 64 ;; esac
+[ -d "$request" ] && [ ! -L "$request" ] && [ -f "$request/request.json" ] && [ ! -L "$request/request.json" ] || exit 64
+case "$method" in
+ validate|apply|rollback|node_validate|node_test|trial_confirm|sub_list|sub_save|sub_refresh|sub_diff)
+  [ ! -L /var/lock/lanekeep-panel-submit.lock ] || exit 1
+  exec 8>/var/lock/lanekeep-panel-submit.lock
+  flock -n 8 || { printf '%s\n' '{"ok":false,"message":"已有面板请求处理中，请先查看状态"}'; exit 0; } ;;
+esac
+case "$method" in
+ sub_refresh|node_validate)
+  [ ! -L /var/lock/lanekeep-sub-refresh.lock ] || exit 1
+  exec 9>/var/lock/lanekeep-sub-refresh.lock
+  flock -n 9 || { printf '%s\n' '{"ok":false,"code":"request","message":"已有订阅刷新，请稍后手动重试"}'; exit 0; } ;;
+esac
+exec ucode /usr/libexec/lanekeep-panel/panel.uc "$method" "$request/request.json"

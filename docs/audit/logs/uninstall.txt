@@ -1,0 +1,33 @@
+( 1/14) Purging luci-app-lanekeep (0.1.0-r1)
+  Executing luci-app-lanekeep-0.1.0-r1.pre-deinstall
+  * {"ok":true,"enabled":false}
+  Executing luci-app-lanekeep-0.1.0-r1.post-deinstall
+( 2/14) Purging coreutils-timeout (9.9-r2)
+  Executing coreutils-timeout-9.9-r2.pre-deinstall
+  * add alternative: /usr/bin/timeout -> /bin/busybox
+( 3/14) Purging coreutils (9.9-r2)
+  Executing coreutils-9.9-r2.pre-deinstall
+( 4/14) Purging flock (2.41.5-r1)
+  Executing flock-2.41.5-r1.pre-deinstall
+  * add alternative: /usr/bin/flock -> /bin/busybox
+( 5/14) Purging kmod-nft-socket (6.12.112-r1)
+  Executing kmod-nft-socket-6.12.112-r1.pre-deinstall
+( 6/14) Purging kmod-nf-socket (6.12.112-r1)
+  Executing kmod-nf-socket-6.12.112-r1.pre-deinstall
+( 7/14) Purging kmod-nft-tproxy (6.12.112-r1)
+  Executing kmod-nft-tproxy-6.12.112-r1.pre-deinstall
+( 8/14) Purging kmod-nf-tproxy (6.12.112-r1)
+  Executing kmod-nf-tproxy-6.12.112-r1.pre-deinstall
+( 9/14) Purging ucode-mod-digest (2026.07.09~b885dd0f-r3)
+  Executing ucode-mod-digest-2026.07.09~b885dd0f-r3.pre-deinstall
+(10/14) Purging ucode-mod-socket (2026.07.09~b885dd0f-r3)
+  Executing ucode-mod-socket-2026.07.09~b885dd0f-r3.pre-deinstall
+(11/14) Purging ucode-mod-struct (2026.07.09~b885dd0f-r3)
+  Executing ucode-mod-struct-2026.07.09~b885dd0f-r3.pre-deinstall
+(12/14) Purging v2ray-geoip (202610050438-r1)
+  Executing v2ray-geoip-202610050438-r1.pre-deinstall
+(13/14) Purging v2ray-geosite (20261009101206-r1)
+  Executing v2ray-geosite-20261009101206-r1.pre-deinstall
+(14/14) Purging xray-core (26.10.21-r1)
+  Executing xray-core-26.10.21-r1.pre-deinstall
+OK: 21.0 MiB in 189 packages

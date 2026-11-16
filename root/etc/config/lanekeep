@@ -1,0 +1,26 @@
+config group 'global'
+	option label '全局模式'
+
+config group 'enhanced'
+	option label '增强模式'
+
+config group 'ondemand'
+	option label '按需代理'
+
+config fallback 'fallback_standard'
+	option group 'standard'
+	option action 'direct'
+
+config fallback 'fallback_global'
+	option group 'global'
+	option action 'proxy'
+
+config fallback 'fallback_enhanced'
+	option group 'enhanced'
+	option action 'proxy'
+
+config fallback 'fallback_ondemand'
+	option group 'ondemand'
+	option action 'direct'
+
+config real_dns 'real_dns'

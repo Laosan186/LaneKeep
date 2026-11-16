@@ -1,0 +1,5 @@
+#!/bin/sh
+set -eu
+[ -z "${IPKG_INSTROOT:-}" ] || exit 0
+# Preserve the enabled flag and configuration across the package upgrade.
+exec /usr/libexec/lanekeep-panel/lifecycle stop

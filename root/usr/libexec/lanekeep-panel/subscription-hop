@@ -1,0 +1,21 @@
+#!/bin/sh
+# Per-hop TLS wrapper, inside subscription-fetch's group; no persistent listener.
+set -eu
+umask 077
+PATH=/usr/sbin:/usr/bin:/sbin:/bin
+export PATH
+work=${1:-};port=${2:-}
+case "$work" in /tmp/lanekeep-sub-cache/.work-????????-????-????-????-????????????) ;; *) exit 64 ;; esac
+case "$port" in ''|*[!0-9]*) exit 64 ;; esac
+[ "$port" -ge 20000 ] && [ "$port" -lt 50000 ] || exit 64
+[ -d "$work" ] && [ ! -L "$work" ] && [ -f "$work/test-config.json" ] && [ ! -L "$work/test-config.json" ] || exit 64
+export XRAY_LOCATION_ASSET=/usr/share/v2ray
+core=
+cleanup(){ trap - EXIT HUP INT TERM; if [ -n "$core" ]; then kill "$core" 2>/dev/null || :; wait "$core" 2>/dev/null || :; fi; }
+trap cleanup EXIT
+trap 'exit 1' HUP INT TERM
+/usr/bin/xray run -c "$work/test-config.json" >/dev/null 2>&1 &
+core=$!
+sleep 1
+kill -0 "$core" 2>/dev/null || exit 1
+ucode /usr/libexec/lanekeep-panel/subscription-wire.uc exchange "$work" "$port" >/dev/null 2>&1

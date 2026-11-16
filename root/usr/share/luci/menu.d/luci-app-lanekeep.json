@@ -1,0 +1,62 @@
+{
+  "admin/services/lanekeep": {
+    "title": "LaneKeep",
+    "order": 65,
+    "action": {
+      "type": "firstchild"
+    },
+    "depends": {
+      "acl": [
+        "luci-app-lanekeep"
+      ]
+    }
+  },
+  "admin/services/lanekeep/status": {
+    "title": "状态",
+    "order": 1,
+    "action": {
+      "type": "view",
+      "path": "lanekeep/status"
+    }
+  },
+  "admin/services/lanekeep/devices": {
+    "title": "设备分组",
+    "order": 2,
+    "action": {
+      "type": "view",
+      "path": "lanekeep/devices"
+    }
+  },
+  "admin/services/lanekeep/rules": {
+    "title": "规则",
+    "order": 3,
+    "action": {
+      "type": "view",
+      "path": "lanekeep/rules"
+    }
+  },
+  "admin/services/lanekeep/versions": {
+    "title": "版本",
+    "order": 6,
+    "action": {
+      "type": "view",
+      "path": "lanekeep/versions"
+    }
+  },
+  "admin/services/lanekeep/nodes": {
+    "title": "节点",
+    "order": 4,
+    "action": {
+      "type": "view",
+      "path": "lanekeep/nodes"
+    }
+  },
+  "admin/services/lanekeep/details": {
+    "title": "详细数据",
+    "order": 5,
+    "action": {
+      "type": "view",
+      "path": "lanekeep/details"
+    }
+  }
+}

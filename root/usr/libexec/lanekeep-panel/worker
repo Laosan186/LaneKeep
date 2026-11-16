@@ -1,0 +1,14 @@
+#!/bin/sh
+set -eu
+umask 077
+PATH=/usr/sbin:/usr/bin:/sbin:/bin
+export PATH
+id=${1:-}
+[ "${#id}" -eq 36 ] || exit 64
+case "$id" in *[!a-f0-9-]*) exit 64 ;; esac
+# The submit RPC may still own FD 8. Never inherit that lock into background work.
+exec 8>&-
+[ ! -L /var/lock/lanekeep-panel-worker.lock ] || exit 1
+exec 7>/var/lock/lanekeep-panel-worker.lock
+flock 7 || exit 1
+exec ucode /usr/libexec/lanekeep-panel/panel.uc execute "$id"

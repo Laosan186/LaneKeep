@@ -1,0 +1,34 @@
+{
+  "date": "2026-11-16",
+  "repository_files_scanned": 171,
+  "personal_token_findings": 0,
+  "private_node_value_findings": 0,
+  "original_reference_values_compared": 9,
+  "escaped_text_checked": true,
+  "unfilled_document_markers": 0,
+  "gitleaks": {
+    "version": "8.30.1",
+    "source_directory_findings": 0,
+    "unpacked_apk_findings": 0,
+    "history_report": "Delivered separately with the private release after the initial commit."
+  },
+  "factory": {
+    "nodes": 0,
+    "members": 0,
+    "custom_rules": 0,
+    "fakeip_exceptions": 0,
+    "enabled": false
+  },
+  "screenshots": {
+    "count": 6,
+    "data": "Synthetic names, reserved documentation addresses; visually reviewed."
+  },
+  "retained_public_data": [
+    "Cloudflare and Ali public DNS service addresses",
+    "Loopback, wildcard and protocol-reserved networks",
+    "RFC documentation examples",
+    "Public service geodata subset with pinned upstream and digest"
+  ],
+  "scope": "All repository source, documentation, hidden GitHub templates and build scripts; secret scan also covers the unpacked release APK. Generated build/cache directories, local artifacts and private test credentials are not repository content.",
+  "limitations": "Automated scans are combined with template/default review and screenshot inspection; they are not a mathematical proof of the absence of all possible sensitive data."
+}

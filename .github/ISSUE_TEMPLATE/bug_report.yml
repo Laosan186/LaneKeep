@@ -1,0 +1,51 @@
+name: Bug report / 问题反馈
+description: Report a reproducible problem without private data / 提交脱敏的问题复现
+title: "[Bug] "
+body:
+  - type: markdown
+    attributes:
+      value: "安全问题请按 SECURITY.md 私下报告。不要粘贴节点、订阅、密钥、UUID、真实 IP 或完整配置。"
+  - type: input
+    id: versions
+    attributes:
+      label: Versions / 版本
+      description: LaneKeep, OpenWrt, LuCI and Xray versions
+    validations:
+      required: true
+  - type: input
+    id: device
+    attributes:
+      label: Device and architecture / 设备型号和架构
+      description: Hardware model and target architecture, without hostname or serial number
+    validations:
+      required: true
+  - type: input
+    id: browser
+    attributes:
+      label: Browser / 浏览器
+      description: Browser version, theme and language
+  - type: textarea
+    id: reproduction
+    attributes:
+      label: Steps / 复现步骤
+      description: Include routing mode, activation state and protocol type; use dummy data.
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected and actual behavior / 预期与实际结果
+    validations:
+      required: true
+  - type: textarea
+    id: evidence
+    attributes:
+      label: Sanitized evidence / 脱敏截图与错误信息
+      description: Include relevant console errors and failed request method names, never credentials or raw request bodies.
+  - type: checkboxes
+    id: privacy
+    attributes:
+      label: Privacy / 隐私检查
+      options:
+        - label: I removed personal data and this is not a security report / 已去除个人数据，且不是安全漏洞报告
+          required: true

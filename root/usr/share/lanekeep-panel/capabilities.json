@@ -1,0 +1,2049 @@
+{
+  "schema": 1,
+  "revision": "phase5-trial-20261108-v1",
+  "core": {
+    "name": "xray",
+    "target_version": "26.10.21",
+    "tested_version": null
+  },
+  "release_status": "trial",
+  "limits": {
+    "nodes": 32,
+    "store_bytes": 524288,
+    "body_bytes": 262144,
+    "link_bytes": 8192,
+    "secret_chars": 4096,
+    "spiderX_chars": 256,
+    "early_data_bytes": 65535,
+    "subscription_items": 500,
+    "subscription_body_bytes": 2097152,
+    "rpc_response_bytes": 65536,
+    "max_nodes": 32,
+    "node_store_bytes": 524288
+  },
+  "protocols": {
+    "vless": {
+      "label": "VLESS",
+      "schemes": [
+        "vless"
+      ],
+      "combos": [
+        {
+          "id": "vless-reality-raw",
+          "security": "reality",
+          "transport": "raw",
+          "flow": [
+            "xtls-rprx-vision",
+            "xtls-rprx-vision-udp443"
+          ],
+          "legacy": true,
+          "status": "legacy_preserved",
+          "chain_front": true,
+          "chain_rear": false,
+          "udp": true,
+          "fields": [
+            "id",
+            "name",
+            "protocol",
+            "server",
+            "port",
+            "uuid",
+            "sni",
+            "flow",
+            "fingerprint",
+            "public_key",
+            "short_id",
+            "mldsa65",
+            "spiderX",
+            "import_hints"
+          ],
+          "required": [
+            "uuid",
+            "sni",
+            "public_key",
+            "fingerprint",
+            "flow"
+          ],
+          "defaults": {
+            "port": 443,
+            "flow": "xtls-rprx-vision",
+            "fingerprint": "chrome"
+          },
+          "role": "single",
+          "min_store_version": 1,
+          "chain_front_status": "trial",
+          "chain_rear_status": "not_applicable",
+          "chain_role_evidence": []
+        },
+        {
+          "id": "vless-reality-raw-v3",
+          "security": "reality",
+          "transport": "raw",
+          "legacy": false,
+          "status": "trial",
+          "role": "single",
+          "fields": [
+            "id",
+            "name",
+            "protocol",
+            "server",
+            "port",
+            "security",
+            "transport",
+            "uuid",
+            "flow",
+            "sni",
+            "fingerprint",
+            "public_key",
+            "short_id",
+            "mldsa65",
+            "spiderX",
+            "import_hints"
+          ],
+          "required": [
+            "security",
+            "transport",
+            "uuid",
+            "sni",
+            "public_key",
+            "fingerprint"
+          ],
+          "defaults": {
+            "port": 443,
+            "security": "reality",
+            "transport": "raw",
+            "flow": "",
+            "sni": "",
+            "fingerprint": "chrome",
+            "short_id": "",
+            "mldsa65": ""
+          },
+          "min_store_version": 3,
+          "chain_front": true,
+          "chain_rear": false,
+          "udp": false,
+          "validation_evidence": [],
+          "flow": [
+            "",
+            "xtls-rprx-vision",
+            "xtls-rprx-vision-udp443"
+          ],
+          "chain_front_status": "trial",
+          "chain_rear_status": "not_applicable",
+          "chain_role_evidence": []
+        },
+        {
+          "id": "vless-reality-xhttp",
+          "security": "reality",
+          "transport": "xhttp",
+          "legacy": false,
+          "status": "trial",
+          "role": "single",
+          "fields": [
+            "id",
+            "name",
+            "protocol",
+            "server",
+            "port",
+            "security",
+            "transport",
+            "uuid",
+            "flow",
+            "sni",
+            "fingerprint",
+            "public_key",
+            "short_id",
+            "mldsa65",
+            "spiderX",
+            "import_hints",
+            "path",
+            "host",
+            "mode"
+          ],
+          "required": [
+            "security",
+            "transport",
+            "uuid",
+            "sni",
+            "public_key",
+            "fingerprint"
+          ],
+          "defaults": {
+            "port": 443,
+            "security": "reality",
+            "transport": "xhttp",
+            "flow": "",
+            "sni": "",
+            "fingerprint": "chrome",
+            "short_id": "",
+            "mldsa65": "",
+            "path": "/",
+            "host": "",
+            "mode": "auto"
+          },
+          "min_store_version": 3,
+          "chain_front": true,
+          "chain_rear": false,
+          "udp": false,
+          "validation_evidence": [],
+          "flow": [
+            ""
+          ],
+          "modes": [
+            "auto",
+            "packet-up",
+            "stream-up",
+            "stream-one"
+          ],
+          "chain_front_status": "trial",
+          "chain_rear_status": "not_applicable",
+          "chain_role_evidence": []
+        },
+        {
+          "id": "vless-tls-raw",
+          "security": "tls",
+          "transport": "raw",
+          "legacy": false,
+          "status": "trial",
+          "role": "single",
+          "fields": [
+            "id",
+            "name",
+            "protocol",
+            "server",
+            "port",
+            "security",
+            "transport",
+            "uuid",
+            "flow",
+            "sni",
+            "fingerprint",
+            "alpn",
+            "insecure"
+          ],
+          "required": [
+            "security",
+            "transport",
+            "uuid",
+            "sni"
+          ],
+          "defaults": {
+            "port": 443,
+            "security": "tls",
+            "transport": "raw",
+            "flow": "",
+            "sni": "",
+            "fingerprint": "",
+            "alpn": [],
+            "insecure": false
+          },
+          "min_store_version": 3,
+          "chain_front": true,
+          "chain_rear": false,
+          "udp": false,
+          "validation_evidence": [],
+          "flow": [
+            "",
+            "xtls-rprx-vision",
+            "xtls-rprx-vision-udp443"
+          ],
+          "chain_front_status": "trial",
+          "chain_rear_status": "not_applicable",
+          "chain_role_evidence": []
+        },
+        {
+          "id": "vless-tls-ws",
+          "security": "tls",
+          "transport": "ws",
+          "legacy": false,
+          "status": "trial",
+          "role": "single",
+          "fields": [
+            "id",
+            "name",
+            "protocol",
+            "server",
+            "port",
+            "security",
+            "transport",
+            "uuid",
+            "flow",
+            "sni",
+            "fingerprint",
+            "alpn",
+            "insecure",
+            "path",
+            "host"
+          ],
+          "required": [
+            "security",
+            "transport",
+            "uuid",
+            "sni"
+          ],
+          "defaults": {
+            "port": 443,
+            "security": "tls",
+            "transport": "ws",
+            "flow": "",
+            "sni": "",
+            "fingerprint": "",
+            "alpn": [],
+            "insecure": false,
+            "path": "/",
+            "host": ""
+          },
+          "min_store_version": 3,
+          "chain_front": true,
+          "chain_rear": false,
+          "udp": false,
+          "validation_evidence": [],
+          "flow": [
+            ""
+          ],
+          "chain_front_status": "trial",
+          "chain_rear_status": "not_applicable",
+          "chain_role_evidence": []
+        },
+        {
+          "id": "vless-tls-grpc",
+          "security": "tls",
+          "transport": "grpc",
+          "legacy": false,
+          "status": "trial",
+          "role": "single",
+          "fields": [
+            "id",
+            "name",
+            "protocol",
+            "server",
+            "port",
+            "security",
+            "transport",
+            "uuid",
+            "flow",
+            "sni",
+            "fingerprint",
+            "alpn",
+            "insecure",
+            "service_name",
+            "mode",
+            "authority"
+          ],
+          "required": [
+            "security",
+            "transport",
+            "uuid",
+            "sni"
+          ],
+          "defaults": {
+            "port": 443,
+            "security": "tls",
+            "transport": "grpc",
+            "flow": "",
+            "sni": "",
+            "fingerprint": "",
+            "alpn": [],
+            "insecure": false,
+            "service_name": "",
+            "authority": "",
+            "mode": "gun"
+          },
+          "min_store_version": 3,
+          "chain_front": true,
+          "chain_rear": false,
+          "udp": false,
+          "validation_evidence": [],
+          "flow": [
+            ""
+          ],
+          "modes": [
+            "gun",
+            "multi"
+          ],
+          "chain_front_status": "trial",
+          "chain_rear_status": "not_applicable",
+          "chain_role_evidence": []
+        },
+        {
+          "id": "vless-tls-httpupgrade",
+          "security": "tls",
+          "transport": "httpupgrade",
+          "legacy": false,
+          "status": "trial",
+          "role": "single",
+          "fields": [
+            "id",
+            "name",
+            "protocol",
+            "server",
+            "port",
+            "security",
+            "transport",
+            "uuid",
+            "flow",
+            "sni",
+            "fingerprint",
+            "alpn",
+            "insecure",
+            "path",
+            "host"
+          ],
+          "required": [
+            "security",
+            "transport",
+            "uuid",
+            "sni"
+          ],
+          "defaults": {
+            "port": 443,
+            "security": "tls",
+            "transport": "httpupgrade",
+            "flow": "",
+            "sni": "",
+            "fingerprint": "",
+            "alpn": [],
+            "insecure": false,
+            "path": "/",
+            "host": ""
+          },
+          "min_store_version": 3,
+          "chain_front": true,
+          "chain_rear": false,
+          "udp": false,
+          "validation_evidence": [],
+          "flow": [
+            ""
+          ],
+          "chain_front_status": "trial",
+          "chain_rear_status": "not_applicable",
+          "chain_role_evidence": []
+        },
+        {
+          "id": "vless-tls-xhttp",
+          "security": "tls",
+          "transport": "xhttp",
+          "legacy": false,
+          "status": "trial",
+          "role": "single",
+          "fields": [
+            "id",
+            "name",
+            "protocol",
+            "server",
+            "port",
+            "security",
+            "transport",
+            "uuid",
+            "flow",
+            "sni",
+            "fingerprint",
+            "alpn",
+            "insecure",
+            "path",
+            "host",
+            "mode"
+          ],
+          "required": [
+            "security",
+            "transport",
+            "uuid",
+            "sni"
+          ],
+          "defaults": {
+            "port": 443,
+            "security": "tls",
+            "transport": "xhttp",
+            "flow": "",
+            "sni": "",
+            "fingerprint": "",
+            "alpn": [],
+            "insecure": false,
+            "path": "/",
+            "host": "",
+            "mode": "auto"
+          },
+          "min_store_version": 3,
+          "chain_front": true,
+          "chain_rear": false,
+          "udp": false,
+          "validation_evidence": [],
+          "flow": [
+            ""
+          ],
+          "modes": [
+            "auto",
+            "packet-up",
+            "stream-up",
+            "stream-one"
+          ],
+          "chain_front_status": "trial",
+          "chain_rear_status": "not_applicable",
+          "chain_role_evidence": []
+        }
+      ],
+      "params": {
+        "critical": [
+          "security",
+          "type",
+          "flow",
+          "sni",
+          "fp",
+          "pbk",
+          "sid",
+          "pqv",
+          "mldsa65Verify",
+          "encryption",
+          "spx",
+          "support-x25519mlkem768",
+          "alpn",
+          "path",
+          "host",
+          "serviceName",
+          "mode",
+          "authority",
+          "insecure",
+          "allowInsecure"
+        ],
+        "ignorable": [
+          "headerType"
+        ],
+        "ignored_values": {
+          "headerType": [
+            "none"
+          ]
+        },
+        "aliases": {
+          "tcp": "raw",
+          "pqv": "mldsa65",
+          "mldsa65Verify": "mldsa65",
+          "spx": "spiderX"
+        }
+      },
+      "new_fields": {
+        "spiderX": {
+          "min_store_version": 2,
+          "validation": "pending"
+        },
+        "import_hints": {
+          "min_store_version": 2,
+          "validation": "pending"
+        }
+      },
+      "mlkem": {
+        "source_supported_fingerprints": [
+          "chrome"
+        ],
+        "loopback_fingerprints": [],
+        "verified_fingerprints": [],
+        "false_supported": false
+      },
+      "fingerprint_fields": [
+        "server",
+        "port",
+        "uuid",
+        "sni",
+        "flow",
+        "fingerprint",
+        "public_key",
+        "short_id",
+        "mldsa65",
+        "spiderX",
+        "import_hints",
+        "native_transport",
+        "native_options",
+        "security",
+        "transport",
+        "alpn",
+        "insecure",
+        "path",
+        "host",
+        "service_name",
+        "mode",
+        "authority"
+      ]
+    },
+    "hysteria2": {
+      "label": "HY2",
+      "schemes": [
+        "hysteria2",
+        "hy2"
+      ],
+      "combos": [
+        {
+          "id": "hysteria2-tls",
+          "security": "tls",
+          "transport": "hysteria",
+          "legacy": true,
+          "status": "legacy_preserved",
+          "chain_front": true,
+          "chain_rear": false,
+          "udp": true,
+          "fields": [
+            "id",
+            "name",
+            "protocol",
+            "server",
+            "port",
+            "password",
+            "sni",
+            "alpn",
+            "insecure"
+          ],
+          "required": [
+            "password",
+            "sni"
+          ],
+          "defaults": {
+            "port": 443,
+            "insecure": false,
+            "alpn": []
+          },
+          "role": "single",
+          "min_store_version": 1,
+          "chain_front_status": "trial",
+          "chain_rear_status": "not_applicable",
+          "chain_role_evidence": []
+        }
+      ],
+      "params": {
+        "critical": [
+          "sni",
+          "peer",
+          "insecure",
+          "allowInsecure",
+          "alpn",
+          "obfs",
+          "obfs-password"
+        ],
+        "ignorable": [],
+        "ignored_values": {}
+      },
+      "fingerprint_fields": [
+        "server",
+        "port",
+        "password",
+        "sni",
+        "alpn",
+        "insecure",
+        "obfs",
+        "obfs_password"
+      ]
+    },
+    "vmess": {
+      "label": "VMess",
+      "schemes": [
+        "vmess"
+      ],
+      "combos": [
+        {
+          "id": "vmess-none-raw",
+          "security": "none",
+          "transport": "raw",
+          "legacy": false,
+          "status": "trial",
+          "role": "single",
+          "fields": [
+            "id",
+            "name",
+            "protocol",
+            "server",
+            "port",
+            "security",
+            "transport",
+            "uuid",
+            "aid",
+            "scy"
+          ],
+          "required": [
+            "security",
+            "transport",
+            "uuid"
+          ],
+          "defaults": {
+            "port": 443,
+            "security": "none",
+            "transport": "raw",
+            "aid": 0,
+            "scy": "auto"
+          },
+          "min_store_version": 3,
+          "chain_front": true,
+          "chain_rear": false,
+          "udp": false,
+          "validation_evidence": [],
+          "chain_front_status": "trial",
+          "chain_rear_status": "not_applicable",
+          "chain_role_evidence": []
+        },
+        {
+          "id": "vmess-none-ws",
+          "security": "none",
+          "transport": "ws",
+          "legacy": false,
+          "status": "trial",
+          "role": "single",
+          "fields": [
+            "id",
+            "name",
+            "protocol",
+            "server",
+            "port",
+            "security",
+            "transport",
+            "uuid",
+            "aid",
+            "scy",
+            "path",
+            "host"
+          ],
+          "required": [
+            "security",
+            "transport",
+            "uuid"
+          ],
+          "defaults": {
+            "port": 443,
+            "security": "none",
+            "transport": "ws",
+            "aid": 0,
+            "scy": "auto",
+            "path": "/",
+            "host": ""
+          },
+          "min_store_version": 3,
+          "chain_front": true,
+          "chain_rear": false,
+          "udp": false,
+          "validation_evidence": [],
+          "chain_front_status": "trial",
+          "chain_rear_status": "not_applicable",
+          "chain_role_evidence": []
+        },
+        {
+          "id": "vmess-none-grpc",
+          "security": "none",
+          "transport": "grpc",
+          "legacy": false,
+          "status": "trial",
+          "role": "single",
+          "fields": [
+            "id",
+            "name",
+            "protocol",
+            "server",
+            "port",
+            "security",
+            "transport",
+            "uuid",
+            "aid",
+            "scy",
+            "service_name",
+            "mode",
+            "authority"
+          ],
+          "required": [
+            "security",
+            "transport",
+            "uuid"
+          ],
+          "defaults": {
+            "port": 443,
+            "security": "none",
+            "transport": "grpc",
+            "aid": 0,
+            "scy": "auto",
+            "service_name": "",
+            "authority": "",
+            "mode": "gun"
+          },
+          "min_store_version": 3,
+          "chain_front": true,
+          "chain_rear": false,
+          "udp": false,
+          "validation_evidence": [],
+          "modes": [
+            "gun",
+            "multi"
+          ],
+          "chain_front_status": "trial",
+          "chain_rear_status": "not_applicable",
+          "chain_role_evidence": []
+        },
+        {
+          "id": "vmess-none-httpupgrade",
+          "security": "none",
+          "transport": "httpupgrade",
+          "legacy": false,
+          "status": "trial",
+          "role": "single",
+          "fields": [
+            "id",
+            "name",
+            "protocol",
+            "server",
+            "port",
+            "security",
+            "transport",
+            "uuid",
+            "aid",
+            "scy",
+            "path",
+            "host"
+          ],
+          "required": [
+            "security",
+            "transport",
+            "uuid"
+          ],
+          "defaults": {
+            "port": 443,
+            "security": "none",
+            "transport": "httpupgrade",
+            "aid": 0,
+            "scy": "auto",
+            "path": "/",
+            "host": ""
+          },
+          "min_store_version": 3,
+          "chain_front": true,
+          "chain_rear": false,
+          "udp": false,
+          "validation_evidence": [],
+          "chain_front_status": "trial",
+          "chain_rear_status": "not_applicable",
+          "chain_role_evidence": []
+        },
+        {
+          "id": "vmess-tls-raw",
+          "security": "tls",
+          "transport": "raw",
+          "legacy": false,
+          "status": "trial",
+          "role": "single",
+          "fields": [
+            "id",
+            "name",
+            "protocol",
+            "server",
+            "port",
+            "security",
+            "transport",
+            "uuid",
+            "aid",
+            "scy",
+            "sni",
+            "fingerprint",
+            "alpn",
+            "insecure"
+          ],
+          "required": [
+            "security",
+            "transport",
+            "uuid",
+            "sni"
+          ],
+          "defaults": {
+            "port": 443,
+            "security": "tls",
+            "transport": "raw",
+            "aid": 0,
+            "scy": "auto",
+            "sni": "",
+            "fingerprint": "",
+            "alpn": [],
+            "insecure": false
+          },
+          "min_store_version": 3,
+          "chain_front": true,
+          "chain_rear": false,
+          "udp": false,
+          "validation_evidence": [],
+          "chain_front_status": "trial",
+          "chain_rear_status": "not_applicable",
+          "chain_role_evidence": []
+        },
+        {
+          "id": "vmess-tls-ws",
+          "security": "tls",
+          "transport": "ws",
+          "legacy": false,
+          "status": "trial",
+          "role": "single",
+          "fields": [
+            "id",
+            "name",
+            "protocol",
+            "server",
+            "port",
+            "security",
+            "transport",
+            "uuid",
+            "aid",
+            "scy",
+            "sni",
+            "fingerprint",
+            "alpn",
+            "insecure",
+            "path",
+            "host"
+          ],
+          "required": [
+            "security",
+            "transport",
+            "uuid",
+            "sni"
+          ],
+          "defaults": {
+            "port": 443,
+            "security": "tls",
+            "transport": "ws",
+            "aid": 0,
+            "scy": "auto",
+            "sni": "",
+            "fingerprint": "",
+            "alpn": [],
+            "insecure": false,
+            "path": "/",
+            "host": ""
+          },
+          "min_store_version": 3,
+          "chain_front": true,
+          "chain_rear": false,
+          "udp": false,
+          "validation_evidence": [],
+          "chain_front_status": "trial",
+          "chain_rear_status": "not_applicable",
+          "chain_role_evidence": []
+        },
+        {
+          "id": "vmess-tls-grpc",
+          "security": "tls",
+          "transport": "grpc",
+          "legacy": false,
+          "status": "trial",
+          "role": "single",
+          "fields": [
+            "id",
+            "name",
+            "protocol",
+            "server",
+            "port",
+            "security",
+            "transport",
+            "uuid",
+            "aid",
+            "scy",
+            "sni",
+            "fingerprint",
+            "alpn",
+            "insecure",
+            "service_name",
+            "mode",
+            "authority"
+          ],
+          "required": [
+            "security",
+            "transport",
+            "uuid",
+            "sni"
+          ],
+          "defaults": {
+            "port": 443,
+            "security": "tls",
+            "transport": "grpc",
+            "aid": 0,
+            "scy": "auto",
+            "sni": "",
+            "fingerprint": "",
+            "alpn": [],
+            "insecure": false,
+            "service_name": "",
+            "authority": "",
+            "mode": "gun"
+          },
+          "min_store_version": 3,
+          "chain_front": true,
+          "chain_rear": false,
+          "udp": false,
+          "validation_evidence": [],
+          "modes": [
+            "gun",
+            "multi"
+          ],
+          "chain_front_status": "trial",
+          "chain_rear_status": "not_applicable",
+          "chain_role_evidence": []
+        },
+        {
+          "id": "vmess-tls-httpupgrade",
+          "security": "tls",
+          "transport": "httpupgrade",
+          "legacy": false,
+          "status": "trial",
+          "role": "single",
+          "fields": [
+            "id",
+            "name",
+            "protocol",
+            "server",
+            "port",
+            "security",
+            "transport",
+            "uuid",
+            "aid",
+            "scy",
+            "sni",
+            "fingerprint",
+            "alpn",
+            "insecure",
+            "path",
+            "host"
+          ],
+          "required": [
+            "security",
+            "transport",
+            "uuid",
+            "sni"
+          ],
+          "defaults": {
+            "port": 443,
+            "security": "tls",
+            "transport": "httpupgrade",
+            "aid": 0,
+            "scy": "auto",
+            "sni": "",
+            "fingerprint": "",
+            "alpn": [],
+            "insecure": false,
+            "path": "/",
+            "host": ""
+          },
+          "min_store_version": 3,
+          "chain_front": true,
+          "chain_rear": false,
+          "udp": false,
+          "validation_evidence": [],
+          "chain_front_status": "trial",
+          "chain_rear_status": "not_applicable",
+          "chain_role_evidence": []
+        }
+      ],
+      "params": {
+        "critical": [],
+        "ignorable": []
+      },
+      "json_keys": [
+        "v",
+        "ps",
+        "add",
+        "port",
+        "id",
+        "aid",
+        "scy",
+        "net",
+        "type",
+        "host",
+        "path",
+        "tls",
+        "sni",
+        "alpn",
+        "fp"
+      ]
+    },
+    "trojan": {
+      "label": "Trojan",
+      "schemes": [
+        "trojan"
+      ],
+      "combos": [
+        {
+          "id": "trojan-tls-raw",
+          "security": "tls",
+          "transport": "raw",
+          "legacy": false,
+          "status": "trial",
+          "role": "single",
+          "fields": [
+            "id",
+            "name",
+            "protocol",
+            "server",
+            "port",
+            "security",
+            "transport",
+            "password",
+            "sni",
+            "fingerprint",
+            "alpn",
+            "insecure"
+          ],
+          "required": [
+            "security",
+            "transport",
+            "password",
+            "sni"
+          ],
+          "defaults": {
+            "port": 443,
+            "security": "tls",
+            "transport": "raw",
+            "sni": "",
+            "fingerprint": "",
+            "alpn": [],
+            "insecure": false
+          },
+          "min_store_version": 3,
+          "chain_front": true,
+          "chain_rear": false,
+          "udp": false,
+          "validation_evidence": [],
+          "chain_front_status": "trial",
+          "chain_rear_status": "not_applicable",
+          "chain_role_evidence": []
+        },
+        {
+          "id": "trojan-tls-ws",
+          "security": "tls",
+          "transport": "ws",
+          "legacy": false,
+          "status": "trial",
+          "role": "single",
+          "fields": [
+            "id",
+            "name",
+            "protocol",
+            "server",
+            "port",
+            "security",
+            "transport",
+            "password",
+            "sni",
+            "fingerprint",
+            "alpn",
+            "insecure",
+            "path",
+            "host"
+          ],
+          "required": [
+            "security",
+            "transport",
+            "password",
+            "sni"
+          ],
+          "defaults": {
+            "port": 443,
+            "security": "tls",
+            "transport": "ws",
+            "sni": "",
+            "fingerprint": "",
+            "alpn": [],
+            "insecure": false,
+            "path": "/",
+            "host": ""
+          },
+          "min_store_version": 3,
+          "chain_front": true,
+          "chain_rear": false,
+          "udp": false,
+          "validation_evidence": [],
+          "chain_front_status": "trial",
+          "chain_rear_status": "not_applicable",
+          "chain_role_evidence": []
+        },
+        {
+          "id": "trojan-tls-grpc",
+          "security": "tls",
+          "transport": "grpc",
+          "legacy": false,
+          "status": "trial",
+          "role": "single",
+          "fields": [
+            "id",
+            "name",
+            "protocol",
+            "server",
+            "port",
+            "security",
+            "transport",
+            "password",
+            "sni",
+            "fingerprint",
+            "alpn",
+            "insecure",
+            "service_name",
+            "mode",
+            "authority"
+          ],
+          "required": [
+            "security",
+            "transport",
+            "password",
+            "sni"
+          ],
+          "defaults": {
+            "port": 443,
+            "security": "tls",
+            "transport": "grpc",
+            "sni": "",
+            "fingerprint": "",
+            "alpn": [],
+            "insecure": false,
+            "service_name": "",
+            "authority": "",
+            "mode": "gun"
+          },
+          "min_store_version": 3,
+          "chain_front": true,
+          "chain_rear": false,
+          "udp": false,
+          "validation_evidence": [],
+          "modes": [
+            "gun",
+            "multi"
+          ],
+          "chain_front_status": "trial",
+          "chain_rear_status": "not_applicable",
+          "chain_role_evidence": []
+        },
+        {
+          "id": "trojan-tls-httpupgrade",
+          "security": "tls",
+          "transport": "httpupgrade",
+          "legacy": false,
+          "status": "trial",
+          "role": "single",
+          "fields": [
+            "id",
+            "name",
+            "protocol",
+            "server",
+            "port",
+            "security",
+            "transport",
+            "password",
+            "sni",
+            "fingerprint",
+            "alpn",
+            "insecure",
+            "path",
+            "host"
+          ],
+          "required": [
+            "security",
+            "transport",
+            "password",
+            "sni"
+          ],
+          "defaults": {
+            "port": 443,
+            "security": "tls",
+            "transport": "httpupgrade",
+            "sni": "",
+            "fingerprint": "",
+            "alpn": [],
+            "insecure": false,
+            "path": "/",
+            "host": ""
+          },
+          "min_store_version": 3,
+          "chain_front": true,
+          "chain_rear": false,
+          "udp": false,
+          "validation_evidence": [],
+          "chain_front_status": "trial",
+          "chain_rear_status": "not_applicable",
+          "chain_role_evidence": []
+        }
+      ],
+      "params": {
+        "critical": [
+          "security",
+          "type",
+          "sni",
+          "alpn",
+          "fp",
+          "path",
+          "host",
+          "serviceName",
+          "mode",
+          "authority",
+          "insecure",
+          "allowInsecure"
+        ],
+        "ignorable": [
+          "headerType"
+        ]
+      }
+    },
+    "shadowsocks": {
+      "label": "Shadowsocks",
+      "schemes": [
+        "ss"
+      ],
+      "combos": [
+        {
+          "id": "shadowsocks-none-raw-2022-blake3-aes-128-gcm",
+          "security": "none",
+          "transport": "raw",
+          "legacy": false,
+          "status": "trial",
+          "role": "single",
+          "fields": [
+            "id",
+            "name",
+            "protocol",
+            "server",
+            "port",
+            "security",
+            "transport",
+            "method",
+            "password"
+          ],
+          "required": [
+            "security",
+            "transport",
+            "password"
+          ],
+          "defaults": {
+            "port": 443,
+            "security": "none",
+            "transport": "raw",
+            "method": "2022-blake3-aes-128-gcm"
+          },
+          "min_store_version": 3,
+          "chain_front": true,
+          "chain_rear": false,
+          "udp": false,
+          "validation_evidence": [],
+          "method": "2022-blake3-aes-128-gcm",
+          "chain_front_status": "trial",
+          "chain_rear_status": "not_applicable",
+          "chain_role_evidence": []
+        },
+        {
+          "id": "shadowsocks-none-raw-2022-blake3-aes-256-gcm",
+          "security": "none",
+          "transport": "raw",
+          "legacy": false,
+          "status": "trial",
+          "role": "single",
+          "fields": [
+            "id",
+            "name",
+            "protocol",
+            "server",
+            "port",
+            "security",
+            "transport",
+            "method",
+            "password"
+          ],
+          "required": [
+            "security",
+            "transport",
+            "password"
+          ],
+          "defaults": {
+            "port": 443,
+            "security": "none",
+            "transport": "raw",
+            "method": "2022-blake3-aes-256-gcm"
+          },
+          "min_store_version": 3,
+          "chain_front": true,
+          "chain_rear": false,
+          "udp": false,
+          "validation_evidence": [],
+          "method": "2022-blake3-aes-256-gcm",
+          "chain_front_status": "trial",
+          "chain_rear_status": "not_applicable",
+          "chain_role_evidence": []
+        },
+        {
+          "id": "shadowsocks-none-raw-2022-blake3-chacha20-poly1305",
+          "security": "none",
+          "transport": "raw",
+          "legacy": false,
+          "status": "trial",
+          "role": "single",
+          "fields": [
+            "id",
+            "name",
+            "protocol",
+            "server",
+            "port",
+            "security",
+            "transport",
+            "method",
+            "password"
+          ],
+          "required": [
+            "security",
+            "transport",
+            "password"
+          ],
+          "defaults": {
+            "port": 443,
+            "security": "none",
+            "transport": "raw",
+            "method": "2022-blake3-chacha20-poly1305"
+          },
+          "min_store_version": 3,
+          "chain_front": true,
+          "chain_rear": false,
+          "udp": false,
+          "validation_evidence": [],
+          "method": "2022-blake3-chacha20-poly1305",
+          "chain_front_status": "trial",
+          "chain_rear_status": "not_applicable",
+          "chain_role_evidence": []
+        },
+        {
+          "id": "shadowsocks-none-raw-aes-128-gcm",
+          "security": "none",
+          "transport": "raw",
+          "legacy": false,
+          "status": "trial",
+          "role": "single",
+          "fields": [
+            "id",
+            "name",
+            "protocol",
+            "server",
+            "port",
+            "security",
+            "transport",
+            "method",
+            "password"
+          ],
+          "required": [
+            "security",
+            "transport",
+            "password"
+          ],
+          "defaults": {
+            "port": 443,
+            "security": "none",
+            "transport": "raw",
+            "method": "aes-128-gcm"
+          },
+          "min_store_version": 3,
+          "chain_front": true,
+          "chain_rear": false,
+          "udp": false,
+          "validation_evidence": [],
+          "method": "aes-128-gcm",
+          "chain_front_status": "trial",
+          "chain_rear_status": "not_applicable",
+          "chain_role_evidence": []
+        },
+        {
+          "id": "shadowsocks-none-raw-aes-256-gcm",
+          "security": "none",
+          "transport": "raw",
+          "legacy": false,
+          "status": "trial",
+          "role": "single",
+          "fields": [
+            "id",
+            "name",
+            "protocol",
+            "server",
+            "port",
+            "security",
+            "transport",
+            "method",
+            "password"
+          ],
+          "required": [
+            "security",
+            "transport",
+            "password"
+          ],
+          "defaults": {
+            "port": 443,
+            "security": "none",
+            "transport": "raw",
+            "method": "aes-256-gcm"
+          },
+          "min_store_version": 3,
+          "chain_front": true,
+          "chain_rear": false,
+          "udp": false,
+          "validation_evidence": [],
+          "method": "aes-256-gcm",
+          "chain_front_status": "trial",
+          "chain_rear_status": "not_applicable",
+          "chain_role_evidence": []
+        },
+        {
+          "id": "shadowsocks-none-raw-chacha20-ietf-poly1305",
+          "security": "none",
+          "transport": "raw",
+          "legacy": false,
+          "status": "trial",
+          "role": "single",
+          "fields": [
+            "id",
+            "name",
+            "protocol",
+            "server",
+            "port",
+            "security",
+            "transport",
+            "method",
+            "password"
+          ],
+          "required": [
+            "security",
+            "transport",
+            "password"
+          ],
+          "defaults": {
+            "port": 443,
+            "security": "none",
+            "transport": "raw",
+            "method": "chacha20-ietf-poly1305"
+          },
+          "min_store_version": 3,
+          "chain_front": true,
+          "chain_rear": false,
+          "udp": false,
+          "validation_evidence": [],
+          "method": "chacha20-ietf-poly1305",
+          "chain_front_status": "trial",
+          "chain_rear_status": "not_applicable",
+          "chain_role_evidence": []
+        },
+        {
+          "id": "shadowsocks-none-raw-xchacha20-ietf-poly1305",
+          "security": "none",
+          "transport": "raw",
+          "legacy": false,
+          "status": "trial",
+          "role": "single",
+          "fields": [
+            "id",
+            "name",
+            "protocol",
+            "server",
+            "port",
+            "security",
+            "transport",
+            "method",
+            "password"
+          ],
+          "required": [
+            "security",
+            "transport",
+            "password"
+          ],
+          "defaults": {
+            "port": 443,
+            "security": "none",
+            "transport": "raw",
+            "method": "xchacha20-ietf-poly1305"
+          },
+          "min_store_version": 3,
+          "chain_front": true,
+          "chain_rear": false,
+          "udp": false,
+          "validation_evidence": [],
+          "method": "xchacha20-ietf-poly1305",
+          "chain_front_status": "trial",
+          "chain_rear_status": "not_applicable",
+          "chain_role_evidence": []
+        }
+      ],
+      "params": {
+        "critical": [],
+        "ignorable": []
+      },
+      "ss2022": {
+        "key_bytes": {
+          "2022-blake3-aes-128-gcm": 16,
+          "2022-blake3-aes-256-gcm": 32,
+          "2022-blake3-chacha20-poly1305": 32
+        },
+        "max_key_segments": 64,
+        "chacha_max_key_segments": 1,
+        "base64_keys_only": true,
+        "status": "pending"
+      }
+    },
+    "socks5": {
+      "label": "SOCKS5",
+      "schemes": [
+        "socks",
+        "socks5"
+      ],
+      "combos": [
+        {
+          "id": "socks5-none-raw",
+          "security": "none",
+          "transport": "raw",
+          "legacy": false,
+          "status": "trial",
+          "role": "rear_only",
+          "fields": [
+            "id",
+            "name",
+            "protocol",
+            "server",
+            "port",
+            "security",
+            "transport",
+            "username",
+            "password",
+            "provider_udp"
+          ],
+          "required": [
+            "security",
+            "transport"
+          ],
+          "defaults": {
+            "port": 1080,
+            "security": "none",
+            "transport": "raw",
+            "provider_udp": false,
+            "username": "",
+            "password": ""
+          },
+          "min_store_version": 3,
+          "chain_front": false,
+          "chain_rear": true,
+          "udp": false,
+          "validation_evidence": [],
+          "chain_front_status": "not_applicable",
+          "chain_rear_status": "trial",
+          "chain_role_evidence": [],
+          "direct_trial_reference": true
+        }
+      ],
+      "params": {
+        "critical": [],
+        "ignorable": []
+      },
+      "standalone_test": false
+    },
+    "http": {
+      "label": "HTTP CONNECT",
+      "schemes": [
+        "http"
+      ],
+      "combos": [
+        {
+          "id": "http-none-raw",
+          "security": "none",
+          "transport": "raw",
+          "legacy": false,
+          "status": "trial",
+          "role": "rear_only",
+          "fields": [
+            "id",
+            "name",
+            "protocol",
+            "server",
+            "port",
+            "security",
+            "transport",
+            "username",
+            "password"
+          ],
+          "required": [
+            "security",
+            "transport"
+          ],
+          "defaults": {
+            "port": 8080,
+            "security": "none",
+            "transport": "raw",
+            "username": "",
+            "password": ""
+          },
+          "min_store_version": 3,
+          "chain_front": false,
+          "chain_rear": true,
+          "udp": false,
+          "validation_evidence": [],
+          "chain_front_status": "not_applicable",
+          "chain_rear_status": "trial",
+          "chain_role_evidence": [],
+          "direct_trial_reference": true
+        }
+      ],
+      "params": {
+        "critical": [],
+        "ignorable": []
+      },
+      "standalone_test": false
+    }
+  },
+  "fingerprint": {
+    "schema": 1,
+    "algorithm": "sha256",
+    "names_are_identity": false,
+    "alpn_order_preserved": true,
+    "extended_model_fields": "all effective connection fields; names/id/display metadata excluded; ALPN and key segment order retained"
+  },
+  "validation_evidence": [],
+  "store_versions": [
+    1,
+    2,
+    3,
+    4,
+    5,
+    6
+  ],
+  "fields": {
+    "id": {
+      "label": "节点编号",
+      "type": "string",
+      "fingerprint": false,
+      "secret": false,
+      "max_bytes": 32
+    },
+    "name": {
+      "label": "名称",
+      "type": "string",
+      "fingerprint": false,
+      "secret": false,
+      "max_bytes": 80
+    },
+    "protocol": {
+      "label": "协议",
+      "type": "string",
+      "fingerprint": true,
+      "secret": false,
+      "max_bytes": 20
+    },
+    "server": {
+      "label": "服务器地址",
+      "type": "string",
+      "fingerprint": true,
+      "secret": false,
+      "max_bytes": 253
+    },
+    "port": {
+      "label": "端口",
+      "type": "int",
+      "fingerprint": true,
+      "secret": false,
+      "default": 443,
+      "min": 1,
+      "max": 65535
+    },
+    "security": {
+      "label": "安全方式",
+      "type": "string",
+      "fingerprint": true,
+      "secret": false,
+      "max_bytes": 16
+    },
+    "transport": {
+      "label": "传输",
+      "type": "string",
+      "fingerprint": true,
+      "secret": false,
+      "max_bytes": 16
+    },
+    "uuid": {
+      "label": "UUID",
+      "type": "string",
+      "fingerprint": true,
+      "secret": true,
+      "max_bytes": 36
+    },
+    "password": {
+      "label": "密码 / 密钥",
+      "type": "string",
+      "fingerprint": true,
+      "secret": true,
+      "max_bytes": 4096
+    },
+    "username": {
+      "label": "用户名",
+      "type": "string",
+      "fingerprint": true,
+      "secret": true,
+      "max_bytes": 4096
+    },
+    "sni": {
+      "label": "SNI",
+      "type": "string",
+      "fingerprint": true,
+      "secret": false,
+      "max_bytes": 253,
+      "default": ""
+    },
+    "flow": {
+      "label": "Flow",
+      "type": "string",
+      "fingerprint": true,
+      "secret": false,
+      "max_bytes": 40,
+      "default": "",
+      "enum": [
+        "",
+        "xtls-rprx-vision",
+        "xtls-rprx-vision-udp443"
+      ]
+    },
+    "fingerprint": {
+      "label": "TLS 指纹",
+      "type": "string",
+      "fingerprint": true,
+      "secret": false,
+      "max_bytes": 32,
+      "default": ""
+    },
+    "public_key": {
+      "label": "REALITY 公钥",
+      "type": "string",
+      "fingerprint": true,
+      "secret": true,
+      "max_bytes": 43
+    },
+    "short_id": {
+      "label": "Short ID",
+      "type": "string",
+      "fingerprint": true,
+      "secret": true,
+      "max_bytes": 16,
+      "default": ""
+    },
+    "mldsa65": {
+      "label": "ML-DSA-65 验证值",
+      "type": "string",
+      "fingerprint": true,
+      "secret": true,
+      "max_bytes": 4096,
+      "default": ""
+    },
+    "spiderX": {
+      "label": "REALITY 路径（留空保持）",
+      "type": "string",
+      "fingerprint": true,
+      "secret": true,
+      "max_bytes": 1024,
+      "max_chars": 256
+    },
+    "import_hints": {
+      "label": "要求 ML-KEM 兼容",
+      "type": "object",
+      "fingerprint": true,
+      "secret": false
+    },
+    "alpn": {
+      "label": "ALPN（逗号分隔）",
+      "type": "array",
+      "fingerprint": true,
+      "secret": false,
+      "default": [],
+      "max_items": 8,
+      "item_max_bytes": 40
+    },
+    "insecure": {
+      "label": "跳过证书验证",
+      "type": "bool",
+      "fingerprint": true,
+      "secret": false,
+      "default": false,
+      "enum": [
+        false
+      ]
+    },
+    "path": {
+      "label": "传输路径",
+      "type": "string",
+      "fingerprint": true,
+      "secret": false,
+      "max_bytes": 2048,
+      "default": "/"
+    },
+    "host": {
+      "label": "HTTP Host",
+      "type": "string",
+      "fingerprint": true,
+      "secret": false,
+      "max_bytes": 253,
+      "default": ""
+    },
+    "service_name": {
+      "label": "gRPC serviceName",
+      "type": "string",
+      "fingerprint": true,
+      "secret": false,
+      "max_bytes": 256,
+      "default": ""
+    },
+    "authority": {
+      "label": "gRPC authority",
+      "type": "string",
+      "fingerprint": true,
+      "secret": false,
+      "max_bytes": 253,
+      "default": ""
+    },
+    "mode": {
+      "label": "传输模式",
+      "type": "string",
+      "fingerprint": true,
+      "secret": false,
+      "max_bytes": 16
+    },
+    "method": {
+      "label": "SS 加密方法",
+      "type": "string",
+      "fingerprint": true,
+      "secret": false,
+      "max_bytes": 48
+    },
+    "scy": {
+      "label": "VMess 加密",
+      "type": "string",
+      "fingerprint": true,
+      "secret": false,
+      "max_bytes": 32,
+      "default": "auto",
+      "enum": [
+        "auto",
+        "aes-128-gcm",
+        "chacha20-poly1305"
+      ]
+    },
+    "aid": {
+      "label": "VMess alterId",
+      "type": "int",
+      "fingerprint": true,
+      "secret": false,
+      "default": 0,
+      "min": 0,
+      "max": 0
+    },
+    "provider_udp": {
+      "label": "服务商声明支持 UDP（本阶段关闭）",
+      "type": "bool",
+      "fingerprint": true,
+      "secret": false,
+      "default": false,
+      "enum": [
+        false
+      ]
+    }
+  },
+  "transports": {
+    "raw": {
+      "headerType": [
+        "none"
+      ]
+    },
+    "ws": {
+      "early_data_query": "ed",
+      "max_early_data_bytes": 65535,
+      "status": "pending"
+    },
+    "httpupgrade": {
+      "early_data_query": "ed",
+      "max_early_data_bytes": 65535,
+      "status": "pending"
+    },
+    "grpc": {
+      "modes": [
+        "gun",
+        "multi"
+      ],
+      "multiMode": {
+        "gun": false,
+        "multi": true
+      }
+    },
+    "xhttp": {
+      "modes": [
+        "auto",
+        "packet-up",
+        "stream-up",
+        "stream-one"
+      ],
+      "extra_allowed": false
+    }
+  },
+  "features": {
+    "subscriptions": {
+      "status": "trial",
+      "validated_channels": [],
+      "cache_path": "/tmp/lanekeep-sub-cache",
+      "manual_only": true,
+      "trial_channels": [
+        "proxy",
+        "direct"
+      ]
+    },
+    "node_capacity": {
+      "status": "trial",
+      "mode": "legacy_sampler",
+      "max_nodes": 21,
+      "trial_max_nodes": 21,
+      "max_store_bytes": 524288,
+      "trial_store_bytes": 524288,
+      "metric_limit": 96,
+      "base_metrics": 51,
+      "observed_metrics": 57,
+      "observed_nodes": 2,
+      "retained_node_pairs": 3,
+      "additional_new_ids_at_preparation": 19,
+      "runtime_union_guard": true,
+      "chain_statistics": false,
+      "requires_new_sampler": false,
+      "requested_max_nodes": 64,
+      "note": "51基础指标，当前57指标含3组历史节点编号；96上限剩余19完整对，当前2节点故总数上限21。已删编号不释放指标，后端按实际旧定义与当前/候选节点并集再次拒绝越界。"
+    },
+    "chain_tcp": {
+      "status": "trial",
+      "label": "两跳链（TCP）",
+      "max_hops": 2,
+      "minimum_store_version": 5,
+      "udp": false,
+      "default_allowed": false,
+      "validated_pairs": [],
+      "validation_note": "No chain role or pair is published before required fixed-version isolation evidence."
+    },
+    "chain_udp": {
+      "status": "trial",
+      "fixed_core": "26.10.21",
+      "validated_pairs": [],
+      "minimum_store_version": 6,
+      "tcp_udp_exit_match_required": true,
+      "production_udp443_unchanged": true,
+      "proof_ttl_seconds": 1200,
+      "test_targets": {
+        "status": "trial",
+        "dns": {
+          "server": "1.1.1.1",
+          "port": 53,
+          "name": "example.com"
+        },
+        "stun": {
+          "server": "stun.cloudflare.com",
+          "port": 3478
+        },
+        "sources": [
+          "https://developers.cloudflare.com/1.1.1.1/ip-addresses/",
+          "https://developers.cloudflare.com/realtime/turn/"
+        ],
+        "scope": "Manual temporary proxy transport tests only; never client DNS upstreams."
+      },
+      "l3w_evidence": [],
+      "l3o_evidence": [],
+      "ui_preview": true
+    }
+  },
+  "trial": {
+    "label": "未验证试用",
+    "ack_required": true,
+    "default_allowed": false,
+    "verification_file": "/etc/lanekeep-proxy/trial-verifications.json",
+    "automatic_promotion": false
+  }
+}

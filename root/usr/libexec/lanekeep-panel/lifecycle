@@ -1,0 +1,83 @@
+#!/bin/sh
+# SPDX-License-Identifier: GPL-3.0-only
+set -eu
+umask 077
+PATH=/usr/sbin:/usr/bin:/sbin:/bin
+export PATH XRAY_LOCATION_ASSET=/usr/share/v2ray
+CODE=/usr/libexec/lanekeep-panel
+PROXY=/etc/lanekeep-proxy
+STATE=/etc/lanekeep-state
+ENGINE=/usr/libexec/lanekeep-xray
+mkdir -p "$STATE"
+chmod 700 "$STATE"
+[ ! -L /var/lock/lanekeep-apply.lock ] || exit 1
+exec 9>/var/lock/lanekeep-apply.lock
+flock -n 9 || exit 1
+generate() {
+    stage=$(mktemp -d /tmp/lanekeep-prepare.XXXXXX)
+    "$ENGINE/lanekeep-gen" --output-dir "$stage/generated" >"$stage/result" 2>&1 || { cat "$stage/result" >&2; return 1; }
+    for name in config.json phone-pilot.nft; do cp "$stage/generated/$name" "$PROXY/$name.next"; chmod 600 "$PROXY/$name.next"; mv "$PROXY/$name.next" "$PROXY/$name"; done
+}
+stop_runtime() {
+    for service in lanekeep-telemetry lanekeep-xray lanekeep-dns; do /etc/init.d/"$service" stop || :; done
+    # Delete only names reserved and recorded by this activation.
+    if [ -f "$STATE/owned-network" ]; then
+        nft delete table inet lanekeep_phone 2>/dev/null || :
+        nft delete table inet lanekeep_dns_gate 2>/dev/null || :
+        ip -4 rule del priority 30210 fwmark 0x7610/0xffffffff lookup 210 2>/dev/null || :
+        ip -4 route del local default dev lo table 210 2>/dev/null || :
+        rm -f "$STATE/owned-network"
+    fi
+    if [ -f "$STATE/dns-before" ]; then
+        ucode "$CODE/dns-state.uc" restore
+        /etc/init.d/dnsmasq restart
+    fi
+}
+case "${1:-}" in
+    prepare) generate; exit 0 ;;
+    disable)
+        uci set lanekeep_runtime.main.enabled=0
+        uci commit lanekeep_runtime
+        stop_runtime
+        echo '{"ok":true,"enabled":false}'
+        exit 0 ;;
+    stop) stop_runtime; exit 0 ;;
+    enable) ucode "$CODE/lifecycle-preflight.uc" >/dev/null ;;
+    boot) [ "$(uci -q get lanekeep_runtime.main.enabled)" = 1 ] || exit 0; ucode "$CODE/lifecycle-preflight.uc" >/dev/null ;;
+    *) echo 'unsupported lifecycle action' >&2; exit 2 ;;
+esac
+if [ -f "$STATE/owned-network" ] && nft list table inet lanekeep_phone >/dev/null 2>&1; then echo '{"ok":true,"enabled":true}'; exit 0; fi
+# Refuse collisions, do not flush someone else's routing table or rules.
+! nft list table inet lanekeep_phone >/dev/null 2>&1 || exit 1
+! nft list table inet lanekeep_dns_gate >/dev/null 2>&1 || exit 1
+[ -z "$(ip -4 route show table 210 2>/dev/null)" ] || exit 1
+! ip -4 rule show | grep -E '(^30210:|lookup 210)' >/dev/null || exit 1
+generate
+ucode "$CODE/ports-preflight.uc"
+nft -c -f "$PROXY/phone-pilot.nft"
+nft -c -f "$PROXY/dns-gate.nft"
+xray run -test -config "$PROXY/domestic-dns.json" >/dev/null 2>&1
+success=0
+cleanup() {
+    if [ "$success" = 0 ]; then
+        uci set lanekeep_runtime.main.enabled=0
+        uci commit lanekeep_runtime
+        stop_runtime
+    fi
+}
+trap cleanup EXIT
+trap 'exit 1' HUP INT TERM
+touch "$STATE/owned-network"
+nft -f "$PROXY/dns-gate.nft"
+ip -4 route add local default dev lo table 210
+ip -4 rule add priority 30210 fwmark 0x7610/0xffffffff lookup 210
+nft -f "$PROXY/phone-pilot.nft"
+uci set lanekeep_runtime.main.enabled=1
+uci commit lanekeep_runtime
+/etc/init.d/lanekeep-dns start
+/etc/init.d/lanekeep-xray start
+ucode "$CODE/dns-state.uc" enable
+/etc/init.d/dnsmasq restart
+/etc/init.d/lanekeep-telemetry start
+success=1
+echo '{"ok":true,"enabled":true}'

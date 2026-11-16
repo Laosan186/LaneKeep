@@ -1,0 +1,184 @@
+{
+  "date": "2026-11-16",
+  "platform": {
+    "openwrt": "25.12.6",
+    "architecture": "x86_64",
+    "kernel": "6.12.112",
+    "xray": "26.10.21",
+    "isolation": "QEMU user networking; synthetic LAN client"
+  },
+  "artifacts": {
+    "luci-app-lanekeep-0.1.0-r1.apk": {
+      "sha256": "6d3e987c20339203ae38fc5ea4802ef0e41e5ee8b21216a0dcf8fc88afef94d3",
+      "bytes": 283985
+    },
+    "luci-app-lanekeep-0.1.0-r2.apk": {
+      "sha256": "ebee7ca3bd86675ddefb3b3d9baaaadfd9bf7a1d4fb194b2c0a570f3ef61c557",
+      "bytes": 283995
+    }
+  },
+  "final_install_flow": [
+    {
+      "step": "final_artifact_empty_install",
+      "network_unchanged": true,
+      "nodes": 0,
+      "enabled": false
+    },
+    {
+      "step": "add_node_save_inactive",
+      "restart_required": false
+    },
+    {
+      "step": "node_protocol_test",
+      "passed": true,
+      "fixture_response": true
+    },
+    {
+      "step": "select_default_save_inactive",
+      "enabled": false
+    },
+    {
+      "step": "group_client_apply_inactive",
+      "enabled": false,
+      "group": "global"
+    },
+    {
+      "step": "explicit_activation",
+      "enabled": true
+    },
+    {
+      "step": "active_core_and_gate",
+      "core": true,
+      "gate": "OPEN",
+      "lease_valid": true
+    },
+    {
+      "step": "transparent_client_proxy",
+      "passed": true,
+      "controlled_protocol_fixture": true
+    },
+    {
+      "step": "client_dns",
+      "passed": true
+    }
+  ],
+  "default_switch_rollback": {
+    "scenario": "active default switch to unreachable test endpoint",
+    "failed_test_confirmed": true,
+    "state": "rolled_back",
+    "seconds": 80.67,
+    "default_restored": true,
+    "gate": "OPEN",
+    "passed": true
+  },
+  "upgrade": {
+    "package": "0.1.0-r2",
+    "configuration_hashes_preserved": true,
+    "enabled_preserved": true,
+    "gate": "OPEN"
+  },
+  "browser_cache": {
+    "browser_cache_enabled": true,
+    "force_reload": false,
+    "before": {
+      "requests": [
+        "/luci-static/resources/view/lanekeep/v0_1_0_r1/nodes.js",
+        "/luci-static/resources/lanekeep/v0_1_0_r1/activation.js",
+        "/luci-static/resources/lanekeep/v0_1_0_r1/foundation.js",
+        "/luci-static/resources/lanekeep/v0_1_0_r1/copy.js",
+        "/luci-static/resources/lanekeep/v0_1_0_r1/nodes-ui.js",
+        "/luci-static/resources/lanekeep/v0_1_0_r1/i18n.js",
+        "/luci-static/resources/lanekeep/v0_1_0_r1/core.js",
+        "/luci-static/resources/lanekeep/v0_1_0_r1/node-form.js",
+        "/luci-static/resources/view/lanekeep/v0_1_0_r1/subscriptions.js",
+        "/luci-static/resources/view/lanekeep/v0_1_0_r1/chain-form.js",
+        "/luci-static/resources/lanekeep/v0_1_0_r1/time.js",
+        "/luci-static/resources/lanekeep/v0_1_0_r1/phase2-strings.js",
+        "/luci-static/resources/lanekeep/v0_1_0_r1/zh.js",
+        "/luci-static/resources/lanekeep/v0_1_0_r1/en.js",
+        "/luci-static/resources/lanekeep/v0_1_0_r1/panel.css"
+      ],
+      "errors": [],
+      "css": "/luci-static/resources/lanekeep/v0_1_0_r1/panel.css?v=0.1.0-r1"
+    },
+    "after": {
+      "requests": [
+        "/luci-static/resources/view/lanekeep/v0_1_0_r2/nodes.js",
+        "/luci-static/resources/lanekeep/v0_1_0_r2/activation.js",
+        "/luci-static/resources/lanekeep/v0_1_0_r2/foundation.js",
+        "/luci-static/resources/lanekeep/v0_1_0_r2/copy.js",
+        "/luci-static/resources/lanekeep/v0_1_0_r2/nodes-ui.js",
+        "/luci-static/resources/lanekeep/v0_1_0_r2/i18n.js",
+        "/luci-static/resources/lanekeep/v0_1_0_r2/core.js",
+        "/luci-static/resources/lanekeep/v0_1_0_r2/node-form.js",
+        "/luci-static/resources/view/lanekeep/v0_1_0_r2/subscriptions.js",
+        "/luci-static/resources/view/lanekeep/v0_1_0_r2/chain-form.js",
+        "/luci-static/resources/lanekeep/v0_1_0_r2/time.js",
+        "/luci-static/resources/lanekeep/v0_1_0_r2/phase2-strings.js",
+        "/luci-static/resources/lanekeep/v0_1_0_r2/zh.js",
+        "/luci-static/resources/lanekeep/v0_1_0_r2/en.js",
+        "/luci-static/resources/lanekeep/v0_1_0_r2/panel.css"
+      ],
+      "errors": [],
+      "css": "/luci-static/resources/lanekeep/v0_1_0_r2/panel.css?v=0.1.0-r2"
+    },
+    "passed": true
+  },
+  "six_pages": [
+    {
+      "page": "nodes",
+      "errors": [],
+      "root": 1,
+      "stylesheet": "/luci-static/resources/lanekeep/v0_1_0_r1/panel.css?v=0.1.0-r1"
+    },
+    {
+      "page": "status",
+      "errors": [],
+      "root": 1,
+      "stylesheet": "/luci-static/resources/lanekeep/v0_1_0_r1/panel.css?v=0.1.0-r1"
+    },
+    {
+      "page": "devices",
+      "errors": [],
+      "root": 1,
+      "stylesheet": "/luci-static/resources/lanekeep/v0_1_0_r1/panel.css?v=0.1.0-r1"
+    },
+    {
+      "page": "rules",
+      "errors": [],
+      "root": 1,
+      "stylesheet": "/luci-static/resources/lanekeep/v0_1_0_r1/panel.css?v=0.1.0-r1"
+    },
+    {
+      "page": "details",
+      "errors": [],
+      "root": 1,
+      "stylesheet": "/luci-static/resources/lanekeep/v0_1_0_r1/panel.css?v=0.1.0-r1"
+    },
+    {
+      "page": "versions",
+      "errors": [],
+      "root": 1,
+      "stylesheet": "/luci-static/resources/lanekeep/v0_1_0_r1/panel.css?v=0.1.0-r1"
+    }
+  ],
+  "external_dns_edit": {
+    "external_dnsmasq_edit_preserved": true,
+    "owned_dns_fields_restored": true,
+    "owned_nft_removed": true,
+    "test_state_restored": true
+  },
+  "uninstall": {
+    "package_removed": true,
+    "network_dns_nft_routes_exactly_restored": true,
+    "network_snapshot_sha256": "5f58d50ea23a4468606679f3300a24a489ed9b482fd94a3283e50914c6207d90",
+    "owned_services_running": [],
+    "client_dns_works": true,
+    "modified_configuration_may_be_retained": true
+  },
+  "immutable_package_files_verified": 100,
+  "immutable_mismatches": 0,
+  "offline_release_tests": 4,
+  "demo_images": 6,
+  "physical_router_accesses": 0
+}

@@ -1,0 +1,72 @@
+#!/bin/sh
+# Step 3 first creation: no old version. Generate and test only; never install or restart.
+set -eu
+umask 077
+
+config_dir=/etc/config
+template=/etc/lanekeep-proxy/template.json
+baseline=/etc/lanekeep-proxy/panel-baseline.json
+previous_dir=
+nodes_file=
+output_dir=
+while [ "$#" -gt 0 ]; do
+    case "$1" in
+        --config-dir|--template|--baseline|--previous-dir|--output-dir|--nodes-file)
+            [ "$#" -ge 2 ] || { echo '{"ok":false,"error":"missing_argument"}' >&2; exit 2; }
+            case "$1" in
+                --nodes-file) nodes_file=$2 ;;
+                --config-dir) config_dir=$2 ;;
+                --template) template=$2 ;;
+                --baseline) baseline=$2 ;;
+                --previous-dir) previous_dir=$2 ;;
+                --output-dir) output_dir=$2 ;;
+            esac
+            shift 2 ;;
+        *) echo '{"ok":false,"error":"unknown_argument"}' >&2; exit 2 ;;
+    esac
+done
+
+script_dir=$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)
+# This anchor is the independently read, accepted configuration, copied byte for byte.
+baseline_hash=$(sha256sum "$baseline")
+baseline_hash=${baseline_hash%% *}
+[ "$baseline_hash" = '02e6567842a2cf930b54e4b32b5ca4ecfe983d5f70afbce6bdfba1cb08ac4941' ] || { echo '{"ok":false,"error":"fixed_baseline_hash_mismatch"}' >&2; exit 1; }
+if [ -z "$output_dir" ]; then
+    [ ! -L /tmp/lanekeep-stage ] || { echo '{"ok":false,"error":"unsafe_stage"}' >&2; exit 2; }
+    mkdir -p /tmp/lanekeep-stage
+    chmod 700 /tmp/lanekeep-stage
+    output_dir=$(mktemp -d /tmp/lanekeep-stage/gen.XXXXXX)
+else
+    case "$output_dir" in /*) ;; *) echo '{"ok":false,"error":"absolute_stage_required"}' >&2; exit 2 ;; esac
+    [ ! -e "$output_dir" ] && [ ! -L "$output_dir" ] || { echo '{"ok":false,"error":"stage_must_be_new"}' >&2; exit 2; }
+    mkdir -m 700 -- "$output_dir"
+fi
+
+if [ -z "$nodes_file" ]; then
+    if [ -f "$config_dir/nodes.json" ]; then nodes_file=$config_dir/nodes.json; else nodes_file=/etc/lanekeep-proxy/nodes.json; fi
+fi
+[ -f "$nodes_file" ] && [ ! -L "$nodes_file" ] || { echo '{"ok":false,"error":"nodes_file_required"}' >&2; exit 1; }
+nodes_hash=$(sha256sum "$nodes_file")
+nodes_hash=${nodes_hash%% *}
+if ! ucode "$script_dir/lanekeep-gen.uc" "$config_dir" "$template" "$baseline" "$output_dir" "$previous_dir" "$nodes_file" "$nodes_hash" >"$output_dir/generator-private.log" 2>&1; then
+    if [ -f "$output_dir/error.json" ]; then cat "$output_dir/error.json" >&2; else echo '{"ok":false,"error":"generator_failed"}' >&2; fi
+    exit 1
+fi
+
+# Hash the whole normalized non-user surface, including routing's other fields.
+template_hash=$(sha256sum "$output_dir/invariant-template.json")
+template_hash=${template_hash%% *}
+output_hash=$(sha256sum "$output_dir/invariant-output.json")
+output_hash=${output_hash%% *}
+[ "$template_hash" = "$output_hash" ] || { echo '{"ok":false,"error":"invariant_hash_mismatch"}' >&2; exit 1; }
+
+LANEKEEP_XRAY_BIN=${LANEKEEP_XRAY_BIN:-/usr/bin/xray}
+export XRAY_LOCATION_ASSET=${XRAY_LOCATION_ASSET:-/usr/share/v2ray/}
+[ -x "$LANEKEEP_XRAY_BIN" ] || { echo '{"ok":false,"error":"xray_binary_unavailable"}' >&2; exit 1; }
+if ! "$LANEKEEP_XRAY_BIN" run -test -c "$output_dir/config.json" >"$output_dir/xray-private.log" 2>&1; then
+    echo '{"ok":false,"error":"xray_config_test_failed"}' >&2
+    exit 1
+fi
+printf '%s\n' "$template_hash" >"$output_dir/invariant.sha256"
+printf '%s\n' 'validated' >"$output_dir/validated"
+cat "$output_dir/summary.json"

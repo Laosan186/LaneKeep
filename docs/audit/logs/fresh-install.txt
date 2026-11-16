@@ -1,0 +1,32 @@
+( 1/14) Installing coreutils (9.9-r2)
+  Executing coreutils-9.9-r2.post-install
+( 2/14) Installing coreutils-timeout (9.9-r2)
+  Executing coreutils-timeout-9.9-r2.post-install
+  * add alternative: /usr/bin/timeout -> /usr/libexec/timeout-coreutils
+( 3/14) Installing flock (2.41.5-r1)
+  Executing flock-2.41.5-r1.post-install
+  * add alternative: /usr/bin/flock -> /usr/bin/util-linux-flock
+( 4/14) Installing kmod-nf-socket (6.12.112-r1)
+  Executing kmod-nf-socket-6.12.112-r1.post-install
+( 5/14) Installing kmod-nft-socket (6.12.112-r1)
+  Executing kmod-nft-socket-6.12.112-r1.post-install
+( 6/14) Installing kmod-nf-tproxy (6.12.112-r1)
+  Executing kmod-nf-tproxy-6.12.112-r1.post-install
+( 7/14) Installing kmod-nft-tproxy (6.12.112-r1)
+  Executing kmod-nft-tproxy-6.12.112-r1.post-install
+( 8/14) Installing ucode-mod-digest (2026.07.09~b885dd0f-r3)
+  Executing ucode-mod-digest-2026.07.09~b885dd0f-r3.post-install
+( 9/14) Installing ucode-mod-socket (2026.07.09~b885dd0f-r3)
+  Executing ucode-mod-socket-2026.07.09~b885dd0f-r3.post-install
+(10/14) Installing ucode-mod-struct (2026.07.09~b885dd0f-r3)
+  Executing ucode-mod-struct-2026.07.09~b885dd0f-r3.post-install
+(11/14) Installing v2ray-geoip (202610050438-r1)
+  Executing v2ray-geoip-202610050438-r1.post-install
+(12/14) Installing v2ray-geosite (20261009101206-r1)
+  Executing v2ray-geosite-20261009101206-r1.post-install
+(13/14) Installing xray-core (26.10.21-r1)
+  Executing xray-core-26.10.21-r1.post-install
+(14/14) Installing luci-app-lanekeep (0.1.0-r1)
+  Executing luci-app-lanekeep-0.1.0-r1.post-install
+OK: 77.1 MiB in 203 packages
+VM_EXIT 0

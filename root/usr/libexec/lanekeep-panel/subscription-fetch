@@ -1,0 +1,20 @@
+#!/bin/sh
+# One bounded manual request; all descendants are in this temporary process group.
+set -eu
+umask 077
+PATH=/usr/sbin:/usr/bin:/sbin:/bin
+export PATH
+work=${1:-}
+case "$work" in /tmp/lanekeep-sub-cache/.work-????????-????-????-????-????????????) ;; *) exit 64 ;; esac
+[ -d "$work" ] && [ ! -L "$work" ] && [ -f "$work/.owner" ] && [ ! -L "$work/.owner" ] || exit 64
+[ "$(cat "$work/.owner")" = lanekeep-sub-work-v1 ] || exit 64
+runner=;watchdog=
+cleanup(){ trap - EXIT HUP INT TERM; [ -z "$watchdog" ] || kill "$watchdog" 2>/dev/null || :; if [ -n "$runner" ]; then kill -TERM -- "-$runner" 2>/dev/null || :; kill -KILL -- "-$runner" 2>/dev/null || :; wait "$runner" 2>/dev/null || :; fi; }
+trap cleanup EXIT
+trap 'exit 1' HUP INT TERM
+setsid /bin/sh -c 'exec 8>&-; exec ucode /usr/libexec/lanekeep-panel/subscription-wire.uc fetch "$1"' lanekeep-subscription "$work" >/dev/null 2>&1 &
+runner=$!
+(exec 8>&- 9>&-; sleep 59; kill -TERM -- "-$runner" 2>/dev/null || :; sleep 1; kill -KILL -- "-$runner" 2>/dev/null || :) >/dev/null 2>&1 &
+watchdog=$!
+wait "$runner" 2>/dev/null || exit 1
+printf 'ok\n'

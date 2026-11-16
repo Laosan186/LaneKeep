@@ -1,0 +1,8 @@
+(1/1) Upgrading luci-app-lanekeep (0.1.0-r1 -> 0.1.0-r2)
+  Executing luci-app-lanekeep-0.1.0-r2.pre-upgrade
+  Installing file to etc/config/lanekeep.apk-new
+  Installing file to etc/config/lanekeep_runtime.apk-new
+  Installing file to etc/lanekeep-proxy/nodes.json.apk-new
+  Executing luci-app-lanekeep-0.1.0-r2.post-upgrade
+  * {"ok":true,"enabled":true}
+OK: 89.0 MiB in 208 packages
