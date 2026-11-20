@@ -4,9 +4,9 @@
 
 OpenWrt 分流管理面板：按设备分规则，管理代理节点、DNS 路径和断线保护。
 
-**v0.1.0 默认停用。安装、添加节点和保存设置都不会自动接管网络。** 选择默认节点后，必须在节点页单独确认“启用 LaneKeep”。
+**v0.2.0 默认停用。安装、添加节点和保存设置都不会自动接管网络。** 选择默认节点后，必须在节点页单独确认“启用 LaneKeep”。
 
-源码中的 IP 规则、规则等四页的界面整理和节点延迟测量 v3 尚未进入 v0.1.0 安装包，见 [CHANGELOG](CHANGELOG.md)。
+0.2.0 新增 IP 规则、规则等四页的界面整理和节点延迟测量 v3，见 [CHANGELOG](CHANGELOG.md)。从 0.1.0 升级可直接覆盖安装；降级回 0.1.0 前须先删除全部 IP 规则。
 
 ![节点页，演示数据](docs/images/nodes-light.png)
 
@@ -56,12 +56,12 @@ Xray 的访问、错误和 DNS 日志关闭。监控保留数字、聚合类别�
 
 ## 安装、升级和卸载
 
-从本仓库的 **Releases** 下载 APK 和对应 SHA256 文件。核对哈希后上传到自己的测试路由器。v0.1.0 是未签名的独立包，确认来源后才使用 `--allow-untrusted`。
+从本仓库的 **Releases** 下载 APK 和对应 SHA256 文件。核对哈希后上传到自己的测试路由器。v0.2.0 是未签名的独立包，确认来源后才使用 `--allow-untrusted`。
 
 ```sh
-sha256sum -c luci-app-lanekeep-0.1.0-r1.apk.sha256
+sha256sum -c luci-app-lanekeep-0.2.0-r1.apk.sha256
 apk update
-apk add --allow-untrusted ./luci-app-lanekeep-0.1.0-r1.apk
+apk add --allow-untrusted ./luci-app-lanekeep-0.2.0-r1.apk
 ```
 
 安装前检查剩余空间：本次测试的依赖增量约 56 MiB，升级还需要暂存余量。依赖由系统当前 25.12 软件源安装；不要混用其他 OpenWrt 版本或内核的软件源。打开 **服务 → LaneKeep**。首次安装只准备本包文件、菜单和停用的启动入口，不创建流量接管表或策略路由、不改 DNS，也不开启断线保护。

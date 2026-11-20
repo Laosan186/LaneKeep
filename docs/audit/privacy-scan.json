@@ -1,6 +1,6 @@
 {
-  "date": "2026-11-16",
-  "repository_files_scanned": 171,
+  "date": "2026-11-20",
+  "repository_files_scanned": 188,
   "personal_token_findings": 0,
   "private_node_value_findings": 0,
   "original_reference_values_compared": 9,
@@ -9,8 +9,9 @@
   "gitleaks": {
     "version": "8.30.1",
     "source_directory_findings": 0,
-    "unpacked_apk_findings": 0,
-    "history_report": "See the gitleaks history reports attached to the v0.1.0 release."
+    "installed_tree_findings": 0,
+    "history_findings": 0,
+    "note": "The installed tree is the materialized 0.2.0-r1 package content, which matches the APK file by file."
   },
   "factory": {
     "nodes": 0,

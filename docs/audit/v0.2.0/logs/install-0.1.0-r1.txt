@@ -1,0 +1,4 @@
+luci-app-lanekeep-0.1.0-r1.apk: OK
+(1/1) Installing luci-app-lanekeep (0.1.0-r1)
+  Executing luci-app-lanekeep-0.1.0-r1.post-install
+OK: 108.6 MiB in 236 packages

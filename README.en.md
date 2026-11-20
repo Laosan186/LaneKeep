@@ -4,9 +4,9 @@
 
 A per-device routing panel for OpenWrt, with node management, controlled DNS paths and a proxy kill switch.
 
-**v0.1.0 is disabled on first installation. Installing it, adding nodes and saving settings do not activate interception.** Select a default node, then separately confirm **Enable LaneKeep** on the Nodes page.
+**v0.2.0 is disabled on first installation. Installing it, adding nodes and saving settings do not activate interception.** Select a default node, then separately confirm **Enable LaneKeep** on the Nodes page.
 
-IP rules, the reworked Rules/Details/Devices/History pages and node latency measurement v3 are in the source but not in the v0.1.0 package; see the [CHANGELOG](CHANGELOG.md).
+0.2.0 adds IP rules, reworked Rules/Details/Devices/History pages and node latency measurement v3; see the [CHANGELOG](CHANGELOG.md). Upgrading from 0.1.0 installs over it; before downgrading to 0.1.0, delete all IP rules.
 
 ![Nodes with demo data](docs/images/nodes-light-en.png)
 
@@ -56,12 +56,12 @@ Dependencies: `luci-base`, `rpcd`, `rpcd-mod-ucode`, `uhttpd-mod-ubus`, `xray-co
 
 ## Install, upgrade and uninstall
 
-Download the APK and its SHA256 file from this repository's **Releases**. Check the hash before copying it to your own test router. v0.1.0 is an unsigned standalone package; use `--allow-untrusted` only after verifying its source.
+Download the APK and its SHA256 file from this repository's **Releases**. Check the hash before copying it to your own test router. v0.2.0 is an unsigned standalone package; use `--allow-untrusted` only after verifying its source.
 
 ```sh
-sha256sum -c luci-app-lanekeep-0.1.0-r1.apk.sha256
+sha256sum -c luci-app-lanekeep-0.2.0-r1.apk.sha256
 apk update
-apk add --allow-untrusted ./luci-app-lanekeep-0.1.0-r1.apk
+apk add --allow-untrusted ./luci-app-lanekeep-0.2.0-r1.apk
 ```
 
 Check available storage first: this test added about 56 MiB of dependencies, and upgrades need temporary headroom. Dependencies come from the router's configured 25.12 repositories. Do not mix OpenWrt releases or kernel repositories. Open **Services → LaneKeep**. First installation prepares package files, menus and a disabled startup entry; it creates no interception tables or policy routes, changes no DNS settings and enables no kill switch.

@@ -1,6 +1,6 @@
 # Security policy / 安全政策
 
-Supported release: **0.1.x**. This is an early release; the protection boundaries and IPv6 prerequisite are documented in [leak protection](docs/leak-protection.en.md).
+Supported release: **0.2.x**. This is an early release; the protection boundaries and IPv6 prerequisite are documented in [leak protection](docs/leak-protection.en.md).
 
 安全问题请私下报告，**不要在公开 Issue、PR 或讨论中发布可利用细节、节点链接、订阅链接、UUID、密钥、密码、真实 IP、设备名或完整配置**。
 

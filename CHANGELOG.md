@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## 0.2.0 — 2026-11-20
 
 Added
 
@@ -13,6 +13,8 @@ Changed
 - Node latency measurement v3: latency is the faster of two requests to `www.gstatic.com/generate_204` on an established tunnel, with the first request (handshake included) shown separately. Without a reused sample, a labelled first-request time is shown instead. The exit IP still comes from a separate `ipinfo.io` connection. The wait per test or chain step is now about 15 seconds; results recorded by 0.1.0 ask for a new test.
 
 Downgrade note: the 0.1.0 generator rejects IP rules. Delete all IP rules and apply before installing 0.1.0 again.
+
+此版本的验收见 [v0.2.0 验收记录](docs/audit/v0.2.0/acceptance.md)。
 
 ## 0.1.0 — 2026-11-16
 

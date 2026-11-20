@@ -1,0 +1,98 @@
+{
+  "date": "2026-11-20",
+  "platform": {
+    "openwrt": "25.12.6",
+    "architecture": "x86_64",
+    "kernel": "6.12.112",
+    "xray": "26.10.21",
+    "isolation": "QEMU user networking with restrict=on (no host or internet access); SSH and LuCI forwards to localhost only"
+  },
+  "artifact": {
+    "name": "luci-app-lanekeep-0.2.0-r1.apk",
+    "sha256": "16f3c957919dcd4a414908fec2f980b2117be5486c1b17bb102282e215aa6e37",
+    "bytes": 297320,
+    "payload_files": 104
+  },
+  "start_state": "Copy of the development test disk with all LaneKeep dependencies installed and listed in /etc/apk/world; previous LaneKeep files removed before the test",
+  "lifecycle": [
+    {
+      "step": "fresh_install_published_0.1.0_r1",
+      "sha256_checked": true,
+      "network_dns_nft_routes_unchanged": true,
+      "immutable_files_verified": 100,
+      "enabled": false,
+      "services_running": []
+    },
+    {
+      "step": "apply_members_and_rules_via_rpc_on_0.1.0",
+      "members": "members_applied",
+      "rules": "applied"
+    },
+    {
+      "step": "upgrade_to_0.2.0_r1",
+      "configuration_hashes_preserved": true,
+      "immutable_files_verified": 101,
+      "enabled_preserved": true,
+      "old_resource_namespace_removed": true,
+      "services_running": []
+    },
+    {
+      "step": "apply_ip_rules_via_rpc_on_0.2.0",
+      "job": "applied",
+      "ip_rules": 4,
+      "all_enabled_rules_have_sequence_numbers": true,
+      "rule_types_reported": [
+        "domain",
+        "full",
+        "keyword",
+        "ip",
+        "dedicated",
+        "geosite"
+      ]
+    },
+    {
+      "step": "uninstall_0.2.0_r1",
+      "network_dns_nft_routes_restored_to_preinstall": true,
+      "services_running": [],
+      "dependencies_retained": true,
+      "modified_configuration_retained": true
+    },
+    {
+      "step": "fresh_install_0.2.0_r1",
+      "network_dns_nft_routes_unchanged": true,
+      "immutable_files_verified": 101,
+      "enabled": false,
+      "services_running": []
+    }
+  ],
+  "browser": {
+    "browser": "Claude desktop built-in browser against the VM LuCI on localhost",
+    "cache": "same browser context, cache enabled, no forced reload",
+    "resources_before": "v0_1_0_r1",
+    "resources_after": "v0_2_0_r1",
+    "pages_0.2.0": [
+      "nodes",
+      "status",
+      "devices",
+      "rules",
+      "details",
+      "versions"
+    ],
+    "panel_root_per_page": 1,
+    "console_errors": 0,
+    "note": "The pane was hidden, so requestAnimationFrame did not fire and LuCI held its queued RPC calls; the check replaced requestAnimationFrame with a short timer in the page. Status and Details show the read-error bar on a disabled instance because sampling is not running (unchanged code)."
+  },
+  "target_checks": {
+    "ip_rule_cases": "41/41",
+    "rules_check": "16/16 (previous tree: v0.1.0)",
+    "latency_check": "8/8"
+  },
+  "offline_tests": "9/9",
+  "not_covered": [
+    "explicit activation, kill-switch gate and transparent client traffic",
+    "upgrade of an enabled instance",
+    "real nodes, subscriptions and node test through the panel RPC",
+    "other architectures and physical devices"
+  ],
+  "known_issue": "Uninstall leaves a dangling /etc/rc.d/K9lanekeep link; the v0.1.0 acceptance disk shows the same link, and packaging scripts are unchanged."
+}
