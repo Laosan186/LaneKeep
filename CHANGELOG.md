@@ -1,5 +1,11 @@
 # Changelog
 
+## Unreleased
+
+Fixed
+
+- The English Status page title reads “LaneKeep”, as the Chinese one does, instead of “Network”. Duplicate entries were removed from the English and Chinese string tables; no other text changes.
+
 ## 0.2.0 — 2026-11-20
 
 Added
