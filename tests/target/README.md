@@ -1,8 +1,8 @@
 # Target-machine checks / 测试机检查
 
-These scripts run on an **isolated OpenWrt 25.12 test machine** (for example a QEMU VM without outside network access) that has LaneKeep's dependencies, including `xray-core` and the v2ray geodata. Never run them on a router that carries real traffic. They use synthetic nodes, rules and addresses, write only under `/tmp`, and do not install, start, reload or apply anything. `rules-check.sh` reads the selected LAN interface from OpenWrt to pick test member addresses.
+These scripts run on an **isolated OpenWrt 25.12 test machine** (for example a QEMU VM without outside network access) that has LaneKeep's dependencies, including `xray-core` and the v2ray geodata. Never run them on a router that carries real traffic. They use synthetic nodes, rules and addresses, write only under `/tmp`, and never install, start, stop, reload or apply LaneKeep services or configuration; `latency-check.sh` only starts temporary local test processes (xray and an HTTP stub). `rules-check.sh` reads the selected LAN interface from OpenWrt to pick test member addresses.
 
-这些脚本只在**隔离的 OpenWrt 25.12 测试机**上运行（例如不通外网的 QEMU 虚拟机），需要已装好 LaneKeep 的依赖，包括 `xray-core` 和 v2ray 分类数据。不要在承载真实流量的路由器上运行。脚本只用合成的节点、规则和地址，只写 `/tmp`，不安装、不启动、不重载、不应用任何配置。
+这些脚本只在**隔离的 OpenWrt 25.12 测试机**上运行（例如不通外网的 QEMU 虚拟机），需要已装好 LaneKeep 的依赖，包括 `xray-core` 和 v2ray 分类数据。不要在承载真实流量的路由器上运行。脚本只用合成的节点、规则和地址，只写 `/tmp`，不安装、不启停或重载 LaneKeep 服务、不应用配置；`latency-check.sh` 只会启动临时的本机测试进程（xray 和 HTTP 桩服务）。
 
 Copy a checkout of this repository to the test machine, then from its top directory:
 

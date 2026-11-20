@@ -38,7 +38,7 @@ return foundation.view(view,{
    E('p',{},t('列表显示相对时间，鼠标悬停可看完整时间（路由器时区）。','Hover a time to see the full router-time value.'))
   ])]);
   return E('div', {'class':'lk-page lk-versions-page'}, [
-   E('div',{'class':'lk-page-head'},[E('h2', {}, lk.text("版本")),E('p',{},t('查看最近 20 次改动，需要时撤销到某次操作之前。','Recent 20 changes; undo to before any of them.'))]),
+   E('div',{'class':'lk-page-head'},[E('h2', {}, lk.text("版本")),E('p',{},t('查看最近的改动（最多各 10 次成功和未成功的操作），需要时撤销到某次操作之前。','Recent changes (up to 10 applied and 10 failed); undo to before any of them.'))]),
    panel.pendingNotice(),
    E('section',{'class':'lk-rule-card'},[E('div',{'class':'lk-rule-card-body'},[tip,rows.length ? E('div', {'class':"lk-legacy-17"}, [E('table', {'class':'table'}, [E('tr', {'class':'tr'}, [lk.text("操作"),lk.text("时间"),lk.text("改动摘要"),lk.text("结果"),lk.text("操作")].map(function(h) { return E('th', {'class':'th'}, h); }))].concat(rows))]) : E('p',{'class':'lk-empty-line'},lk.text("目前没有可显示的版本。"))])])
   ]);

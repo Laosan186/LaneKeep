@@ -28,6 +28,7 @@ The “IP / network” rule type accepts one public IPv4 address or network, suc
 - Routing uses `domainStrategy: AsIs` with FakeDNS and TLS/HTTP/QUIC sniffing. Connections with an identifiable domain are matched by domain, so **IP rules only match direct-IP traffic whose domain cannot be identified**, such as some apps, games or specific servers. Opening a website in a browser does not exercise an IP rule; use a domain rule for websites. This feature leaves `domainStrategy` unchanged to keep the existing protection.
 - Literal IP traffic has no FakeIP guard, so an IP rule cannot exit through a two-hop chain, neither as an explicit node nor through “this mode's node” when that node is a chain.
 - In On-demand mode, IP rules that exit via proxy or a specific node first get a UDP 443 block row for the same targets, like custom proxied domains.
+- If the selected LAN is later moved to a subnet that overlaps saved IP rules, the next configuration generation fails and the previous state stays in place; edit or delete those IP rules first.
 - The 0.1.0 generator does not know IP rules. Before downgrading to 0.1.0, delete all IP rules in the panel and apply.
 
 ## DNS

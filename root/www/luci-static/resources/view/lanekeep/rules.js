@@ -96,10 +96,10 @@ return foundation.view(view,{
    var rule=rules[index];
    var value = field(index,'value',E('input', {type:'number',min:10811,max:10860,step:1,'class':'cbi-input-text lk-port-input',value:rule.value,maxlength:5,input:function() { rule.value = this.value; }}),lk.text("值"));
    var browsers=E('div',{'class':'lk-browser-files'},['chrome','edge'].map(function(browser){
-    var name=browser==='chrome'?'Chrome':'Edge', enable=panel.button(lk.text("启用"),function(){panel.downloadReg(browser,rule.value,true);});
+    var name=browser==='chrome'?'Chrome':'Edge', enable=panel.button(t('启用','Enable'),function(){panel.downloadReg(browser,rule.value,true);});
     enable.disabled=rule.enabled!=='1' || !saved[rule.id] || saved[rule.id].enabled!=='1' || saved[rule.id].type!=='dedicated' || saved[rule.id].value!==rule.value;
-    enable.title=name+lk.text(" 启用");
-    var off=panel.button(lk.text("关闭"),function(){panel.downloadReg(browser,null,false);});off.title=name+lk.text(" 关闭");
+    enable.title=name+t(' 启用',' enable');
+    var off=panel.button(t('关闭','Disable'),function(){panel.downloadReg(browser,null,false);});off.title=name+t(' 关闭',' disable');
     return E('div',{'class':'lk-browser-line'},[E('span',{'class':'lk-browser-name'},name),enable,off]);
    }));
    var pending=!saved[rule.id] || saved[rule.id].value!==rule.value || saved[rule.id].enabled!=='1';

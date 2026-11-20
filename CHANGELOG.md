@@ -10,7 +10,7 @@ Added
 Changed
 
 - Rules, Details, Devices and History pages use cards, collapsible “!” tips, single-line notes, a sticky “Review changes” bar and step-by-step instructions for dedicated proxy ports. Chart axes show short times without a time-zone name.
-- Node latency measurement v3: latency is the faster of two requests to `www.gstatic.com/generate_204` on an established tunnel, with the first request (handshake included) shown separately and used as a labelled fallback. The exit IP still comes from a separate `ipinfo.io` connection. The wait per test or chain step is now about 15 seconds; results recorded by 0.1.0 ask for a new test.
+- Node latency measurement v3: latency is the faster of two requests to `www.gstatic.com/generate_204` on an established tunnel, with the first request (handshake included) shown separately. Without a reused sample, a labelled first-request time is shown instead. The exit IP still comes from a separate `ipinfo.io` connection. The wait per test or chain step is now about 15 seconds; results recorded by 0.1.0 ask for a new test.
 
 Downgrade note: the 0.1.0 generator rejects IP rules. Delete all IP rules and apply before installing 0.1.0 again.
 

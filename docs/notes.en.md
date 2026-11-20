@@ -15,7 +15,7 @@ Some protocol combinations are experimental. Parsing an import or generating a v
 Tests run only when you click. A temporary Xray process opens a SOCKS inbound on the router's `127.0.0.1` and sends requests through the selected node. The node resolves the target names; there is no direct path, and the running configuration is not touched.
 
 - **Latency**: requests `http://www.gstatic.com/generate_204` through the node. The first request includes the node handshake and is shown as “first connection”; two more requests on the same connection follow, and the faster one is the latency.
-- **Fallback**: if the server closes the connection, a reused request fails or the 204 probe fails, latency falls back to the first request time and is labelled “first request, handshake included”.
+- **Fallback**: one reused sample is enough. If the first request succeeds but no reused sample is obtained (the server closes the connection or the reused request fails), latency uses the first request time; if the 204 probe fails on its first request, latency uses the time of the exit lookup request below. Both fallbacks are labelled “first request, handshake included”.
 - **Exit**: a separate connection requests `http://ipinfo.io/json` for the exit IP and country; it is not part of the latency. Both third-party services see the node's exit address.
 - Latency and exit lookup each have a 6-second deadline; a whole test takes at most about 15 seconds. Chains test the entry hop first, then the whole chain, with the same limits per step. Results recorded by 0.1.0 (measurement version 2) ask for a new test.
 
