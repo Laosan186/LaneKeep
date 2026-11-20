@@ -38,11 +38,11 @@ setsid /bin/sh -c '
  trap '\''kill "$core" 2>/dev/null || :'\'' EXIT
  sleep 1
  kill -0 "$core" 2>/dev/null || exit 1
- ucode "$2/node-wire.uc" emit "$1" | nc 127.0.0.1 "$3" | ucode "$2/node-wire.uc" stream "$1"
+ ucode "$2/node-wire.uc" probe "$1" "$3"
 ' lanekeep-chain "$work" "$code" "$port" >/dev/null 2>&1 &
 runner=$!
 tries=0
-while [ "$tries" -lt 90 ]; do
+while [ "$tries" -lt 150 ]; do
  if [ -f "$work/test-result" ] && [ ! -L "$work/test-result" ]; then
   cat "$work/test-result"
   exit 0

@@ -6,6 +6,7 @@ import * as dedicated from '../lanekeep-panel/dedicated.uc';
 import * as settings from '../lanekeep-panel/settings.uc';
 import * as telemetry from '../lanekeep-panel/telemetry-config.uc';
 import * as dns_idle from '../lanekeep-panel/dns-idle.uc';
+import * as ip_rule from '../lanekeep-panel/ip-rule.uc';
 import { validate_store, read_store, render, assert_reference, assert_default, role, route_tag, chain_rules, chain_closure, chain_outbound, assert_chain_outbounds, chain_impact } from '../lanekeep-panel/nodes.uc';
 
 let config_dir = ARGV[0];
@@ -150,9 +151,11 @@ function load_config(directory, need_dhcp, available_nodes) {
         let enabled = string_option(section, 'enabled', '1');
         let note = string_option(section, 'note', '');
         if (!contains(groups, group)) fail('invalid_rule_group');
-        if (!contains([ 'domain', 'full', 'keyword', 'regexp', 'dedicated', 'geosite' ], kind)) fail('invalid_rule_type');
+        if (!contains([ 'domain', 'full', 'keyword', 'ip', 'regexp', 'dedicated', 'geosite' ], kind)) fail('invalid_rule_type');
         if (action == 'node') { if ((available_nodes || node_map)[node] == null) fail('rule_node_missing'); assert_reference((available_nodes || node_map)[node],{nodes:values(available_nodes || node_map),default_node:node_store.default_node}); }
         else if (actions[action] == null || node != '') fail('invalid_rule_action');
+        // Literal IP rules have no FakeIP guard, so they never route to a two-hop chain.
+        if (kind == 'ip' && action == 'node' && (available_nodes || node_map)[node].protocol == 'chain') fail('ip_rule_chain_forbidden');
         if (enabled != '0' && enabled != '1') fail('invalid_rule_enabled');
         if (length(note) > 256 || match(note, /[[:cntrl:]]/)) fail('invalid_note');
         if (kind == 'geosite') {
@@ -173,6 +176,11 @@ function load_config(directory, need_dhcp, available_nodes) {
         }
         else if (kind == 'keyword') {
             if (length(value) > 253 || !match(value, /^[a-z0-9.-]{3,}$/)) fail('invalid_keyword');
+        }
+        else if (kind == 'ip') {
+            let parsed = ip_rule.normalize(value, lan.context().subnet);
+            if (!parsed.ok) fail('invalid_ip_rule');
+            value = parsed.value;
         }
         else {
             fail('new_regexp_forbidden');
@@ -205,7 +213,7 @@ function expected_template(base) {return clone(base);}
 
 function render_group(data, group) {
     let result = [];
-    let ondemand_proxy = [];
+    let ondemand_proxy = [], ondemand_proxy_ip = [];
     let current = null;
     for (let rule in data.rules) {
         if (rule.group != group || rule.enabled != '1' || rule.type=='dedicated') continue;
@@ -215,18 +223,24 @@ function render_group(data, group) {
             current = null;
             continue;
         }
-        let domain = rule.type + ':' + rule.value;
+        // Xray ANDs domain and ip conditions, so IP entries always use their own rows.
+        let field = rule.type == 'ip' ? 'ip' : 'domain';
+        let entry = rule.type == 'ip' ? rule.value : rule.type + ':' + rule.value;
         let outbound = rule.action == 'node' ? route_tag(rule.node,node_store) : rule.action=='proxy'?settings.proxy_tag(data,group,node_store):actions[rule.action];
-        if (group == 'ondemand' && (rule.action == 'proxy' || rule.action == 'node')) push(ondemand_proxy, domain);
-        if (current == null || current.outboundTag != outbound) {
-            current = { type: 'field', inboundTag: [ tags[group] ], domain: [], outboundTag: outbound };
+        if (field == 'ip' && substr(outbound, 0, 6) == 'chain-') fail('ip_rule_chain_forbidden');
+        if (group == 'ondemand' && (rule.action == 'proxy' || rule.action == 'node')) push(field == 'ip' ? ondemand_proxy_ip : ondemand_proxy, entry);
+        if (current == null || current.outboundTag != outbound || current[field] == null) {
+            current = field == 'ip' ? { type: 'field', inboundTag: [ tags[group] ], ip: [], outboundTag: outbound } :
+                { type: 'field', inboundTag: [ tags[group] ], domain: [], outboundTag: outbound };
             push(result, current);
         }
-        push(current.domain, domain);
+        push(current[field], entry);
     }
     let expanded=[];for(let rule in result)for(let row in chain_rules(rule,node_store))push(expanded,row);result=expanded;
-    if (length(ondemand_proxy)) {
-        let protected_result = [ { type: 'field', inboundTag: [tags.ondemand], network: 'udp', port: '443', domain: ondemand_proxy, outboundTag: 'block' } ];
+    let protected_result = [];
+    if (length(ondemand_proxy)) push(protected_result, { type: 'field', inboundTag: [tags.ondemand], network: 'udp', port: '443', domain: ondemand_proxy, outboundTag: 'block' });
+    if (length(ondemand_proxy_ip)) push(protected_result, { type: 'field', inboundTag: [tags.ondemand], network: 'udp', port: '443', ip: ondemand_proxy_ip, outboundTag: 'block' });
+    if (length(protected_result)) {
         for (let rule in result) push(protected_result, rule);
         return protected_result;
     }

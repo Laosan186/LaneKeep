@@ -2,7 +2,7 @@
 
 [中文](leak-protection.md) · [README](../README.en.md)
 
-This describes the v0.1.0 source mechanisms, not a guarantee across all clients, apps or networks. First installation is disabled. Traffic protection starts only after explicit activation.
+This describes the current source mechanisms, including custom IP rules added after v0.1.0, not a guarantee across all clients, apps or networks. First installation is disabled. Traffic protection starts only after explicit activation.
 
 ## Fixed-rule matrix
 
@@ -13,12 +13,22 @@ This describes the v0.1.0 source mechanisms, not a guarantee across all clients,
 | Block `geosite:category-doh` | Yes | Yes | Yes | Yes |
 | Protect internal DNS / transparent ports | Yes | Yes | Yes | Yes |
 | Block unresolved FakeIP destinations | Yes | Yes | Yes | Yes |
-| UDP 443 | Broad block | Broad block | Broad block | Selected service categories and custom proxied domains |
+| UDP 443 | Broad block | Broad block | Broad block | Selected service categories and custom proxied domains and IPs |
 | Dedicated iCloud Private Relay category block | No | Yes | No | No |
 
 The matrix follows `root/etc/lanekeep-proxy/template.json` and the generator. FakeIP guards include `198.18.0.0/15` and `2001:2::/48`, but interception is IPv4-only. An IPv6 range in JSON does not establish IPv6 protection. Valid FakeDNS mappings restored to domain names continue through domain routing.
 
 Fixed protection precedes user rules. Some private-name/address exceptions also precede custom insertion points. On-demand IP categories do not imply a blanket UDP 443 block.
+
+## Custom IP rules
+
+The “IP / network” rule type accepts one public IPv4 address or network, such as `1.2.3.4` or `1.2.3.0/24`. `/32` is stored as a single address, and host bits must be zero. Any overlap with these ranges is rejected: `0.0.0.0/8`, private networks, `100.64.0.0/10`, loopback, link-local, `192.0.0.0/24`, documentation ranges, the FakeIP block `198.18.0.0/15`, multicast and reserved space, and the selected LAN subnet read from OpenWrt. IP rules therefore never cover the LAN or the FakeIP pool, and fixed protection still precedes custom rules.
+
+- Xray ANDs `domain` and `ip` within one rule, so IP rules always get their own rows; adjacent IP rules with the same exit share a row.
+- Routing uses `domainStrategy: AsIs` with FakeDNS and TLS/HTTP/QUIC sniffing. Connections with an identifiable domain are matched by domain, so **IP rules only match direct-IP traffic whose domain cannot be identified**, such as some apps, games or specific servers. Opening a website in a browser does not exercise an IP rule; use a domain rule for websites. This feature leaves `domainStrategy` unchanged to keep the existing protection.
+- Literal IP traffic has no FakeIP guard, so an IP rule cannot exit through a two-hop chain, neither as an explicit node nor through “this mode's node” when that node is a chain.
+- In On-demand mode, IP rules that exit via proxy or a specific node first get a UDP 443 block row for the same targets, like custom proxied domains.
+- The 0.1.0 generator does not know IP rules. Before downgrading to 0.1.0, delete all IP rules in the panel and apply.
 
 ## DNS
 

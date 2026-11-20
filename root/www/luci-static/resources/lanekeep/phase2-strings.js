@@ -699,8 +699,8 @@ var exported = {
   "Default node “Demo node 01” is reachable. If it goes down, all proxied traffic is blocked and nothing falls back to direct."
  ],
  "测试仅在点击后发起；普通节点一次小请求，链按前置、整链顺序各一次，单步约10秒。临时回环入口不会修改主核心配置；测试成功不证明生产门控或全部设备验收通过。": [
-  "只在你点击时测试。普通节点发一次小请求；两跳链先测前置、再测整条链，每步约 10 秒。测试走临时通道，不改动正在运行的配置。测试通过只说明这一次连得上。",
-  "Tests run only when you click. A node gets one small request; a chain tests the entry hop first, then the whole chain, about 10 s per step. Tests use a temporary channel and leave the running config alone. A pass only means it connected this once."
+  "只在你点击时测试。普通节点先在同一条连接上测延迟，再另起连接查出口；两跳链先测前置、再测整条链，每步最长约 15 秒。测试走临时通道，不改动正在运行的配置。测试通过只说明这一次连得上。",
+  "Tests run only when you click. A node is timed on one reused connection, then a second connection checks the exit; a chain tests the entry hop first, then the whole chain, up to about 15 s per step. Tests use a temporary channel and leave the running config alone. A pass only means it connected this once."
  ],
  "分享链接 / 订阅导入": [
   "导入",

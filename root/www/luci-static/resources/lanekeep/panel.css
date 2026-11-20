@@ -857,3 +857,126 @@
   content:none !important; display:none !important; background:transparent !important;
   box-shadow:none !important; border:0 !important;
 }
+
+/* 2026-11-19: rules, details, devices and history pages share card layout, tips and footers. */
+.lanekeep-root[data-page^="admin-services-lanekeep-"]>.lk-page:first-child:not(.cbi-map){background:transparent;border:0;border-radius:0;padding:0;box-shadow:none;display:grid;gap:16px}
+.lanekeep-root .lk-page{display:grid;gap:16px;min-width:0}
+.lanekeep-root .lk-page-head h2{margin:0 0 4px;padding:0;border:0;color:var(--text-strong);font-size:26px;font-weight:700}
+.lanekeep-root .lk-page-head p{margin:0;color:var(--muted-text);font-size:13px;line-height:1.6}
+.lanekeep-root .lk-rule-card{border:1px solid var(--border-color);border-radius:16px;background:var(--surface-color);box-shadow:var(--section-shadow);min-width:0}
+.lanekeep-root .lk-rule-card-head{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;padding:16px 20px;border-bottom:1px solid var(--border-color)}
+.lanekeep-root[data-page^="admin-services-lanekeep-"] .lk-rule-card-head h3{margin:0;padding:0;border:0;font-size:16px;font-weight:650;color:var(--text-strong)}
+.lanekeep-root[data-page^="admin-services-lanekeep-"] .lk-rule-card-head p{margin:4px 0 0;font-size:13px;line-height:1.6;color:var(--muted-text)}
+.lanekeep-root .lk-rule-card-actions{display:flex;flex-wrap:wrap;gap:8px;flex-shrink:0}
+.lanekeep-root[data-page^="admin-services-lanekeep-"] .lk-rule-card-actions .cbi-button{margin:0}
+.lanekeep-root .lk-rule-card-body{display:grid;gap:12px;padding:16px 20px;min-width:0}
+.lanekeep-root .lk-rule-card-body>.alert-message{margin:0}
+.lanekeep-root .lk-tip{border:1px solid var(--border-color);border-radius:10px;background:var(--surface-muted);min-width:0}
+.lanekeep-root .lk-tip>summary{display:flex;align-items:center;gap:8px;padding:8px 12px;cursor:pointer;list-style:none;font-size:13px;font-weight:600;line-height:1.5;color:var(--text-strong)}
+.lanekeep-root .lk-tip>summary::-webkit-details-marker{display:none}
+.lanekeep-root .lk-tip>summary::after{content:"";width:7px;height:7px;margin-inline-start:auto;border-right:2px solid var(--muted-text);border-bottom:2px solid var(--muted-text);transform:rotate(-45deg);transition:transform .15s;flex:none}
+.lanekeep-root .lk-tip[open]>summary::after{transform:rotate(45deg)}
+.lanekeep-root .lk-tip-icon{display:inline-grid;place-items:center;width:18px;height:18px;border-radius:50%;border:1.5px solid currentColor;color:var(--lk-warning);background:var(--lk-warning-bg);font-size:11px;font-weight:800;line-height:1;flex:none}
+.lanekeep-root .lk-tip-body{padding:2px 14px 12px 38px;font-size:13px;line-height:1.7;color:var(--text-color)}
+.lanekeep-root[data-page^="admin-services-lanekeep-"] .lk-tip-body p{margin:6px 0;font-size:13px;line-height:1.7;color:var(--text-color)}
+.lanekeep-root .lk-tip-body h4{margin:12px 0 4px;padding:0;border:0;font-size:13px;color:var(--text-strong)}
+.lanekeep-root .lk-tip-list{margin:4px 0;padding-inline-start:20px}
+.lanekeep-root .lk-tip-list li{margin:3px 0;padding:0}
+.lanekeep-root ol.lk-tip-list>li{list-style:decimal}
+.lanekeep-root ul.lk-tip-list>li{list-style:disc}
+.lanekeep-root .lk-page>div:empty{display:none}
+.lanekeep-root[data-page^="admin-services-lanekeep-"] .lk-tip-key{padding:8px 10px;border-radius:8px;background:var(--lk-warning-bg);color:var(--lk-warning)}
+.lanekeep-root .lk-table-scroll{overflow-x:auto;min-width:0}
+.lanekeep-root[data-page="admin-services-lanekeep-rules"] .lk-rule-table{min-width:960px;width:100%}
+.lanekeep-root[data-page="admin-services-lanekeep-rules"] .lk-rule-table .tr>:is(.th,.td){padding:10px 12px;vertical-align:middle}
+.lanekeep-root[data-page="admin-services-lanekeep-rules"] .lk-rule-table .td:is(:nth-child(3),:nth-child(4)){min-width:0}
+.lanekeep-root .lk-rule-table .td :is(select,input[type="text"],input[type="number"]){width:100%;box-sizing:border-box;min-height:36px}
+.lanekeep-root .lk-rule-table .td select+select{margin-top:6px}
+.lanekeep-root .lk-rule-table .lk-col-seq{width:76px;font-size:12px;color:var(--muted-text)}
+.lanekeep-root .lk-rule-table .lk-col-type{width:150px}
+.lanekeep-root .lk-rule-table .lk-col-value{min-width:200px}
+.lanekeep-root .lk-rule-table .lk-col-exit{width:200px}
+.lanekeep-root .lk-rule-table .lk-col-on{width:52px;text-align:center}
+.lanekeep-root .lk-rule-table .lk-col-note{width:190px}
+.lanekeep-root .lk-rule-table .lk-col-actions{width:150px;white-space:nowrap}
+.lanekeep-root .lk-rule-table .lk-col-port{width:190px}
+.lanekeep-root .lk-rule-table .lk-col-browser{width:200px}
+.lanekeep-root .lk-note-input::placeholder{color:var(--muted-text);opacity:.7}
+.lanekeep-root .lk-row-buttons{display:flex;align-items:center;gap:6px}
+.lanekeep-root[data-page^="admin-services-lanekeep-"] .lk-rule-table .td .cbi-button,.lanekeep-root[data-page^="admin-services-lanekeep-"] .lk-row-buttons .cbi-button+.cbi-button{margin:0}
+.lanekeep-root[data-page^="admin-services-lanekeep-"] .lk-icon-btn{min-width:34px;padding-inline:8px;font-size:15px}
+.lanekeep-root .lk-port-input{max-width:120px}
+.lanekeep-root .lk-socks{display:block;margin-top:6px;padding:0;background:none;font-size:12px;color:var(--muted-text);white-space:nowrap}
+.lanekeep-root .lk-browser-files{display:grid;gap:6px}
+.lanekeep-root .lk-browser-line{display:flex;align-items:center;gap:6px}
+.lanekeep-root .lk-browser-name{width:50px;font-size:12px;font-weight:600;color:var(--muted-text)}
+.lanekeep-root[data-page^="admin-services-lanekeep-"] .lk-browser-line .cbi-button{margin:0;min-height:30px;padding:3px 10px}
+.lanekeep-root .lk-inline-actions,.lanekeep-root .lk-inline-controls{display:flex;flex-wrap:wrap;align-items:center;gap:8px}
+.lanekeep-root .lk-inline-actions{margin:8px 0}
+.lanekeep-root[data-page^="admin-services-lanekeep-"] :is(.lk-inline-actions,.lk-inline-controls) .cbi-button{margin:0}
+.lanekeep-root .lk-inline-controls select{min-width:200px;max-width:100%}
+.lanekeep-root .lk-node-select{width:100%;max-width:420px}
+.lanekeep-root[data-page^="admin-services-lanekeep-"] .lk-muted-line{margin:0;font-size:12px;line-height:1.6;color:var(--muted-text)}
+.lanekeep-root[data-page^="admin-services-lanekeep-"] .lk-empty-line{margin:0;padding:18px;text-align:center;color:var(--muted-text);border:1px dashed var(--border-color);border-radius:10px}
+.lanekeep-root[data-page^="admin-services-lanekeep-"] .lk-inline-warning{color:var(--lk-warning)}
+.lanekeep-root .lk-mode-tabs{margin:0}
+.lanekeep-root .lk-page>.lk-disclosure{margin:0;background:var(--surface-color)}
+.lanekeep-root .lk-builtin-list{list-style:none;margin:0;padding:0;display:grid;gap:2px}
+.lanekeep-root .lk-builtin-list li{display:flex;gap:10px;padding:6px 8px;border-radius:6px;font-size:13px;line-height:1.6}
+.lanekeep-root .lk-builtin-list li:nth-child(odd){background:var(--surface-muted)}
+.lanekeep-root .lk-builtin-pos{flex:0 0 28px;text-align:right;color:var(--muted-text);font-variant-numeric:tabular-nums}
+.lanekeep-root .lk-builtin-list .lk-builtin-slot{background:var(--lk-warning-bg);color:var(--lk-warning);font-weight:600}
+.lanekeep-root .lk-builtin-fallback{font-weight:600}
+.lanekeep-root .lk-dns-input{font-family:ui-monospace,SFMono-Regular,Consolas,monospace;font-size:13px}
+.lanekeep-root .lk-rules-footer-bar{position:sticky;bottom:12px;z-index:5;display:flex;align-items:center;justify-content:space-between;gap:12px;padding:12px 20px;border:1px solid var(--border-color);border-radius:14px;background:var(--surface-color);box-shadow:0 6px 24px rgb(0 0 0 / 12%)}
+.lanekeep-root[data-page^="admin-services-lanekeep-"] .lk-rules-footer-bar p{margin:0;font-size:13px;color:var(--muted-text)}
+.lanekeep-root[data-page^="admin-services-lanekeep-"] .lk-rules-footer-bar .cbi-button{margin:0;flex:none}
+.lanekeep-root .lk-stat-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}
+.lanekeep-root .lk-stat-grid-4{grid-template-columns:repeat(4,minmax(0,1fr))}
+.lanekeep-root .lk-stat{display:flex;flex-direction:column;gap:4px;min-width:0;padding:14px 16px;border:1px solid var(--border-color);border-radius:12px;background:var(--surface-muted)}
+.lanekeep-root .lk-stat-label{font-size:12px;color:var(--muted-text)}
+.lanekeep-root .lk-stat-value{font-size:17px;font-weight:650;line-height:1.4;color:var(--text-strong);overflow-wrap:anywhere}
+.lanekeep-root .lk-stat-sub{font-size:12px;color:var(--muted-text)}
+.lanekeep-root .lk-tone-ok .lk-stat-value{color:var(--lk-gate-success)}
+.lanekeep-root .lk-tone-warn .lk-stat-value{color:var(--lk-warning)}
+.lanekeep-root .lk-tone-bad .lk-stat-value{color:var(--lk-error)}
+.lanekeep-root .lk-tone-muted .lk-stat-value{color:var(--muted-text);font-weight:500}
+.lanekeep-root .lk-exit-result:empty{display:none}
+.lanekeep-root .lk-monitor,.lanekeep-root .lk-monitor-content{display:grid;gap:12px;min-width:0}
+.lanekeep-root .lk-monitor-toolbar{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:10px}
+.lanekeep-root .lk-monitor-toolbar .lk-legacy-11{flex:1 1 360px;min-width:0;margin:0}
+.lanekeep-root .lk-monitor-tools{display:flex;flex-wrap:wrap;align-items:center;gap:8px}
+.lanekeep-root[data-page^="admin-services-lanekeep-"] .lk-monitor-tools .cbi-button{margin:0}
+.lanekeep-root .lk-monitor-status{display:flex;align-items:flex-start;gap:12px;padding:14px 16px;border:1px solid var(--border-color);border-radius:12px;background:var(--surface-muted)}
+.lanekeep-root .lk-monitor-status strong{display:block;font-size:15px;line-height:1.5;color:var(--text-strong)}
+.lanekeep-root .lk-monitor-dot{width:10px;height:10px;margin-top:7px;border-radius:50%;background:var(--muted-text);flex:none}
+.lanekeep-root .lk-monitor-status.lk-state-ok{background:var(--lk-gate-success-bg);border-color:transparent}
+.lanekeep-root .lk-state-ok .lk-monitor-dot{background:var(--lk-gate-success)}
+.lanekeep-root .lk-monitor-status.lk-state-ok strong{color:var(--lk-gate-success)}
+.lanekeep-root .lk-monitor-status.lk-state-warn{background:var(--lk-warning-bg);border-color:transparent}
+.lanekeep-root .lk-state-warn .lk-monitor-dot{background:var(--lk-warning)}
+.lanekeep-root .lk-monitor-status.lk-state-warn strong{color:var(--lk-warning)}
+.lanekeep-root .lk-monitor-meta{display:flex;flex-wrap:wrap;gap:2px 16px;margin-top:4px;font-size:12px;color:var(--muted-text)}
+.lanekeep-root .lk-chart-list{display:grid;gap:12px}
+.lanekeep-root .lk-chart-card{display:grid;gap:8px;min-width:0;padding:12px 14px;border:1px solid var(--border-color);border-radius:12px;background:var(--surface-color)}
+.lanekeep-root .lk-chart-head{display:flex;flex-wrap:wrap;align-items:baseline;justify-content:space-between;gap:4px 16px}
+.lanekeep-root .lk-chart-head h4{margin:0;padding:0;border:0;font-size:14px;color:var(--text-strong)}
+.lanekeep-root .lk-chart-legend{display:flex;flex-wrap:wrap;gap:4px 14px}
+.lanekeep-root .lk-chart-legend .lk-legend{display:inline-flex;align-items:center;gap:6px;margin:0;font-size:12px}
+.lanekeep-root .lk-chart-legend .lk-legend::before{content:"";width:14px;height:3px;border-radius:2px;background:currentColor}
+.lanekeep-root .lk-chart-card .lk-tip-body .lk-legacy-1{margin:0;padding:0;background:transparent}
+.lanekeep-root .lk-monitor .lk-disclosure{margin:0;background:var(--surface-color)}
+.lanekeep-root .lk-monitor .lk-disclosure-body>:is(.lanekeep-health-journal,.lanekeep-monitor-history){margin:0;padding:0;background:transparent}
+.lanekeep-root .lk-event-list{list-style:none;margin:0;padding:0;display:grid;gap:4px}
+.lanekeep-root .lk-event-list li{display:flex;gap:12px;font-size:13px}
+.lanekeep-root .lk-event-time{flex:none;color:var(--muted-text);font-variant-numeric:tabular-nums}
+.lanekeep-root .lk-snapshots{align-items:center}
+.lanekeep-root .lk-version-id{font-size:11px;color:var(--muted-text);overflow-wrap:anywhere}
+@media(max-width:900px){.lanekeep-root .lk-stat-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-width:700px){
+.lanekeep-root .lk-rule-card-head{flex-wrap:wrap;padding:14px 16px}
+.lanekeep-root .lk-rule-card-body{padding:14px 16px}
+.lanekeep-root .lk-tip-body{padding-inline-start:16px}
+.lanekeep-root .lk-rules-footer-bar{flex-direction:column;align-items:stretch;padding:12px 14px}
+.lanekeep-root .lk-stat-grid-4{grid-template-columns:repeat(2,minmax(0,1fr))}
+.lanekeep-root .lk-page-head h2{font-size:22px}}

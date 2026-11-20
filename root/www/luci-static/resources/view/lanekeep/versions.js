@@ -24,18 +24,23 @@ return foundation.view(view,{
    var action = panel.button(version.kind === 'failed' ? lk.text("重试这次改动") : lk.text("撤销到这次操作之前"), function() { restore(version,action); });
    action.disabled = !!version.same_current;
    return E('tr', {'class':'tr'}, [
-    E('td', {'class':'td'}, [E('strong', {}, version.kind === 'failed' ? lk.text("未成功的改动") : lk.text("历史操作")), E('p', {}, version.id)]),
+    E('td', {'class':'td'}, [E('strong', {}, version.kind === 'failed' ? lk.text("未成功的改动") : lk.text("历史操作")), E('p', {'class':'lk-version-id'}, version.id)]),
     E('td', {'class':'td'}, panel.utc(version.time_utc)),
     E('td', {'class':'td'}, panel.summary(version.summary)),
     E('td', {'class':'td'}, panel.resultLabel(version.result)),
     E('td', {'class':'td'}, version.same_current ? [action, E('p', {}, lk.text("与当前相同"))] : [action])
    ]);
   });
-  return E('div', {}, [
-   E('h2', {}, lk.text("版本")), panel.pendingNotice(),
-   panel.notice(lk.text("每行对应一次操作。撤销会恢复该次操作之前的完整状态，所选操作及之后的改动会一起撤销；未成功的改动可重新校验后重试。失败草稿与同次操作合并显示。时间使用路由器时区，列表显示相对时间，悬停查看完整时间。")),
-   panel.notice(lk.text("点击按钮先查看差异，确认后只恢复有变化的部分：先分组，再恢复规则和节点（含默认选择）。仅生成的核心配置有变化时重启核心。")),
-   rows.length ? E('div', {'class':"lk-legacy-17"}, [E('table', {'class':'table'}, [E('tr', {'class':'tr'}, [lk.text("操作"),lk.text("时间"),lk.text("改动摘要"),lk.text("结果"),lk.text("操作")].map(function(t) { return E('th', {'class':'th'}, t); }))].concat(rows))]) : panel.message(lk.text("目前没有可显示的版本。"))
+  function t(zh,en){return lk.language==='en'?en:zh;}
+  var tip=E('details',{'class':'lk-tip'},[E('summary',{},[E('span',{'class':'lk-tip-icon','aria-hidden':'true'},'!'),E('span',{},t('撤销是怎么工作的？','How does undo work?'))]),E('div',{'class':'lk-tip-body'},[
+   E('p',{},t('每行是一次操作。“撤销到此之前”会恢复这次操作之前的完整状态，这次及之后的改动会一起撤销；未成功的改动可以重新检查后重试。','Each row is one operation. Undo restores the state before it, including later changes.')),
+   E('p',{},t('点按钮会先列出差异，确认后才恢复有变化的部分：先恢复设备分组，再恢复规则和节点（含默认节点）。只有生成的代理配置有变化时才会重启代理核心。','You will see the differences first; only changed parts are restored.')),
+   E('p',{},t('列表显示相对时间，鼠标悬停可看完整时间（路由器时区）。','Hover a time to see the full router-time value.'))
+  ])]);
+  return E('div', {'class':'lk-page lk-versions-page'}, [
+   E('div',{'class':'lk-page-head'},[E('h2', {}, lk.text("版本")),E('p',{},t('查看最近 20 次改动，需要时撤销到某次操作之前。','Recent 20 changes; undo to before any of them.'))]),
+   panel.pendingNotice(),
+   E('section',{'class':'lk-rule-card'},[E('div',{'class':'lk-rule-card-body'},[tip,rows.length ? E('div', {'class':"lk-legacy-17"}, [E('table', {'class':'table'}, [E('tr', {'class':'tr'}, [lk.text("操作"),lk.text("时间"),lk.text("改动摘要"),lk.text("结果"),lk.text("操作")].map(function(h) { return E('th', {'class':'th'}, h); }))].concat(rows))]) : E('p',{'class':'lk-empty-line'},lk.text("目前没有可显示的版本。"))])])
   ]);
  },
  handleSave:null, handleSaveApply:null, handleReset:null

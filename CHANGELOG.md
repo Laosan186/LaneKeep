@@ -1,5 +1,19 @@
 # Changelog
 
+## Unreleased
+
+Added
+
+- IP rules: one public IPv4 address or network per rule (`1.2.3.4`, `1.2.3.0/24`). Private, loopback, link-local, CGNAT, multicast, documentation and FakeIP ranges and the selected LAN subnet are rejected, and host bits must be zero. IP rules get their own Xray rows, cannot exit through a two-hop chain, and in On-demand mode proxied IPs get the same UDP 443 block row as proxied domains. They only match direct-IP connections whose domain cannot be identified. The status RPC reports `rule_types`; the Rules page offers the IP type only when the backend lists it.
+- Target-machine checks in `tests/target/` for IP rule parsing, generator output, rules page sequence numbers and node latency, using synthetic data only.
+
+Changed
+
+- Rules, Details, Devices and History pages use cards, collapsible “!” tips, single-line notes, a sticky “Review changes” bar and step-by-step instructions for dedicated proxy ports. Chart axes show short times without a time-zone name.
+- Node latency measurement v3: latency is the faster of two requests to `www.gstatic.com/generate_204` on an established tunnel, with the first request (handshake included) shown separately and used as a labelled fallback. The exit IP still comes from a separate `ipinfo.io` connection. The wait per test or chain step is now about 15 seconds; results recorded by 0.1.0 ask for a new test.
+
+Downgrade note: the 0.1.0 generator rejects IP rules. Delete all IP rules and apply before installing 0.1.0 again.
+
 ## 0.1.0 — 2026-11-16
 
 Initial packaged release for OpenWrt 25.12, licensed under GPL-3.0-only.

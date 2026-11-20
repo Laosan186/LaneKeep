@@ -6,6 +6,7 @@ import * as nodes from './nodes.uc';
 import * as caps from './caps.uc';
 import * as previews from './import-preview.uc';
 import * as dedicated from './dedicated.uc';
+import * as ip_rule from './ip-rule.uc';
 import * as settings from './settings.uc';
 import * as dns_idle from './dns-idle.uc';
 import * as subscriptions from './subscriptions.uc';
@@ -24,7 +25,7 @@ let GROUPS = ['standard', 'global', 'enhanced', 'ondemand'];
 let MEMBERS = ['global', 'enhanced', 'ondemand'];
 let TAGS = {standard:'standard-transparent', global:'global-transparent', enhanced:'enhanced-transparent', ondemand:'ondemand-transparent'};
 let LABELS = {standard:'常规', global:'全局', enhanced:'增强', ondemand:'按需'};
-let GENERATOR_SHA = '664ca81226fbe7006da3a4778c70655b6f3656be3b7757d494a008c6c4bf7982';
+let GENERATOR_SHA = 'fe8c9c0c57f0ae75ca4a36b9f434ca3f984789a7f13e9818144343deb14d4476';
 let failure = null;
 function enabled(){return uci.cursor().get('lanekeep_runtime','main','enabled')=='1';}
 let may_have_started = false;
@@ -122,7 +123,7 @@ function validate_rules(list, current, store) {
         if(r.action=='node' && (!nodes.valid_node_id(r.node) || !length(filter((store || current_nodes()).nodes,n=>n.id==r.node)))) reject(f+'.node','指定节点不存在');
         if(r.action=='node'){let node_store=store||current_nodes();nodes.assert_reference(filter(node_store.nodes,n=>n.id==r.node)[0],node_store);}
         if (type(r.group)!='string' || !has(GROUPS,r.group)) reject(f+'.group','请选择有效分组');
-        if (type(r.type)!='string' || !has(['domain','full','keyword','dedicated','geosite'],r.type)) reject(f+'.type','只支持域名、完整域名、关键词、专用入口和广告域名库');
+        if (type(r.type)!='string' || !has(['domain','full','keyword','ip','dedicated','geosite'],r.type)) reject(f+'.type','只支持域名、完整域名、关键词、IP、专用入口和广告域名库');
         if (type(r.action)!='string' || !has(['proxy','direct','block','node'],r.action)) reject(f+'.action','请选择代理、直连或阻断');
         if (type(r.enabled)!='string' || r.enabled!='0' && r.enabled!='1') reject(f+'.enabled','启用值无效');
         if (!text(r.note,256)) reject(f+'.note','备注最多256字节，不能含控制字符');
@@ -142,6 +143,12 @@ function validate_rules(list, current, store) {
             for (let label in split(value,'.')) if (length(label)>63) reject(f+'.value','域名每段最多63个字符');
         } else if (r.type=='keyword') {
             if (!match(value,/^[a-z0-9.-]{3,}$/)) reject(f+'.value','关键词至少3个小写字母、数字、点或连字符');
+        } else if (r.type=='ip') {
+            let lan_subnet=null;try{lan_subnet=lan.context().subnet;}catch(e){}
+            let parsed=ip_rule.normalize(value,lan_subnet);
+            if(!parsed.ok) reject(f+'.value',({host:'网段写法有误：主机位须为 0，例如 1.2.3.0/24',reserved:'局域网、本机、组播、假 IP 等保留地址不能设置'})[parsed.code] || '请填写一个 IPv4 地址或网段，例如 1.2.3.4 或 1.2.3.0/24');
+            value=parsed.value;
+            if(r.action=='node' && filter((store || current_nodes()).nodes,n=>n.id==r.node)[0]?.protocol=='chain') reject(f+'.node','IP 规则暂不支持两跳链，请选择普通节点');
         }
         let key=r.group+'|'+r.type+'|'+value, ak=r.group+'|'+value;
         if (same[key]) reject(f+'.value','同组规则重复');
@@ -299,6 +306,11 @@ function prepare(draft, origin) {
         data.rules=validate_rules(draft.rules,data.rules);
         let next=validate_settings({fallbacks:draft.fallbacks ?? data.fallbacks,real_dns:draft.real_dns ?? data.real_dns,group_nodes:draft.group_nodes ?? data.group_nodes},current_nodes());
         data.group_nodes=next.group_nodes;data.fallbacks=next.fallbacks;data.real_dns=next.real_dns;
+        for(let i=0;i<length(data.rules);i++) {
+            let r=data.rules[i], selected=data.group_nodes[r.group] || '';
+            if(r.type=='ip' && r.enabled=='1' && r.action=='proxy' && selected!='' && filter(current_nodes().nodes,n=>n.id==selected)[0]?.protocol=='chain')
+                reject('rules.'+i+'.action','本模式的节点是两跳链，IP 规则暂不支持两跳链；请改选“指定节点”、直连或阻断');
+        }
     }
     ensure_root(); gc(); ensure_no_active();
     let id=uuid(),dir=ROOT+'/'+id;
@@ -364,8 +376,8 @@ function builtins(config) {
         if(r.__lanekeep_user_slot!=null) {
             let g=r.__lanekeep_user_slot;
             if(!has(GROUPS,g)) return layout;
-            push(result[g],{position:null,kind:'user_slot',text:'我的规则插入位置'+(g=='ondemand'?'；代理域名自动先附加相同域名的UDP443保护':'')});
-            let generated=[],ids=[],guard=[],guard_ids=[],current=null;
+            push(result[g],{position:null,kind:'user_slot',text:'我的规则插入位置'+(g=='ondemand'?'；代理域名和IP自动先附加相同目标的UDP443保护':'')});
+            let generated=[],ids=[],guard=[],guard_ids=[],guard_ip=[],guard_ip_ids=[],current=null;
             for(let user in config.rules) {
                 if(user.group!=g || user.enabled!='1' || user.type=='dedicated') continue;
                 if(user.type=='geosite') {
@@ -373,16 +385,21 @@ function builtins(config) {
                     push(generated,{type:'field',inboundTag:[TAGS[g]],domain:['geosite:category-ads-all'],outboundTag:'block'});
                     push(ids,[user.id]);current=null;continue;
                 }
-                let domain=user.type+':'+user.value,outbound=(user.action=='node'?nodes.route_tag(user.node,store):user.action=='proxy'?settings.proxy_tag(config,g,store):{direct:'direct',block:'block'}[user.action]);
-                if(g=='ondemand' && (user.action=='proxy' || user.action=='node')) {push(guard,domain);push(guard_ids,user.id);}
-                if(current==null || current.outboundTag!=outbound) {
-                    current={type:'field',inboundTag:[TAGS[g]],domain:[],outboundTag:outbound};push(generated,current);push(ids,[]);
+                // Mirrors lanekeep-gen render_group: IP entries never share a row with domains.
+                let field=user.type=='ip'?'ip':'domain',entry=user.type=='ip'?user.value:user.type+':'+user.value,outbound=(user.action=='node'?nodes.route_tag(user.node,store):user.action=='proxy'?settings.proxy_tag(config,g,store):{direct:'direct',block:'block'}[user.action]);
+                if(g=='ondemand' && (user.action=='proxy' || user.action=='node')) {if(field=='ip'){push(guard_ip,entry);push(guard_ip_ids,user.id);}else{push(guard,entry);push(guard_ids,user.id);}}
+                if(current==null || current.outboundTag!=outbound || current[field]==null) {
+                    current=field=='ip'?{type:'field',inboundTag:[TAGS[g]],ip:[],outboundTag:outbound}:{type:'field',inboundTag:[TAGS[g]],domain:[],outboundTag:outbound};push(generated,current);push(ids,[]);
                 }
-                push(current.domain,domain);push(ids[length(ids)-1],user.id);
+                push(current[field],entry);push(ids[length(ids)-1],user.id);
             }
             if(length(guard)) {
                 if(!equal(live[offset],{type:'field',inboundTag:[TAGS.ondemand],network:'udp',port:'443',domain:guard,outboundTag:'block'})) return layout;
                 for(let id in guard_ids) push(positions[id],offset+1);offset++;
+            }
+            if(length(guard_ip)) {
+                if(!equal(live[offset],{type:'field',inboundTag:[TAGS.ondemand],network:'udp',port:'443',ip:guard_ip,outboundTag:'block'})) return layout;
+                for(let id in guard_ip_ids) push(positions[id],offset+1);offset++;
             }
             for(let n=0;n<length(generated);n++)for(let row in nodes.chain_rules(generated[n],store)){
                 if(!equal(live[offset],json(lan.expand(sprintf('%J',row)))))return layout;
@@ -485,7 +502,8 @@ function status(args) {
     let out={ok:true,revision:revision,core:core,gate:{state:core.running && service?.dns_gate?.running==true && fresh && leased && gate.state=='OPEN'?'OPEN':'CLOSED',fresh:fresh,lease_valid:leased},
         current_version:'lanekeep-'+substr(revision,0,12),last_apply:public_log(history[length(history)-1]),counts:counts,
         count_basis:'DHCP静态分配数量，非在线设备数量；其它动态或未知LAN设备默认常规组',warnings:warnings,
-        config:{revision:revision,members:config.members,rules:config.rules,group_nodes:config.group_nodes,fallbacks:config.fallbacks,real_dns:config.real_dns},devices:{static:hosts,dynamic:dynamic,dhcp_path:['admin','network','dhcp']},builtin:layout.verified ? layout.builtin : {standard:[],global:[],enhanced:[],ondemand:[]}};
+        config:{revision:revision,members:config.members,rules:config.rules,group_nodes:config.group_nodes,fallbacks:config.fallbacks,real_dns:config.real_dns},devices:{static:hosts,dynamic:dynamic,dhcp_path:['admin','network','dhcp']},builtin:layout.verified ? layout.builtin : {standard:[],global:[],enhanced:[],ondemand:[]},
+        rule_types:['domain','full','keyword','ip','dedicated','geosite']};
     if(fingerprint('/etc/config/lanekeep')!=revision || fingerprint('/etc/config/dhcp')!=dhcp_revision) reject('revision','读取期间配置发生变化，请刷新');
     let ns=current_nodes(),dn=filter(ns.nodes,n=>n.id==ns.default_node)[0];out.default_node=dn?{id:dn.id,name:dn.name,last_test:last_test(dn.id)}:null;out.lan={address:lan.context().address,subnet:lan.context().subnet};out.lifecycle={enabled:enabled()};out.nodes_revision=nodes_revision();
     try { out.home=home.read([...hosts,...map(dynamic,h=>({...h,group:group_for(h.ip,config.members)}))],config,layout.verified);out.policy_check=out.home.policy_check; } catch(e) { out.home={rules_checked:false,rules_message:'状态核对暂不可读',devices:[],privacy_ok:null,supervisor:{available:false,retry_seconds:60}}; }
@@ -797,7 +815,7 @@ function single_node_test(args) {
     let port=20000+(int(substr(replace(id,/-/g,''),0,6),16)%30000);
     write(dir+'/test-config.json',{log:{loglevel:'none'},inbounds:[{tag:'test-in',listen:'127.0.0.1',port:port,protocol:'socks',settings:{auth:'noauth',udp:false}}],outbounds:[ob]});
     let raw=run(CODE+'/node-test '+q(dir)+' '+port),value=raw?json(raw):{ok:false,status:'failed',message:'节点测试未完成；未尝试直连'};
-    if(!value.ok)delete value.elapsed_ms;value.measurement_version=2;value.tested_at=time();value.time_utc=trim(run('date -u +%Y-%m-%dT%H:%M:%SZ') || '');if(!match(value.time_utc,/^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}Z$/))reject('test','无法记录测试时间，结果未保存');value.revision=revision;
+    if(!value.ok){delete value.elapsed_ms;delete value.connect_ms;delete value.latency_basis;}value.measurement_version=3;value.tested_at=time();value.time_utc=trim(run('date -u +%Y-%m-%dT%H:%M:%SZ') || '');if(!match(value.time_utc,/^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}Z$/))reject('test','无法记录测试时间，结果未保存');value.revision=revision;
     if(nodes_revision()!=revision)reject('revision','测试期间节点已改变，结果作废');
     let cache=regular(ROOT+'/node-tests.json')?obj(ROOT+'/node-tests.json'):{};cache[args.id]={node:n,result:value};write(ROOT+'/node-tests.json',cache);
     if(regular(dir+'/test-config.json'))fs.unlink(dir+'/test-config.json');
@@ -822,7 +840,11 @@ function probe_chain_step(outbounds,selected) {
         let all=[{tag:'block',protocol:'blackhole',settings:{}}];for(let out in outbounds)push(all,out);
         write(dir+'/test-config.json',{log:{access:'none',error:'none',loglevel:'none',dnsLog:false},inbounds:[{tag:'test-in',listen:'127.0.0.1',port,protocol:'socks',settings:{auth:'noauth',udp:false}}],outbounds:all,routing});
         let raw=run(CODE+'/chain-test '+q(dir)+' '+port);
-        if(raw&&length(raw)<=2048){let response=json(raw);if(response.ok==true&&match(response.ip||'',/^[0-9]{1,3}(\.[0-9]{1,3}){3}$/)&&length(filter(split(response.ip,'.'),p=>int(p)>255))==0&&match(response.country||'',/^[A-Z]{2}$/)&&type(response.elapsed_ms)=='int'&&response.elapsed_ms>=0&&response.elapsed_ms<=10000)value={ok:true,status:'ok',ip:response.ip,country:response.country,elapsed_ms:response.elapsed_ms};}
+        if(raw&&length(raw)<=2048){let response=json(raw);if(response.ok==true&&match(response.ip||'',/^[0-9]{1,3}(\.[0-9]{1,3}){3}$/)&&length(filter(split(response.ip,'.'),p=>int(p)>255))==0&&match(response.country||'',/^[A-Z]{2}$/)&&type(response.elapsed_ms)=='int'&&response.elapsed_ms>=0&&response.elapsed_ms<=10000){
+            value={ok:true,status:'ok',ip:response.ip,country:response.country,elapsed_ms:response.elapsed_ms,measurement_version:3};
+            if(has(['warm','first_request'],response.latency_basis))value.latency_basis=response.latency_basis;
+            if(type(response.connect_ms)=='int'&&response.connect_ms>=0&&response.connect_ms<=10000)value.connect_ms=response.connect_ms;
+        }}
     } catch(e) { /* No exception content, addresses or credentials are returned. */ }
     // Cleanup only files owned by this fresh task. The shell also cleans after signals.
     if(regular(dir+'/.owner')&&fs.readfile(dir+'/.owner')=='lanekeep-chain-test-v1\n'){
@@ -850,8 +872,8 @@ function node_test_run(args) {
     let first=probe_chain_step([ob],'test-front'),second={ok:false,status:'skipped',message:'前置未成功，未发起整链请求'};
     if(first.ok&&nodes_revision()==revision&&caps.revision()==cap_revision)second=probe_chain_step([ob,nodes.chain_outbound(composed,store,'test-front')],'chain-'+composed.id);
     if(nodes_revision()!=revision||caps.revision()!=cap_revision)reject('revision','测试期间节点或能力表改变，结果作废');
-    let value={ok:first.ok&&second.ok,test_kind:'chain_tcp',status:first.ok&&second.ok?'ok':'failed',front_id:composed.front,rear_id:composed.rear,front:first,chain:second,measurement_version:2,tested_at:time(),revision,caps_revision:cap_revision,message:'节点临时连接测试；不代表生产两跳、门控或设备 DNS/WebRTC 验收'};
-    if(value.ok){value.ip=second.ip;value.country=second.country;value.elapsed_ms=second.elapsed_ms;}
+    let value={ok:first.ok&&second.ok,test_kind:'chain_tcp',status:first.ok&&second.ok?'ok':'failed',front_id:composed.front,rear_id:composed.rear,front:first,chain:second,measurement_version:3,tested_at:time(),revision,caps_revision:cap_revision,message:'节点临时连接测试；不代表生产两跳、门控或设备 DNS/WebRTC 验收'};
+    if(value.ok){value.ip=second.ip;value.country=second.country;value.elapsed_ms=second.elapsed_ms;if(second.connect_ms!=null)value.connect_ms=second.connect_ms;if(second.latency_basis)value.latency_basis=second.latency_basis;}
     value.time_utc=trim(run('date -u +%Y-%m-%dT%H:%M:%SZ')||'');if(!match(value.time_utc,/^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}Z$/))reject('test','无法记录测试时间，结果未保存');
     let cache=regular(ROOT+'/node-tests.json')?obj(ROOT+'/node-tests.json'):{};cache[args.id]={node:n,result:value};write(ROOT+'/node-tests.json',cache);return value;
 }

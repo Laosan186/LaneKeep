@@ -35,16 +35,21 @@ return foundation.view(view,{
   }, true);
   var dhcpPath = devices.dhcp_path;
   var validPath = Array.isArray(dhcpPath) && dhcpPath.join('/') === 'admin/network/dhcp';
-  return E('div', {}, [
-   E('h2', {}, lk.text("设备分组")), panel.pendingNotice(),
-   panel.notice(lk.text("只修改分组。新连接按新组处理，已有连接可能暂沿原组；应用不重启核心，不改变共享 FakeDNS 映射。")),
-   E('h3', {}, lk.text("DHCP 静态分配")),
-   E('table', {'class':'table'}, [E('tr', {'class':'tr'}, [lk.text("主机名"),lk.text("IP 地址"),lk.text("分组")].map(function(t) { return E('th', {'class':'th'}, t); }))].concat(staticRows)),
-   errorBox, save,
-   E('h3', {}, lk.text("动态租约")),
-   panel.message(lk.text("以下设备未固定 IP，需先固定才能分组。")),
-   validPath ? E('a', {href:L.url.apply(L, dhcpPath)}, lk.text("前往 DHCP 页面设置静态分配")) : panel.notice(lk.text("DHCP 页面路径未核实，请从 LuCI 网络菜单进入。"), true),
-   (devices.dynamic || []).length ? E('table', {'class':'table'}, [E('tr', {'class':'tr'}, [lk.text("主机名"),lk.text("IP 地址"),lk.text("状态")].map(function(t) { return E('th', {'class':'th'}, t); }))].concat((devices.dynamic || []).map(function(d) { return E('tr', {'class':'tr'}, [E('td', {'class':'td'}, panel.text(d.name, lk.text("未命名"))), E('td', {'class':'td'}, d.ip), E('td', {'class':'td'}, lk.text("未固定 IP"))]); }))) : panel.message(lk.text("当前没有未固定 IP 的动态租约。"))
+  function t(zh,en){return lk.language==='en'?en:zh;}
+  function card(title,sub,body,actions){return E('section',{'class':'lk-rule-card'},[E('div',{'class':'lk-rule-card-head'},[E('div',{'class':'lk-rule-card-title'},[E('h3',{},title),E('p',{},sub)])].concat(actions?[E('div',{'class':'lk-rule-card-actions'},actions)]:[])),E('div',{'class':'lk-rule-card-body'},body)]);}
+  function table(headers,rows){return E('div',{'class':'lk-table-scroll'},E('table', {'class':'table'}, [E('tr', {'class':'tr'}, headers.map(function(h) { return E('th', {'class':'th'}, h); }))].concat(rows)));}
+  var tip=E('details',{'class':'lk-tip'},[E('summary',{},[E('span',{'class':'lk-tip-icon','aria-hidden':'true'},'!'),E('span',{},t('换模式后会发生什么？','What happens after switching?'))]),E('div',{'class':'lk-tip-body'},[E('p',{},t('只改设备所在的模式。应用后新连接按新模式的规则处理，已有连接可能暂时沿用原模式；不会重启代理核心，也不会改变共享的假 IP 映射。','Only the mode changes. New connections follow the new mode; existing ones may keep the old mode briefly. The proxy core is not restarted.')),E('p',{},t('没有固定 IP 的设备都按常规模式处理；要放进其他模式，先在 DHCP 页面给它固定 IP。','Devices without a fixed IP use Standard mode; fix the IP on the DHCP page first.'))])]);
+  var dhcpLink=validPath ? E('a', {'class':'cbi-button cbi-button-neutral',href:L.url.apply(L, dhcpPath)}, lk.text("前往 DHCP 页面设置静态分配")) : null;
+  return E('div', {'class':'lk-page lk-devices-page'}, [
+   E('div',{'class':'lk-page-head'},[E('h2', {}, lk.text("设备分组")),E('p',{},t('把设备放进不同模式，每个模式使用自己的分流规则。','Put each device in a mode; every mode has its own rules.'))]),
+   panel.pendingNotice(),
+   card(lk.text("DHCP 静态分配"),t('已固定 IP 的设备可以选择模式；改完点底部“检查改动”。','Devices with a fixed IP can choose a mode.'),[tip,staticRows.length?table([lk.text("主机名"),lk.text("IP 地址"),lk.text("分组")],staticRows):E('p',{'class':'lk-empty-line'},t('还没有固定 IP 的设备。','No device has a fixed IP yet.'))]),
+   errorBox,
+   E('div',{'class':'lk-rules-footer-bar'},[E('p',{},t('检查后会列出改动，确认才会应用。','Review lists the changes before applying.')),save]),
+   card(lk.text("动态租约"),lk.text("以下设备未固定 IP，需先固定才能分组。"),[
+    validPath ? null : panel.notice(lk.text("DHCP 页面路径未核实，请从 LuCI 网络菜单进入。"), true),
+    (devices.dynamic || []).length ? table([lk.text("主机名"),lk.text("IP 地址"),lk.text("状态")],(devices.dynamic || []).map(function(d) { return E('tr', {'class':'tr'}, [E('td', {'class':'td'}, panel.text(d.name, lk.text("未命名"))), E('td', {'class':'td'}, d.ip), E('td', {'class':'td'}, lk.text("未固定 IP"))]); })) : E('p',{'class':'lk-empty-line'},lk.text("当前没有未固定 IP 的动态租约。"))
+   ].filter(Boolean),dhcpLink?[dhcpLink]:null)
   ]);
  },
  handleSave:null, handleSaveApply:null, handleReset:null

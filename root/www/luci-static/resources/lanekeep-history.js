@@ -11,7 +11,9 @@ var colors=["var(--lk-color-0c6d58)","var(--lk-color-c07625)","var(--lk-color-38
 var eventNames={sampler_started:lk.text("采样启动"),gate_open:lk.text("保护开关开放"),gate_closed:lk.text("保护开关关闭"),core_start_attempt:lk.text("核心启动尝试"),core_restart_attempt:lk.text("核心重启尝试"),core_running:lk.text("核心运行"),core_rollback:lk.text("应用回退"),rules_apply:lk.text("规则应用"),wan_restored:lk.text("外网恢复"),wan_lost:lk.text("外网断开"),default_node_changed:lk.text("默认节点切换"),user_mark:lk.text("现在卡"),wall_clock_changed:lk.text("系统时钟校正")};
 function svg(name,attrs,text){var e=document.createElementNS('http://www.w3.org/2000/svg',name);Object.keys(attrs||{}).forEach(function(k){e.setAttribute(k,attrs[k]);});if(text!=null)e.textContent=text;return e;}
 function format(v,unit){if(v==null||!isFinite(v))return '—';if(unit==='B/s'||unit==='B'){var n=v,u=unit;['Ki','Mi','Gi'].some(function(p){if(n<1024)return true;n/=1024;u=p+(unit==='B/s'?'B/s':'B');return false;});return n.toFixed(n<10?2:1)+' '+u;}return (Math.abs(v)<10?v.toFixed(2):v.toFixed(1))+(unit?' '+unit:'');}
-function clockLabel(w){return panel.foundation.time.full(w);}
+function clockLabel(w){return panel.foundation.time.plain(w);}
+function axisLabel(w,span){return panel.foundation.time.axis(w,span>=43200);}
+function t(zh,en){return lk.language==='en'?en:zh;}
 function explainMetric(m){
  var fixed={
   gate:[lk.text("代理通道的保护开关。1 表示开放，0 表示关闭，受保护的流量会受到限制。"),lk.text("平时一般是 1；卡顿时如果变成 0，可对照下方探针和时间线，看看是不是检测失败触发了保护。")],
@@ -60,18 +62,18 @@ function explanations(metrics){
   );return items;},[]))
  ]);
 }
-function chart(data,metrics,title,range){
- var node=E('section',{'class':'lanekeep-history-chart'}),defs=data.latest.defs,rows=data.rows||[],indices=metrics.map(function(m){return defs.indexOf(m);});
- node.appendChild(E('h4',{},title));var picture=svg('svg',{viewBox:'0 0 960 175',role:'img','aria-label':title,'class':"lk-legacy-5"}),left=70,right=945,top=12,bottom=133,max=0;
+function chart(data,metrics,title,range,fold){
+ var node=E('section',{'class':'lanekeep-history-chart lk-chart-card'}),defs=data.latest.defs,rows=data.rows||[],indices=metrics.map(function(m){return defs.indexOf(m);});
+ node.appendChild(E('div',{'class':'lk-chart-head'},[E('h4',{},title),E('div',{'class':'lk-chart-legend'},metrics.map(function(m,k){return E('span',{'class':'lk-legend lk-series-'+k%colors.length},m.label);}))]));var picture=svg('svg',{viewBox:'0 0 960 175',role:'img','aria-label':title,'class':"lk-legacy-5"}),left=70,right=945,top=12,bottom=133,max=0;
  rows.forEach(function(r){indices.forEach(function(i){if(r.values[i]!=null&&r.mono>=range.start&&r.mono<=range.end)max=Math.max(max,r.values[i]);});});if(max<=0)max=1;
  function x(t){return left+(t-range.start)/(range.end-range.start)*(right-left);}
  for(var i=0;i<=3;i++){var y=top+(bottom-top)*i/3;picture.appendChild(svg('line',{x1:left,x2:right,y1:y,y2:y,stroke:"var(--lk-color-dfe9e5)"}));picture.appendChild(svg('text',{x:left-8,y:y+4,'text-anchor':'end',fill:"var(--lk-color-576a64)",'font-size':11},format(max*(3-i)/3,metrics[0].unit)));}
- for(var j=0;j<=4;j++){var at=range.start+(range.end-range.start)*j/4;picture.appendChild(svg('text',{x:x(at),y:158,'text-anchor':j===0?'start':j===4?'end':'middle',fill:"var(--lk-color-576a64)",'font-size':11},clockLabel(data.latest.wall-(data.latest.mono-at))));}
+ for(var j=0;j<=4;j++){var at=range.start+(range.end-range.start)*j/4;picture.appendChild(svg('text',{x:x(at),y:158,'text-anchor':j===0?'start':j===4?'end':'middle',fill:"var(--lk-color-576a64)",'font-size':11},axisLabel(data.latest.wall-(data.latest.mono-at),range.end-range.start)));}
  (data.events||[]).forEach(function(e){if(e.mono<range.start||e.mono>range.end)return;var line=svg('line',{x1:x(e.mono),x2:x(e.mono),y1:top,y2:bottom,stroke:e.kind==='user_mark'?"var(--lk-color-c44d45)":"var(--lk-color-9bada4)",'stroke-dasharray':'3 3'});line.appendChild(svg('title',{},(eventNames[e.kind]||e.kind)+' · '+clockLabel(e.wall)));picture.appendChild(line);});
  metrics.forEach(function(m,k){var idx=indices[k],path='',connected=false,prev=null,step=data.window==='30m'||data.snapshot!=='none'?10:120;
   rows.forEach(function(r){var v=r.values[idx];if(r.mono<range.start||r.mono>range.end||v==null){connected=false;return;}if(prev!=null&&(r.mono-prev>step||r.mono<=prev))connected=false;path+=(connected?'L':'M')+x(r.mono).toFixed(2)+','+(bottom-(v/max)*(bottom-top)).toFixed(2)+' ';connected=true;prev=r.mono;});
   picture.appendChild(svg('path',{d:path,fill:'none',stroke:colors[k%colors.length],'stroke-width':1.7,'vector-effect':'non-scaling-stroke'}));
- });node.appendChild(picture);node.appendChild(E('div',{},metrics.map(function(m,k){return E('span',{'class':'lk-legend lk-series-'+k%colors.length},m.label);})));node.appendChild(explanations(metrics));return node;
+ });node.appendChild(picture);node.appendChild(fold('explain:'+title,t('这张图怎么看','How to read this chart'),[explanations(metrics)],false,'lk-tip'));return node;
 }
 function groups(defs,category){var list=[];function add(title,filter){var a=defs.filter(filter);if(a.length)list.push([title,a]);}
  if(category==='traffic'){add(lk.text("外网接口"),function(d){return /^wan_(up|down)$/.test(d.id);});['standard','global','enhanced','ondemand'].forEach(function(g){add(({standard:lk.text("常规"),global:lk.mode('global'),enhanced:lk.text("增强"),ondemand:lk.text("按需")})[g]+lk.text("组 · 代理程序 载荷"),function(d){return d.id.indexOf('group_'+g+'_')===0;});});var outs={};defs.filter(function(d){return d.id.indexOf('out_')===0&&d.id.indexOf('out_block_')!==0;}).forEach(function(d){var id=d.id.replace(/_(up|down)$/,'');(outs[id]||(outs[id]=[])).push(d);});Object.keys(outs).forEach(function(k){list.push([outs[k][0].label.replace(/上传$/,''),outs[k]]);});}
@@ -86,7 +88,6 @@ function healthTime(t){return panel.foundation.time.marker(t);}
 function healthEvidence(e){var a=[],v=e.evidence||{};if(/^fd_/.test(e.code)&&e.peak!=null)a.push(lk.text("代理程序句柄峰值 ")+e.peak+(v.fd_limit!=null?lk.text(" / 上限 ")+v.fd_limit:''));if(/^queue_/.test(e.code)){if(v.tcp!=null)a.push(lk.text("TCP 待接峰值 ")+v.tcp+lk.text(" 条"));if(v.data!=null&&v.data>0)a.push(lk.text("TCP 数据峰值 ")+format(v.data,'B'));if(v.udp!=null&&v.udp>0)a.push(lk.text("UDP 队列峰值 ")+format(v.udp,'B'));}if(e.code==='cpu_high')a.push(lk.text("峰值 ")+format(e.peak,'%'));if(e.code==='memory_low')a.push(lk.text("最低 ")+format(e.peak,'MiB'));return a.join('；')||lk.text("按已采集状态记录；不推断具体线路或站点原因");}
 function healthPanel(j,selected,onSelect){
  var box=E('section',{'class':('lanekeep-health-journal')+" lk-legacy-6",'data-lk-style':"lk-legacy-6"});
- box.appendChild(E('h4',{},lk.text("故障记录与每日运行总结")));
  if(!j){box.appendChild(panel.notice(lk.text("故障留存尚未启用；当前曲线仍为内存历史。")));return box;}
  box.appendChild(E('p',{},lk.text("保留 30 个日历日，重启后可查看。按 US 时间每日零点汇总前一天；今天仍在记录。只保留运行故障与必要数值，不含访问站点、目标 IP 或逐条连接。")));
  if(j.detail_error)box.appendChild(panel.notice(j.detail_error,true));
@@ -111,7 +112,6 @@ function monitorPanel(m){
  function table(headers,rows){return E('table',{'class':'table'},[E('tr',{},headers.map(function(x){return E('th',{},x);}))].concat(rows.map(function(row){return E('tr',{},row.map(function(x){return E('td',{},x==null?lk.text("缺测"):String(x));}));})));}
  function counts(title,o,labels){return E('p',{},title+'\uff1a'+Object.keys(o||{}).map(function(k){return ((labels||{})[k]||k)+' '+o[k];}).join(' / '));}
  var group={standard:lk.text("常规"),global:lk.mode('global'),enhanced:lk.text("增强"),ondemand:lk.text("按需"),router:lk.text("路由器"),unknown:lk.text("未知")},dest={captured_original_public:lk.text("透明代理原始公网目标"),node_server:lk.text("节点服务器"),direct_public:lk.text("直连公网"),lan:lk.text("局域网/本机"),broadcast:lk.text("广播"),multicast:lk.text("组播"),public_unclassified:lk.text("公网（节点地址未解析）"),unknown:lk.text("未知")};
- box.appendChild(E('h3',{},lk.text("自动诊断与每日代理程序句柄峰值")));
  box.appendChild(E('p',{},m.storage_ok?lk.text("代理程序句柄达到 2000 时单独保留快照；四组入口排队和保护开关按连续两次样本判断。"):lk.text("监控保存异常，不能据此判定正常。")));
  box.appendChild(E('p',{},lk.text("代理程序句柄专用 2 份快照；排队和保护开关共用另外 2 份，不会覆盖句柄快照。日峰值只覆盖已采样时段。")));
  box.appendChild(table([lk.text("日期"),lk.text("代理程序句柄采样峰值"),lk.text("峰值时间"),lk.text("句柄有效采样覆盖"),lk.text("间隔 / 缺测"),lk.text("实际记录范围")],(m.days||[]).slice().reverse().map(function(d){return [d.date,d.fd_peak,healthTime(d.fd_peak_at),panel.duration(Math.floor(d.covered_seconds||0)),d.gap_count||0,healthTime(d.first)+' \u2014 '+healthTime(d.last)];})));
@@ -124,33 +124,44 @@ function monitorPanel(m){
 }
 
 function render(initial,defaultNode){
- var host=E('div',{'class':'lanekeep-history'}),controls=E('div',{'class':"lk-legacy-9"}),content=E('div'),notice=E('div',{'role':'status'}),window='30m',snapshot='none',category='health',healthDay=null,data=initial,received=initial&&initial._received||performance.now(),timer=null,ticker=null,inFlight=false,disposed=false,failed=!initial,lastOld=null;
- var windows=E('select',{},['30m','6h','24h'].map(function(w){return E('option',{value:w},({'30m':lk.text("过去 30 分钟"),'6h':lk.text("过去 6 小时"),'24h':lk.text("过去 24 小时")})[w]);}));
+ var host=E('div',{'class':'lanekeep-history lk-monitor'}),content=E('div',{'class':'lk-monitor-content'}),notice=E('div',{'role':'status'}),window='30m',snapshot='none',category='health',healthDay=null,data=initial,received=initial&&initial._received||performance.now(),timer=null,ticker=null,inFlight=false,disposed=false,failed=!initial,lastOld=null,opened={};
+ // Content repaints every 5 s; keep each fold's open state across repaints.
+ function fold(id,summary,body,defaultOpen,cls){var isTip=cls==='lk-tip',d=E('details',{'class':(cls||'lk-fold')+(isTip?'':' lk-disclosure'),open:(opened[id]!=null?opened[id]:defaultOpen)?'':null},[E('summary',{},isTip?[E('span',{'class':'lk-tip-icon','aria-hidden':'true'},'!'),E('span',{},summary)]:summary),E('div',{'class':isTip?'lk-tip-body':'lk-disclosure-body'},body)]);d.addEventListener('toggle',function(){opened[id]=d.open;});return d;}
+ var windows=E('select',{'class':'cbi-input-select','aria-label':t('时间范围','Time range')},['30m','6h','24h'].map(function(w){return E('option',{value:w},({'30m':lk.text("过去 30 分钟"),'6h':lk.text("过去 6 小时"),'24h':lk.text("过去 24 小时")})[w]);}));
  var categoryButtons={},categories=E('div',{'class':('lanekeep-history-categories')+" lk-legacy-10",role:'group','aria-label':lk.text("图表分类"),'data-lk-style':"lk-legacy-10"});
- ['health','traffic','resources','queues'].forEach(function(c){var b=panel.button(({health:lk.text("保护开关、拦截与 TCP"),traffic:lk.text("外网、四组与出口"),resources:lk.text("连接与系统资源"),queues:lk.text("四组接收队列")})[c],function(){category=c;selectCategory();paint();});b.setAttribute('class','lanekeep-history-category');categoryButtons[c]=b;categories.appendChild(b);});
+ ['health','traffic','resources','queues'].forEach(function(c){var b=panel.button(({health:t('保护与网络质量','Protection & network'),traffic:t('流量','Traffic'),resources:t('系统资源','System resources'),queues:t('接收队列','Receive queues')})[c],function(){category=c;selectCategory();paint();});b.setAttribute('class','lanekeep-history-category');b.title=({health:lk.text("保护开关、拦截与 TCP"),traffic:lk.text("外网、四组与出口"),resources:lk.text("连接与系统资源"),queues:lk.text("四组接收队列")})[c];categoryButtons[c]=b;categories.appendChild(b);});
  function selectCategory(){Object.keys(categoryButtons).forEach(function(c){var selected=c===category,b=categoryButtons[c];b.setAttribute('aria-pressed',selected?'true':'false');b.classList.add('lk-chart-tab');});}
  var button=panel.button(lk.text("现在卡"),function(){button.disabled=true;mark().then(function(r){notice.replaceChildren(panel.notice(r.message||lk.text("标记未完成"),!r.ok));}).catch(function(){notice.replaceChildren(panel.notice(lk.text("标记请求失败，请先查看采样状态。"),true));}).finally(function(){button.disabled=false;refresh();});},true);
- controls.append(windows,button);host.append(E('span', {hidden:''}),controls,E('div',{'class':"lk-legacy-11"},categories),notice,content);selectCategory();
+ button.title=t('觉得网络卡的时候点一下，图上会画一条红线，并保存前后 10 分钟的数据，方便对照。','Click when the network feels slow to mark the moment and keep 10 minutes of data around it.');
+ host.append(E('span', {hidden:''}),E('div',{'class':'lk-monitor-toolbar'},[E('div',{'class':"lk-legacy-11"},categories),E('div',{'class':'lk-monitor-tools'},[windows,button])]),notice,content);selectCategory();
  function paint(){
   if(!data||!data.ok||!data.latest){lastOld=true;host.classList.toggle('lanekeep-history-stale',true);content.replaceChildren(panel.notice(data&&data.message||lk.text("监控停了：历史采样暂不可读。"),true));button.disabled=true;return;}
   var l=data.latest; l.defs=(l.defs||[]).map(function(d){return Object.assign({},d,{label:d.id==='conntrack'?lk.text("连接数"):d.id==='core_fd'?lk.text("代理程序句柄（FD）"):plain(d.label)});}); var now=data.now+(performance.now()-received)/1000,age=now-l.mono,issues=l.issues||[],old=failed||age>20,headline=old?lk.text("监控停了：样本超过 20 秒未更新或现在读不到；下面仅为最后读到的历史，不能代表现在正常"):issues.length?lk.text("异常：")+issues.map(function(i){return plain(i.message)+lk.text("，已观测持续 ")+Math.max(0,Math.floor(now-i.since))+lk.text(" 秒");}).join('；'):lk.text("正常：当前已采集指标未见异常");
   lastOld=old;host.classList.toggle('lanekeep-history-stale',old);button.disabled=old;var name=defaultNode&&defaultNode.id===l.default_node?defaultNode.name:l.default_node,uptimeIndex=l.defs.findIndex(function(d){return d.id==='core_uptime';}),uptime=l.row.values[uptimeIndex],restart=l.restarts==null?'—':String(l.restarts)+(l.restarts_partial?lk.text("（仅启用记录后）"):'');
-  var body=[E('h3',{'class':"lk-legacy-12"},headline),E('p',{},lk.text("默认节点：")+(name||'—')+lk.text(" · 代理程序运行：")+(uptime==null?'—':panel.duration(uptime))+lk.text(" · 自开机重启尝试：")+restart+lk.text(" · 最新采样 ")+clockLabel(l.wall)),panel.notice(plain(l.scope)),E('p',{},lk.text("5 秒数据保留 1 小时，1 分钟数据保留 24 小时；断电丢失。曲线空白表示缺值、计数归零或采样中断。此页不发外网探测。"))];
-  body.push(healthPanel(l.health,healthDay,function(d){healthDay=d;refresh();}));body.push(monitorPanel(l.monitor));
+  var state=old?'stale':issues.length?'warn':'ok',zone=panel.foundation.time.zoneName();
+  var body=[E('div',{'class':'lk-monitor-status lk-state-'+state},[E('span',{'class':'lk-monitor-dot','aria-hidden':'true'}),E('div',{},[E('strong',{},headline),E('div',{'class':'lk-monitor-meta'},[
+   E('span',{},lk.text("默认节点：")+(name||'—')),E('span',{},t('代理程序已运行 ','Core uptime ')+(uptime==null?'—':panel.duration(uptime))),E('span',{},t('开机以来重启尝试 ','Restart attempts ')+restart),E('span',{},t('最新采样 ','Latest sample ')+clockLabel(l.wall))])])])];
+  body.push(fold('about',t('关于这些数据：保留多久、怎么读图','About this data and how to read the charts'),[
+   panel.notice(plain(l.scope)),
+   E('p',{},lk.text("5 秒数据保留 1 小时，1 分钟数据保留 24 小时；断电丢失。曲线空白表示缺值、计数归零或采样中断。此页不发外网探测。")),
+   E('p',{},t('读图：从左到右是时间，各张图同一位置对应同一时刻。灰色竖虚线是当时发生的事件（悬停可看名称），红色竖线是“标记卡顿”。曲线空白表示没有可靠数据，不代表数值为 0。','Time runs left to right; dashed lines are events, red lines are your slowness marks. Gaps mean no reliable data, not zero.')),
+   zone?E('p',{},t('页面时间均为路由器时区：','All times use the router time zone: ')+zone):null
+  ].filter(Boolean),false,'lk-tip'));
   if(l.restarts_partial)body.push(panel.notice(lk.text("本次开机在启用记录前的重启次数未知；此处只显示已记录的启动尝试，不补造历史。")));
   var range={start:data.now-data.span,end:data.now};
   if(snapshot!=='none'){var snap=(l.snapshots||[]).find(function(s){return ''+s.slot===snapshot;});if(snap){range={start:snap.mark-600,end:snap.mark+600};body.push(panel.notice(lk.text("快照 ")+snapshot+'：'+(snap.complete?lk.text("前后对比已完成"):lk.text("正在收集标记后的 10 分钟"))+lk.text("；标记前不足 10 分钟时保留实际已有数据。")));}}
-  var snapButtons=E('div',{'class':"lk-legacy-13"});(l.snapshots||[]).forEach(function(s){snapButtons.appendChild(panel.button(lk.text("快照 ")+s.slot+' · '+(s.complete?lk.text("完成"):lk.text("采集中")),function(){snapshot=''+s.slot;refresh();}));});if(snapshot!=='none')snapButtons.appendChild(panel.button(lk.text("返回时间线"),function(){snapshot='none';refresh();}));body.push(snapButtons);
-  body.push(E('p',{'class':"lk-legacy-14"},lk.text("读图提示：从左到右是时间，各张图的同一位置对应同一时刻；竖虚线表示那时发生了事件，红色竖线是“现在卡”标记。曲线空白表示没有可靠数据，不表示数值为 0。")));
-  var chartGroups=groups(l.defs,category);chartGroups.forEach(function(g){body.push(chart(data,g[1],g[0],range));});
+  if((l.snapshots||[]).length||snapshot!=='none'){var snapButtons=E('div',{'class':"lk-legacy-13 lk-snapshots"},[E('span',{'class':'lk-muted-line'},t('卡顿快照：','Slowness snapshots: '))]);(l.snapshots||[]).forEach(function(s){snapButtons.appendChild(panel.button(lk.text("快照 ")+s.slot+' · '+(s.complete?lk.text("完成"):lk.text("采集中")),function(){snapshot=''+s.slot;refresh();}));});if(snapshot!=='none')snapButtons.appendChild(panel.button(lk.text("返回时间线"),function(){snapshot='none';refresh();}));body.push(snapButtons);}
+  var chartGroups=groups(l.defs,category),grid=E('div',{'class':'lk-chart-list'});chartGroups.forEach(function(g){grid.appendChild(chart(data,g[1],g[0],range,fold));});body.push(grid);
   var metrics=[];chartGroups.forEach(function(g){g[1].forEach(function(m){metrics.push(m);});});
-  body.push(E('h4',{},lk.text("当前读数与采样时间")),E('div',{'class':"lk-legacy-15"},E('table',{'class':'table'},[E('tr',{'class':'tr'},[lk.text("指标"),lk.text("数值"),lk.text("采样时间 / 新鲜度")].map(function(s){return E('th',{'class':'th'},s);})),].concat(metrics.map(function(m){var idx=l.defs.indexOf(m),at=l.row.sources[m.source],value=l.row.values[idx],stale=old||(at!=null&&now-at>20);return E('tr',{'class':'tr'},[E('td',{'class':'td'},m.label),E('td',{'class':'td'},format(value,m.unit)),E('td',{'class':'td'},at==null?'—':healthTime(l.wall-(l.mono-at))+(stale?lk.text(" · 过期"):' · '+Math.max(0,Math.floor(now-at))+lk.text(" 秒前")))]);})))));
-  if(category==='health'&&window==='30m'&&snapshot==='none'){var rounds=(data.probes||[]).filter(function(p){return p.mono>=range.start;});body.push(E('details',{},[E('summary',{},lk.text("每轮探针记录 · ")+rounds.length+lk.text(" 轮（仅聚合结果和耗时）")),E('div',{'class':"lk-legacy-16"},E('table',{'class':'table'},rounds.slice().reverse().map(function(p){return E('tr',{},[E('td',{},healthTime(p.wall)),E('td',{},p.ok?lk.text("成功"):lk.text("失败")),E('td',{},p.ms+' ms')]);})))]));}
-  body.push(E('h4',{},lk.text("当前不能可靠采集的项目")),panel.notice((l.unavailable||[]).map(plain).join('；')+lk.text("。显示“—”，不能由零字节推断没有拦截。")));
-  var events=(data.events||[]).filter(function(e){return e.mono>=range.start&&e.mono<=range.end;}).slice(-30).reverse();body.push(E('h4',{},lk.text("时间线事件（最近 30 条）")),E('ul',{},events.map(function(e){return E('li',{},clockLabel(e.wall)+' · '+(eventNames[e.kind]||e.kind));})));
+  body.push(fold('readings',lk.text("当前读数与采样时间")+t('（'+metrics.length+' 项）',' ('+metrics.length+')'),[E('div',{'class':"lk-legacy-15"},E('table',{'class':'table'},[E('tr',{'class':'tr'},[lk.text("指标"),lk.text("数值"),lk.text("采样时间 / 新鲜度")].map(function(s){return E('th',{'class':'th'},s);})),].concat(metrics.map(function(m){var idx=l.defs.indexOf(m),at=l.row.sources[m.source],value=l.row.values[idx],stale=old||(at!=null&&now-at>20);return E('tr',{'class':'tr'},[E('td',{'class':'td'},m.label),E('td',{'class':'td'},format(value,m.unit)),E('td',{'class':'td'},at==null?'—':healthTime(l.wall-(l.mono-at))+(stale?lk.text(" · 过期"):' · '+Math.max(0,Math.floor(now-at))+lk.text(" 秒前")))]);}))))],false));
+  var events=(data.events||[]).filter(function(e){return e.mono>=range.start&&e.mono<=range.end;}).slice(-30).reverse();
+  body.push(fold('events',lk.text("时间线事件（最近 30 条）")+t(' · '+events.length+' 条',' · '+events.length),[events.length?E('ul',{'class':'lk-event-list'},events.map(function(e){return E('li',{},[E('span',{'class':'lk-event-time'},clockLabel(e.wall)),E('span',{},eventNames[e.kind]||e.kind)]);})):E('p',{'class':'lk-muted-line'},t('这段时间没有事件。','No events in this range.'))],false));
+  if(category==='health'&&window==='30m'&&snapshot==='none'){var rounds=(data.probes||[]).filter(function(p){return p.mono>=range.start;});body.push(fold('probes',lk.text("每轮探针记录 · ")+rounds.length+lk.text(" 轮（仅聚合结果和耗时）"),[E('div',{'class':"lk-legacy-16"},E('table',{'class':'table'},rounds.slice().reverse().map(function(p){return E('tr',{},[E('td',{},healthTime(p.wall)),E('td',{},p.ok?lk.text("成功"):lk.text("失败")),E('td',{},p.ms+' ms')]);})))],false));}
+  body.push(fold('health',lk.text("故障记录与每日运行总结"),[healthPanel(l.health,healthDay,function(d){healthDay=d;refresh();})],true));
+  body.push(fold('monitor',lk.text("自动诊断与每日代理程序句柄峰值"),[monitorPanel(l.monitor)],false));
+  if((l.unavailable||[]).length)body.push(E('p',{'class':'lk-muted-line'},lk.text("当前不能可靠采集的项目")+'：'+(l.unavailable||[]).map(plain).join('；')+lk.text("。显示“—”，不能由零字节推断没有拦截。")));
   content.replaceChildren.apply(content,body);
- }
- function schedule(){clearTimeout(timer);if(!document.hidden&&!disposed)timer=setTimeout(refresh,5000);}
+ } function schedule(){clearTimeout(timer);if(!document.hidden&&!disposed)timer=setTimeout(refresh,5000);}
  function refresh(){if(disposed)return;if(!host.isConnected){dispose();return;}if(document.hidden||inFlight){schedule();return;}inFlight=true;read(window,snapshot,healthDay||'').then(function(r){data=r;received=r&&r._received||performance.now();failed=!r||r.ok!==true;paint();}).catch(function(){failed=true;paint();notice.replaceChildren(panel.notice(lk.text("刷新失败；已有数字超过 20 秒会标为过期。"),true));}).finally(function(){inFlight=false;schedule();});}
  function visibility(){if(!host.isConnected){dispose();return;}clearTimeout(timer);if(!document.hidden)refresh();}
  function dispose(){disposed=true;clearTimeout(timer);clearInterval(ticker);document.removeEventListener('visibilitychange',visibility);}

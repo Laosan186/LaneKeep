@@ -71,7 +71,7 @@ methods.nodes=function(){
 var groups = [ 'standard', 'global', 'enhanced', 'ondemand' ];
 var labels = { standard: lk.text("常规"), global: lk.mode('global'), enhanced: lk.text("增强"), ondemand: lk.text("按需") };
 var actions = { proxy: lk.text("代理（默认节点）"), direct: lk.text("直连"), block: lk.text("阻断"), node: lk.text("指定节点") };
-var types = { domain: lk.text("域名及子域"), full: lk.text("完整域名"), keyword: lk.text("关键词"), dedicated:lk.text("专用入口") };
+var types = { domain: lk.text("域名及子域"), full: lk.text("完整域名"), keyword: lk.text("关键词"), ip: lk.language==='en'?'IP / network':'IP / 网段', dedicated:lk.text("专用入口"), geosite:lk.text("广告域名库") };
 var pendingKey = 'lanekeep.pending.draft';
 var memoryPending = null;
 var active = false;
@@ -98,8 +98,14 @@ function notice(value, warning) { return E('div', { 'class': warning ? 'alert-me
 function testDuration(result) {
  if (result && result.status === 'timeout') return lk.text("超时");
  if (!result || !result.ok) return lk.text("失败");
- if (result.measurement_version !== 2) return lk.text("旧测量结果，请重新测试");
- return typeof result.elapsed_ms === 'number' && isFinite(result.elapsed_ms) && result.elapsed_ms >= 0 ? (lk.language==='en'?'Latency ':'延迟 ')+result.elapsed_ms+' ms' : lk.text("耗时未取得");
+ // v3: latency on an established tunnel (best of two); the first request includes the node handshake.
+ if (result.measurement_version !== 3) return lk.text("旧测量结果，请重新测试");
+ var en=lk.language==='en', ms=result.elapsed_ms, first=result.connect_ms;
+ if (typeof ms !== 'number' || !isFinite(ms) || ms < 0) return lk.text("耗时未取得");
+ var text=(en?'Latency ':'延迟 ')+ms+' ms';
+ if (result.latency_basis === 'first_request') return text+(en?' (first request, handshake included)':'（首次请求，含握手）');
+ if (typeof first === 'number' && isFinite(first) && first >= 0) text+=(en?' · first connection ':' · 首次连接 ')+first+' ms';
+ return text;
 }
 function duration(seconds) {
  if (typeof seconds !== 'number' || !isFinite(seconds) || seconds < 0) return lk.text("未知");

@@ -6,6 +6,8 @@ A per-device routing panel for OpenWrt, with node management, controlled DNS pat
 
 **v0.1.0 is disabled on first installation. Installing it, adding nodes and saving settings do not activate interception.** Select a default node, then separately confirm **Enable LaneKeep** on the Nodes page.
 
+IP rules, the reworked Rules/Details/Devices/History pages and node latency measurement v3 are in the source but not in the v0.1.0 package; see the [CHANGELOG](CHANGELOG.md).
+
 ![Nodes with demo data](docs/images/nodes-light-en.png)
 
 ## Features
@@ -20,7 +22,7 @@ A per-device routing panel for OpenWrt, with node management, controlled DNS pat
 Factory defaults contain no nodes, assigned devices, custom rules or FakeIP exceptions. Classification depends on the installed databases; it does not identify every site's location. Custom rules run at the insertion points shown on the Rules page, after fixed protection and some private-address rules.
 
 - A proxy node per mode, inheriting the default when unset. Shared DNS and the kill switch still follow the default node.
-- Domain, exact-domain, keyword and the fixed ad-domain category; direct, proxy, specific-node or block actions. Ad blocking starts disabled and can be added per mode.
+- Domain, exact-domain, keyword, public IPv4 address / network and the fixed ad-domain category; direct, proxy, specific-node or block actions. Ad blocking starts disabled and can be added per mode. IP rules match only direct-IP connections whose domain cannot be identified and cannot use two-hop chains; see [leak protection](docs/leak-protection.en.md#custom-ip-rules).
 - Two-hop chains: a regular entry node and a SOCKS5 / HTTP exit. Chains cannot nest or become the default. UDP requires a supported combination and explicit confirmation.
 - LAN SOCKS5 ports **10811–10860** for Global, Enhanced and On-demand, restricted to devices in the selected mode. Standard has no dedicated ports. Dedicated entries use their own rules, not the mode's entire domain policy.
 - Download Windows Chrome / Edge proxy policies. Downloading changes nothing; importing replaces the corresponding browser policy. Keep the original policy before importing.
@@ -34,7 +36,7 @@ Factory defaults contain no nodes, assigned devices, custom rules or FakeIP exce
 
 ## Protection boundaries
 
-When enabled, fixed rules handle TCP/UDP 53 and block 853, known DoH categories, protected internal ports and unresolved FakeIP destinations in all four modes. **UDP 443 coverage differs:** Standard, Global and Enhanced block it broadly; On-demand covers selected categories and custom proxied domains.
+When enabled, fixed rules handle TCP/UDP 53 and block 853, known DoH categories, protected internal ports and unresolved FakeIP destinations in all four modes. **UDP 443 coverage differs:** Standard, Global and Enhanced block it broadly; On-demand covers selected categories and custom proxied domains and IPs.
 
 A DNS health check through the default node controls protected proxy data traffic, including other nodes selected by individual modes. Failure closes the gate without falling back to direct. Detection has a bounded window; it is not instantaneous. Direct traffic still depends on the core and DNS and is not guaranteed to work during a fault.
 
@@ -88,6 +90,7 @@ Before removal, LaneKeep stops its services, removes its owned nft tables and po
 - No automatic selection of another node. History restoration can undo the selected operation and all later configuration, not just one row.
 - At most 21 records including chains. Historical IDs may exhaust the 96-metric budget earlier; chain traffic is not separately collected.
 - Some backend diagnostics remain in Chinese. Changes to a third-party test service can cause a node test to fail without proving that all node traffic is unavailable.
+- Node “latency” is the faster of two reused requests on one tunnel; “first connection” includes the node handshake. The test contacts `www.gstatic.com` and `ipinfo.io`; see [notes](docs/notes.en.md#node-tests).
 
 ## FAQ
 
@@ -107,7 +110,7 @@ python tools/preview/serve.py
 
 Open the printed loopback URL. Use `?page=nodes&theme=dark&lang=en` to select a page, theme and language. RPC is simulated. The real package modules, versioned resource paths and page initialization are used unchanged.
 
-`root/` contains runtime source and empty defaults; `tools/build/` generates versioned assets and APKs; `packaging/` contains lifecycle scripts; `tools/preview/` holds demo tooling; `tests/` and `docs/audit/` contain public validation methods and records.
+`root/` contains runtime source and empty defaults; `tools/build/` generates versioned assets and APKs; `packaging/` contains lifecycle scripts; `tools/preview/` holds demo tooling; `tests/` and `docs/audit/` contain public validation methods and records. Run the offline checks with `python -X utf8 -m unittest discover -s tests -v`; checks for an isolated test machine are in [tests/target](tests/target/README.md).
 
 On Linux with a full apk-tools 3.x build: `python3 tools/build/build-apk.py --apk /path/to/apk`. The minimal target OpenWrt apk normally omits `mkpkg`. An OpenWrt package Makefile is also included. `VERSION` and `RELEASE` control asset and package versions.
 
