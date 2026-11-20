@@ -28,10 +28,10 @@ d5ae8cd2bef1e26bcc136576dfdcc7c441218188c6b8a0f8e839954ff6b3f2e6  docs/audit/v0.
 eac1746d0fe63656896d4d36c96d06041a56bec05a18b19df6aa72e7c796dab1  docs/audit/v0.2.0/logs/target-checks.txt
 30fe54e59a2e2701b6d31f24c32b3ca02530415b46ad7b3302b05e5f73506c43  docs/audit/v0.2.0/logs/uninstall-0.2.0-r1.txt
 4c42a0f7b22184e96c5f20b714f15c1245fcaed1386e53e2fd54b0b6e5dca915  docs/audit/v0.2.0/logs/upgrade-0.1.0-r1-to-0.2.0-r1.txt
-3598fb6a1aac4775866ca8472f0f38975cdf26a0a15c2ca7894bd16fdf57f599  docs/images/nodes-dark-en.png
-5bd5037a0df313e2f67ed33ac4f3e66086a335a16765e977586847d96f4e36a3  docs/images/nodes-dark.png
-2c31d793aaaf43b011de989b0ef8faa419b8761868e5cf9373e5ac0c65774f36  docs/images/nodes-light-en.png
-916e0087ac3c0aa6a892b9ca6f8ab6f75da7b9ed6b8c023e982b9c2ce711db17  docs/images/nodes-light.png
+2fc0c8e34443d5cf19ed490e66533d4bc5aeae0b29a3d0adf968b59bc29dc228  docs/images/nodes-dark-en.png
+b3e8e8cce5219982816c7d82b1039ff832001e4aebab542350236ec04bac4448  docs/images/nodes-dark.png
+296d62182c23a589e20799f8b922bee6a4930bf7cb73d3e2bcd858b13b0a60c3  docs/images/nodes-light-en.png
+eb464f3fe28ca9d132bb7d27186ef2794a2c95b57b68eea0b4bfdd0d0e2f9e94  docs/images/nodes-light.png
 7705ed9e59084ad650bf47eb3ee9f60ff1a953def1fa3c99c6ddc20e641f8737  docs/images/status-light-en.png
 7359e4601dbcb940d6212b566ba3964f44b3e49ea59aab869fabdb25f54a0071  docs/images/status-light.png
 00fdc682db19d29d059843c37e04c32c25b49b76d38091f3871e94900d9f27bb  docs/leak-protection.en.md
