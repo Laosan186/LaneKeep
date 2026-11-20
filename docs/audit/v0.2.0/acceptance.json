@@ -9,11 +9,11 @@
   },
   "artifact": {
     "name": "luci-app-lanekeep-0.2.0-r1.apk",
-    "sha256": "16f3c957919dcd4a414908fec2f980b2117be5486c1b17bb102282e215aa6e37",
-    "bytes": 297320,
+    "sha256": "8741e60baf15da467a2c126e00d5f8576324779f377fe9cf283b101b558a92b8",
+    "bytes": 297317,
     "payload_files": 104
   },
-  "start_state": "Copy of the development test disk with all LaneKeep dependencies installed and listed in /etc/apk/world; previous LaneKeep files removed before the test",
+  "start_state": "Copy of the development test disk with all LaneKeep dependencies installed and listed in /etc/apk/world. Before the test, the previous LaneKeep files and two old runtime state directories (/etc/lanekeep-state, /etc/lanekeep-health) were removed, three static DHCP hosts were added, and the VM was rebooted; no LaneKeep file remained.",
   "lifecycle": [
     {
       "step": "fresh_install_published_0.1.0_r1",
@@ -26,10 +26,12 @@
     {
       "step": "apply_members_and_rules_via_rpc_on_0.1.0",
       "members": "members_applied",
-      "rules": "applied"
+      "rules": "applied",
+      "nodes": 0
     },
     {
       "step": "upgrade_to_0.2.0_r1",
+      "instance": "disabled",
       "configuration_hashes_preserved": true,
       "immutable_files_verified": 101,
       "enabled_preserved": true,
@@ -58,6 +60,17 @@
       "modified_configuration_retained": true
     },
     {
+      "step": "move_retained_configuration_aside",
+      "moved": [
+        "/etc/config/lanekeep",
+        "/etc/lanekeep-proxy",
+        "/etc/lanekeep-state"
+      ],
+      "remaining": [
+        "/etc/rc.d/K9lanekeep"
+      ]
+    },
+    {
       "step": "fresh_install_0.2.0_r1",
       "network_dns_nft_routes_unchanged": true,
       "immutable_files_verified": 101,
@@ -67,7 +80,7 @@
   ],
   "browser": {
     "browser": "Claude desktop built-in browser against the VM LuCI on localhost",
-    "cache": "same browser context, cache enabled, no forced reload",
+    "cache": "same tab and cache, no forced reload",
     "resources_before": "v0_1_0_r1",
     "resources_after": "v0_2_0_r1",
     "pages_0.2.0": [
@@ -79,17 +92,19 @@
       "versions"
     ],
     "panel_root_per_page": 1,
-    "console_errors": 0,
-    "note": "The pane was hidden, so requestAnimationFrame did not fire and LuCI held its queued RPC calls; the check replaced requestAnimationFrame with a short timer in the page. Status and Details show the read-error bar on a disabled instance because sampling is not running (unchanged code)."
+    "failed_resources": 0,
+    "note": "The pane was hidden, so requestAnimationFrame did not fire and LuCI held its queued RPC calls; after each navigation the check replaced requestAnimationFrame with a short timer in the page. Status and Details show the read-error bar on a disabled instance because sampling is not running (unchanged code). Values were recorded by hand from the browser tool results."
   },
   "target_checks": {
+    "where": "same VM disk after the lifecycle, against the release source tree",
     "ip_rule_cases": "41/41",
-    "rules_check": "16/16 (previous tree: v0.1.0)",
+    "rules_check": "16/16 (previous tree: v0.1.0 tag)",
     "latency_check": "8/8"
   },
   "offline_tests": "9/9",
+  "logs": "Package manager logs with the repeated offline-cache warnings removed",
   "not_covered": [
-    "explicit activation, kill-switch gate and transparent client traffic",
+    "explicit activation, kill-switch gate and transparent client traffic and DNS",
     "upgrade of an enabled instance",
     "real nodes, subscriptions and node test through the panel RPC",
     "other architectures and physical devices"

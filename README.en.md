@@ -6,7 +6,7 @@ A per-device routing panel for OpenWrt, with node management, controlled DNS pat
 
 **v0.2.0 is disabled on first installation. Installing it, adding nodes and saving settings do not activate interception.** Select a default node, then separately confirm **Enable LaneKeep** on the Nodes page.
 
-0.2.0 adds IP rules, reworked Rules/Details/Devices/History pages and node latency measurement v3; see the [CHANGELOG](CHANGELOG.md). Upgrading from 0.1.0 installs over it; before downgrading to 0.1.0, delete all IP rules.
+0.2.0 adds IP rules, reworked Rules/Details/Devices/History pages and node latency measurement v3; see the [CHANGELOG](CHANGELOG.md). Upgrade from 0.1.0 with `apk add --upgrade` (the 0.2.0 acceptance covers upgrading a disabled instance; see the [acceptance limits](docs/audit/v0.2.0/acceptance.md#验证边界)); before downgrading to 0.1.0, delete all IP rules.
 
 ![Nodes with demo data](docs/images/nodes-light-en.png)
 

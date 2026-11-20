@@ -30,6 +30,6 @@
     "RFC documentation examples",
     "Public service geodata subset with pinned upstream and digest"
   ],
-  "scope": "All repository source, documentation, hidden GitHub templates and build scripts; secret scan also covers the unpacked release APK. Generated build/cache directories, local artifacts and private test credentials are not repository content.",
+  "scope": "All repository source, documentation, hidden GitHub templates and build scripts; the secret scan also covers the 0.2.0-r1 package content (the materialized install tree, identical to the APK payload file by file). Generated build/cache directories, local artifacts and private test credentials are not repository content.",
   "limitations": "Automated scans are combined with template/default review and screenshot inspection; they are not a mathematical proof of the absence of all possible sensitive data."
 }

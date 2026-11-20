@@ -1,4 +1,4 @@
-LaneKeep 0.1.0, GPL-3.0-only.
+LaneKeep, GPL-3.0-only.
 The lanekeep-services.dat subset is derived from Loyalsoldier/v2ray-rules-dat release 202611152204 (GPL-3.0).
 Upstream: https://github.com/Loyalsoldier/v2ray-rules-dat
 Only GOOGLE and NETFLIX public IPv4 prefixes are included.
