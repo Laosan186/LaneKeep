@@ -13,7 +13,7 @@
     "bytes": 297317,
     "payload_files": 104
   },
-  "start_state": "Copy of the development test disk with all LaneKeep dependencies installed and listed in /etc/apk/world. Before the test, the previous LaneKeep files and two old runtime state directories (/etc/lanekeep-state, /etc/lanekeep-health) were removed, three static DHCP hosts were added, and the VM was rebooted; no LaneKeep file remained.",
+  "start_state": "Copy of the development test disk with all LaneKeep dependencies installed; the 8 non-system dependencies are listed in /etc/apk/world. Before the test, the previous LaneKeep files and two old runtime state directories (/etc/lanekeep-state, /etc/lanekeep-health) were removed, three static DHCP hosts were added, and the VM was rebooted; no LaneKeep file remained.",
   "lifecycle": [
     {
       "step": "fresh_install_published_0.1.0_r1",
@@ -109,5 +109,5 @@
     "real nodes, subscriptions and node test through the panel RPC",
     "other architectures and physical devices"
   ],
-  "known_issue": "Uninstall leaves a dangling /etc/rc.d/K9lanekeep link; the v0.1.0 acceptance disk shows the same link, and packaging scripts are unchanged."
+  "known_issue": "Uninstall leaves the runtime state directory /etc/lanekeep-state and a dangling /etc/rc.d/K9lanekeep link besides the retained modified configuration; the v0.1.0 acceptance disk shows the same link, and packaging and lifecycle scripts are unchanged."
 }

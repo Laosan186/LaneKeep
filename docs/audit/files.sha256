@@ -21,8 +21,8 @@ ba6146f66a7a55678d04001c2e79ae4b227a19aca0f9874680fd9d1744cb2f9b  docs/audit/log
 01f06db6e27ea0454e86fa471c5bba2f1587f7d7020752626d68eab355be5a1a  docs/audit/logs/uninstall.txt
 706b50eb0c2c1abe63670272c97026947e3137fc93bd620bc59e1826e9a10f23  docs/audit/logs/upgrade.txt
 56b2a7b2b343a3e944b849b012fb4df8e5de86a431604f2a1b12b85cb6a2372d  docs/audit/privacy-scan.json
-bb50c36fafce53862158528c44b0c22e2172ad9cfff46fc1c5a6ae6b6974c0bb  docs/audit/v0.2.0/acceptance.json
-3fd43ab8797f99cc02585d811411fb9bb724b01dec40b5ab6cfc6e34ec8e1dce  docs/audit/v0.2.0/acceptance.md
+71e3e64a3b48b8acd65f73a9e786b79bd5c59bcf1a0cc0244ba4320bd1a0dc2d  docs/audit/v0.2.0/acceptance.json
+dff51cdba4d99bfa9ba01f6302216bf191a2b5c5d0b11c14e4f4a5c864456c9b  docs/audit/v0.2.0/acceptance.md
 aca3a1dc08a11fe6b52d4f3efc2cb24c4c0cb9d94ac9e9cd97d586da501786bb  docs/audit/v0.2.0/logs/install-0.1.0-r1.txt
 d5ae8cd2bef1e26bcc136576dfdcc7c441218188c6b8a0f8e839954ff6b3f2e6  docs/audit/v0.2.0/logs/install-0.2.0-r1.txt
 eac1746d0fe63656896d4d36c96d06041a56bec05a18b19df6aa72e7c796dab1  docs/audit/v0.2.0/logs/target-checks.txt

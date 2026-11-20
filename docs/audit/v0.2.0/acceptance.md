@@ -4,7 +4,7 @@
 
 This report covers installation, upgrade from 0.1.0, removal and the new features of the v0.2.0 APK on an isolated QEMU VM. Unlike the v0.1.0 run, the VM had **no host or internet access**, so explicit activation, the kill-switch gate and transparent client traffic were not exercised again; packaging, lifecycle, nftables, DNS and gate code are unchanged since 0.1.0.
 
-环境：OpenWrt 25.12.6 x86_64、Linux 6.12.112、Xray 26.10.21。QEMU 用户网络加 `restrict=on`，客机不能访问宿主或外网，只把 SSH 和 LuCI 转发到本机。起点是一份已装好 LaneKeep 全部依赖（均列在 `/etc/apk/world`）的测试盘副本。测试前删除了其中旧的 LaneKeep 文件和两个旧运行状态目录（`/etc/lanekeep-state`、`/etc/lanekeep-health`），添加 3 个 DHCP 静态租约后重启，确认不再有任何 LaneKeep 文件；安装和升级都用 `apk --no-network` 完成。
+环境：OpenWrt 25.12.6 x86_64、Linux 6.12.112、Xray 26.10.21。QEMU 用户网络加 `restrict=on`，客机不能访问宿主或外网，只把 SSH 和 LuCI 转发到本机。起点是一份已装好 LaneKeep 全部依赖的测试盘副本，其中 xray-core、分类数据、nft tproxy/socket 内核模块等 8 个非系统依赖显式列在 `/etc/apk/world`，卸载 LaneKeep 不会连带移除它们。测试前删除了其中旧的 LaneKeep 文件和两个旧运行状态目录（`/etc/lanekeep-state`、`/etc/lanekeep-health`），添加 3 个 DHCP 静态租约后重启，确认不再有任何 LaneKeep 文件；安装和升级都用 `apk --no-network` 完成。
 
 ## 结果
 
@@ -28,7 +28,7 @@ This report covers installation, upgrade from 0.1.0, removal and the new feature
 
 - 首轮验收后审查发现包内 `NOTICE` 仍写“LaneKeep 0.1.0”。改为不带版本号后重新构建，并在新的测试盘副本上重跑了全部步骤；本文和日志均为重跑结果。
 - 内置浏览器窗格处于隐藏状态时，页面不绘制，`requestAnimationFrame` 不触发；LuCI 用它冲刷排队的 RPC 请求，页面因此停在“Loading view…”。直接发出的 ubus 请求正常。检查时在页面里把 `requestAnimationFrame` 换成短定时器后，各页正常加载。这是测试环境问题，未修改产品代码。
-- 卸载后残留一个悬空的 `/etc/rc.d/K9lanekeep` 链接。v0.1.0 验收盘卸载后同样存在；打包脚本本次未改，作为已知问题另行处理。
+- 卸载后除 APK 保留的已改配置（`/etc/config/lanekeep`、`/etc/lanekeep-proxy`）外，还残留运行状态目录 `/etc/lanekeep-state` 和一个悬空的 `/etc/rc.d/K9lanekeep` 链接。v0.1.0 验收盘卸载后同样有这个链接；打包与生命周期脚本本次未改，作为已知问题另行处理。
 - 升级和卸载日志中的 `ubus call service delete … (Not found)` 出现在停用实例上：服务本来就没有注册，不影响结果。
 
 ## 验证边界
