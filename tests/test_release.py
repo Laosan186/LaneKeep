@@ -84,4 +84,23 @@ class ReleaseInvariants(unittest.TestCase):
             self.assertNotIn(' nc ',text)
         self.assertIn('measurement_version !== 3',(ROOT/'root/www/luci-static/resources/lanekeep.js').read_text(encoding='utf-8'))
 
+    def test_nodes_page_reads_the_same_gate_snapshot_as_status(self):
+        # The Nodes page shows "Unknown" whenever the nodes RPC omits gate, so both RPCs share one reader.
+        panel=(ROOT/'root/usr/libexec/lanekeep-panel/panel.uc').read_text(encoding='utf-8')
+        def body(name):return re.search(r'\nfunction '+name+r'\(.*?\n\}\n',panel,re.S).group(0)
+        self.assertEqual(panel.count("fs.readfile('/tmp/lanekeep-dns-gate/status')"),1)
+        self.assertEqual(panel.count("'nft -j list set inet lanekeep_dns_gate healthy_data'"),1)
+        snapshot=body('gate_snapshot')
+        self.assertIn("'/tmp/lanekeep-dns-gate/status'",snapshot)
+        self.assertRegex(snapshot,r"return \{state:[^\n]*\?'OPEN':'CLOSED',fresh:fresh,lease_valid:leased\};")
+        status=body('status')
+        self.assertIn('let gate=gate_snapshot(service,uptime);',status)
+        self.assertIn("if(!gate.fresh) push(warnings,'门控状态过期或不可读，按CLOSED显示');",status)
+        self.assertIn('core:core,gate:gate,',status)
+        nodes=body('node_list')
+        self.assertRegex(nodes,r"try \{[^\n]*gate=gate_snapshot\([^\n]*\}\n\s*catch\(e\) \{ gate=\{state:'CLOSED',fresh:false,lease_valid:false\}; \}")
+        self.assertRegex(nodes,r'return sizes\.page\(result,[^\n]*,gate:gate,')
+        # fresh:false is what the Nodes page renders as "Unknown".
+        self.assertIn('known=g.fresh!==false',(ROOT/'root/www/luci-static/resources/lanekeep/nodes-ui.js').read_text(encoding='utf-8'))
+
 if __name__=='__main__':unittest.main()

@@ -462,6 +462,17 @@ function restore_history(version) {
     return {whole_state:true,selected_operation:base,later_operations:items,history_complete:pos>=0,
         message:'这是完整状态恢复：所选操作及之后的规则、专用入口、分组、节点和默认选择都可能被撤销。最终以当前状态与目标快照的差异为准。'};
 }
+// Kill-switch snapshot shared by status and the nodes page. A missing or stale gate file yields fresh:false.
+function gate_snapshot(service,uptime) {
+    let gate={};
+    for(let line in split(fs.readfile('/tmp/lanekeep-dns-gate/status') || '', '\n')) { let pair=split(line,'='); if(length(pair)==2) gate[pair[0]]=pair[1]; }
+    let fresh=match(gate.uptime_seconds || '',/^[0-9]+$/)!=null && uptime>=int(gate.uptime_seconds) && uptime-int(gate.uptime_seconds)<=5;
+    let lease_raw=run('nft -j list set inet lanekeep_dns_gate healthy_data'); let leased=false;
+    if(lease_raw) for(let e in json(lease_raw).nftables || []) if(e.set?.name=='healthy_data') for(let element in e.set.elem || []) {
+        let v=element.elem || element; if(v.val==30241 && type(v.expires)=='int' && v.expires>0) leased=true;
+    }
+    return {state:service?.core?.running==true && service?.dns_gate?.running==true && fresh && leased && gate.state=='OPEN'?'OPEN':'CLOSED',fresh:fresh,lease_valid:leased};
+}
 function status(args) {
     safe_keys(args,['job_id'],'status');
     if(args.job_id!=null && args.job_id!='' && !valid_id(args.job_id)) reject('job_id','任务编号无效');
@@ -486,20 +497,14 @@ function status(args) {
         let fields=tail ? split(tail,' ') : [];
         if(length(fields)>19) { let elapsed=uptime-int(fields[19])/100; core.uptime_seconds=elapsed>0?int(elapsed):0; }
     }
-    let gate={};
-    for(let line in split(fs.readfile('/tmp/lanekeep-dns-gate/status') || '', '\n')) { let pair=split(line,'='); if(length(pair)==2) gate[pair[0]]=pair[1]; }
-    let fresh=match(gate.uptime_seconds || '',/^[0-9]+$/)!=null && uptime>=int(gate.uptime_seconds) && uptime-int(gate.uptime_seconds)<=5;
-    let lease_raw=run('nft -j list set inet lanekeep_dns_gate healthy_data'); let leased=false;
-    if(lease_raw) for(let e in json(lease_raw).nftables || []) if(e.set?.name=='healthy_data') for(let element in e.set.elem || []) {
-        let v=element.elem || element; if(v.val==30241 && type(v.expires)=='int' && v.expires>0) leased=true;
-    }
-    if(!fresh) push(warnings,'门控状态过期或不可读，按CLOSED显示');
+    let gate=gate_snapshot(service,uptime);
+    if(!gate.fresh) push(warnings,'门控状态过期或不可读，按CLOSED显示');
     if(fingerprint(ENGINE+'/lanekeep-gen.uc')!=GENERATOR_SHA) push(warnings,'生成器版本不同，已禁用提交；请先核对广播/组播保护');
     if(enabled()&&!settings.standard_dns_active(obj(PROXY+'/config.json')))push(warnings,'常规组受保护DNS解析未完整启用；增强、全局及按需保持原解析，不代表已通过客户端泄露测试');
     let history=logs(),layout=builtins(config);
     if(!layout.verified) push(warnings,'现役规则与模板/用户配置不一致，暂不显示生效序号；请先核对配置');
     for(let r in config.rules) r.positions=layout.verified ? layout.positions[r.id] : [];
-    let out={ok:true,revision:revision,core:core,gate:{state:core.running && service?.dns_gate?.running==true && fresh && leased && gate.state=='OPEN'?'OPEN':'CLOSED',fresh:fresh,lease_valid:leased},
+    let out={ok:true,revision:revision,core:core,gate:gate,
         current_version:'lanekeep-'+substr(revision,0,12),last_apply:public_log(history[length(history)-1]),counts:counts,
         count_basis:'DHCP静态分配数量，非在线设备数量；其它动态或未知LAN设备默认常规组',warnings:warnings,
         config:{revision:revision,members:config.members,rules:config.rules,group_nodes:config.group_nodes,fallbacks:config.fallbacks,real_dns:config.real_dns},devices:{static:hosts,dynamic:dynamic,dhcp_path:['admin','network','dhcp']},builtin:layout.verified ? layout.builtin : {standard:[],global:[],enhanced:[],ondemand:[]},
@@ -700,8 +705,12 @@ function node_list(args) {
         for(let g in GROUPS)if(data.group_nodes[g]==n.id)push(p.references,{id:'group_proxy_'+g,group:g,type:'group_proxy',enabled:'1',label:LABELS[g]+' / 组代理节点'});
         for(let g in GROUPS)if(data.fallbacks[g].action=='node' && data.fallbacks[g].node==n.id)push(p.references,{id:'fallback_'+g,group:g,type:'fallback',enabled:'1',label:LABELS[g]+' / 兜底出口'});
     }
+    // The nodes page shows the kill switch from this snapshot; a read failure stays "unknown" instead of failing the page.
+    let gate;
+    try { let raw=run("ubus -t 2 call service list '{\"name\":\"lanekeep-xray\"}'"); gate=gate_snapshot(raw ? json(raw)?.['lanekeep-xray']?.instances : null,int(split(fs.readfile('/proc/uptime') || '0',' ')[0])); }
+    catch(e) { gate={state:'CLOSED',fresh:false,lease_valid:false}; }
     if(nodes_revision()!=revision)reject('revision','节点已改变，请刷新');
-    return sizes.page(result,args.offset||0,{ok:true,revision:revision,uci_revision:fingerprint('/etc/config/lanekeep'),default_node:store.default_node,lifecycle:{enabled:enabled()},runtime_capacity:capacity_runtime(),
+    return sizes.page(result,args.offset||0,{ok:true,revision:revision,uci_revision:fingerprint('/etc/config/lanekeep'),default_node:store.default_node,gate:gate,lifecycle:{enabled:enabled()},runtime_capacity:capacity_runtime(),
       notice:'仅LAN手动切换。健康探测跟随默认节点；门控关闭会阻断所有代理流量，包括指定节点。核心停止时国内业务也可能阻断；无直连回落。'},'nodes');
 }
 
