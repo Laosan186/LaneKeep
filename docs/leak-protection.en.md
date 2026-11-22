@@ -2,7 +2,7 @@
 
 [中文](leak-protection.md) · [README](../README.en.md)
 
-This describes the v0.2.0 source mechanisms, including the custom IP rules added in that release, not a guarantee across all clients, apps or networks. First installation is disabled. Traffic protection starts only after explicit activation.
+This describes the v0.2.1 source mechanisms, including the custom IP rules added in v0.2.0, not a guarantee across all clients, apps or networks. First installation is disabled. Traffic protection starts only after explicit activation.
 
 ## Fixed-rule matrix
 
@@ -73,4 +73,4 @@ LAN SOCKS5 ports 10811–10860 are available to Global, Enhanced and On-demand a
 4. In the test environment, interrupt the default node and observe the detection window and recovery. One successful check does not prove every fault case.
 5. Disable or uninstall and compare DNS, policy routes and owned nft tables with the baseline.
 
-See the [v0.2.0 acceptance record](audit/v0.2.0/acceptance.md), the [v0.1.0 acceptance record](audit/acceptance.md) and [documentation audit](audit/document-audit.md).
+See the [v0.2.1 acceptance record](audit/v0.2.1/acceptance.md), the [v0.2.0 acceptance record](audit/v0.2.0/acceptance.md), the [v0.1.0 acceptance record](audit/acceptance.md) and [documentation audit](audit/document-audit.md).

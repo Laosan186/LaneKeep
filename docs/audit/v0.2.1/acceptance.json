@@ -1,0 +1,130 @@
+{
+  "date": "2026-11-21",
+  "platform": {
+    "openwrt": "25.12.6",
+    "architecture": "x86_64",
+    "kernel": "6.12.112",
+    "xray": "26.10.21",
+    "isolation": "QEMU user networking with restrict=on (no host or internet access); SSH and LuCI forwards to localhost only"
+  },
+  "artifact": {
+    "name": "luci-app-lanekeep-0.2.1-r1.apk",
+    "sha256": "c6e126a4ea3843224ec6436d76cf84f8ea175d5bc70f28ecb836b02b2d93539f",
+    "bytes": 297449,
+    "payload_files": 104
+  },
+  "start_state": "Copy of the final v0.2.0 acceptance disk. The 0.2.0-r1 package left on it was removed with apk del, its retained configuration and runtime state directories were deleted and the VM was rebooted. Dependencies (8 non-system packages in /etc/apk/world) and three static DHCP hosts remained; apart from the known dangling /etc/rc.d/K9lanekeep link, no LaneKeep file remained.",
+  "lifecycle": [
+    {
+      "step": "fresh_install_published_0.2.0_r1",
+      "sha256_checked": true,
+      "network_dns_nft_routes_unchanged": true,
+      "immutable_files_verified": 101,
+      "enabled": false,
+      "services_running": []
+    },
+    {
+      "step": "apply_members_and_rules_via_rpc_on_0.2.0",
+      "members": "members_applied",
+      "rules": "applied",
+      "nodes": 0
+    },
+    {
+      "step": "nodes_gate_on_0.2.0",
+      "nodes_reply_has_gate": false,
+      "status_gate_missing_file": {"state": "CLOSED", "fresh": false, "lease_valid": false},
+      "status_gate_fresh_file": {"state": "CLOSED", "fresh": true, "lease_valid": false}
+    },
+    {
+      "step": "upgrade_to_0.2.1_r1",
+      "instance": "disabled",
+      "configuration_hashes_preserved": true,
+      "immutable_files_verified": 101,
+      "enabled_preserved": true,
+      "resource_namespace": "v0_2_1_r1",
+      "services_running": []
+    },
+    {
+      "step": "nodes_gate_on_0.2.1",
+      "missing_file": {"nodes_gate": {"state": "CLOSED", "fresh": false, "lease_valid": false}, "equals_status_gate": true},
+      "fresh_file": {"nodes_gate": {"state": "CLOSED", "fresh": true, "lease_valid": false}, "equals_status_gate": true},
+      "status_gate_and_stale_warning_identical_to_0.2.0": true,
+      "nodes_reply_keys_added": ["gate"],
+      "nodes_reply_keys_removed": []
+    },
+    {
+      "step": "nodes_gate_read_failure_on_0.2.1",
+      "method": "/usr/sbin/nft bind-mounted to a script printing invalid JSON, unmounted afterwards",
+      "nodes_ok": true,
+      "nodes_gate": {"state": "CLOSED", "fresh": false, "lease_valid": false},
+      "status_ok": false,
+      "status_note": "status fails as a whole in this case; by the unchanged status code 0.2.0 should fail the same way (not run on 0.2.0)",
+      "nft_restored_evidence": "the nft ruleset snapshot after the later uninstall matched the pre-install snapshot"
+    },
+    {
+      "step": "served_web_files_without_login",
+      "files": 23,
+      "content_matches_installed_files": true,
+      "namespace_before_upgrade": "v0_2_0_r1",
+      "namespace_after_upgrade": "v0_2_1_r1"
+    },
+    {
+      "step": "apply_ip_rules_via_rpc_on_0.2.1",
+      "job": "applied",
+      "ip_rules": 4,
+      "all_enabled_rules_have_sequence_numbers": true,
+      "rule_types_reported": ["domain", "full", "keyword", "ip", "dedicated", "geosite"]
+    },
+    {
+      "step": "uninstall_0.2.1_r1",
+      "network_dns_nft_routes_restored_to_preinstall": true,
+      "services_running": [],
+      "dependencies_retained": true,
+      "modified_configuration_retained": true
+    },
+    {
+      "step": "move_retained_configuration_aside",
+      "moved": ["/etc/config/lanekeep", "/etc/lanekeep-proxy", "/etc/lanekeep-state"],
+      "remaining": ["/etc/rc.d/K9lanekeep"]
+    },
+    {
+      "step": "fresh_install_0.2.1_r1",
+      "network_dns_nft_routes_unchanged": true,
+      "immutable_files_verified": 101,
+      "enabled": false,
+      "services_running": [],
+      "nodes_gate_equals_status_gate": true
+    }
+  ],
+  "frontend": {
+    "where": "demo preview of the release source (the packaged frontend files, resource namespace v0_2_1_r1), not the VM LuCI",
+    "method": "the gate in the nodes reply was replaced before rendering the Nodes page",
+    "injected_gate_values": {
+      "OPEN, fresh": "standby",
+      "CLOSED, fresh": "triggered",
+      "CLOSED, fresh:false": "unknown",
+      "gate missing": "unknown"
+    },
+    "languages": ["zh", "en"],
+    "recorded": "by the acceptance runner from the browser tool results"
+  },
+  "target_checks": {
+    "where": "same VM disk after the lifecycle, against the release source tree",
+    "ip_rule_cases": "41/41",
+    "rules_check": "16/16 (previous tree: v0.1.0 tag)",
+    "latency_check": "8/8"
+  },
+  "offline_tests": "10/10",
+  "known_issues": [
+    "after uninstall, the runtime state directory /etc/lanekeep-state and a dangling /etc/rc.d/K9lanekeep link remain besides the configuration apk retains (same as 0.2.0)"
+  ],
+  "logs": "Package manager logs with the repeated offline-cache warnings removed; gate checks summarised from the raw ubus results",
+  "not_covered": [
+    "Standby on the Nodes page (needs an enabled instance with an open gate)",
+    "logged-in LuCI pages (not opened in this run)",
+    "explicit activation, kill-switch gate and transparent client traffic and DNS",
+    "upgrade of an enabled instance and a direct upgrade from 0.1.0",
+    "real nodes, subscriptions and node test through the panel RPC",
+    "other architectures and physical devices"
+  ]
+}

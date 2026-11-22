@@ -1,0 +1,8 @@
+(1/1) Purging luci-app-lanekeep (0.2.1-r1)
+  Executing luci-app-lanekeep-0.2.1-r1.pre-deinstall
+  * {"ok":true,"enabled":false}
+  Executing luci-app-lanekeep-0.2.1-r1.post-deinstall
+OK: 107.7 MiB in 235 packages
+  * Command failed: ubus call service delete { "name": "lanekeep-telemetry" } (Not found)
+  * Command failed: ubus call service delete { "name": "lanekeep-xray" } (Not found)
+  * Command failed: ubus call service delete { "name": "lanekeep-dns" } (Not found)

@@ -1,0 +1,18 @@
+# Gate checks: ubus calls on the VM. "missing" = no gate status file; "fresh" = synthetic /tmp gate file
+# with state=OPEN and the current uptime (written just before the calls, removed after).
+
+## gate_old (0.2.0-r1, after applying members and rules; package luci-app-lanekeep-0.2.0-r1)
+missing: status.gate={ "state": "CLOSED", "fresh": false, "lease_valid": false } stale_warning=true nodes.ok=true nodes.gate=(absent)
+fresh: status.gate={ "state": "CLOSED", "fresh": true, "lease_valid": false } stale_warning=false nodes.ok=true nodes.gate=(absent)
+
+## gate_new (0.2.1-r1, after upgrading from 0.2.0-r1; package luci-app-lanekeep-0.2.1-r1)
+missing: status.gate={ "state": "CLOSED", "fresh": false, "lease_valid": false } stale_warning=true nodes.ok=true nodes.gate={ "state": "CLOSED", "fresh": false, "lease_valid": false } equal=true
+fresh: status.gate={ "state": "CLOSED", "fresh": true, "lease_valid": false } stale_warning=false nodes.ok=true nodes.gate={ "state": "CLOSED", "fresh": true, "lease_valid": false } equal=true
+
+## gate_fresh_install (0.2.1-r1, fresh installation; package luci-app-lanekeep-0.2.1-r1)
+missing: status.gate={ "state": "CLOSED", "fresh": false, "lease_valid": false } stale_warning=true nodes.ok=true nodes.gate={ "state": "CLOSED", "fresh": false, "lease_valid": false } equal=true
+fresh: status.gate={ "state": "CLOSED", "fresh": true, "lease_valid": false } stale_warning=false nodes.ok=true nodes.gate={ "state": "CLOSED", "fresh": true, "lease_valid": false } equal=true
+
+## gate_fallback (0.2.1-r1; /usr/sbin/nft bind-mounted to a script printing invalid JSON, unmounted afterwards)
+nodes: rc=0 ok=true gate={ "state": "CLOSED", "fresh": false, "lease_valid": false }
+status: rc=0 ok=false message=面板请求失败，未返回内部诊断；请先核对状态 (status code unchanged from 0.2.0)

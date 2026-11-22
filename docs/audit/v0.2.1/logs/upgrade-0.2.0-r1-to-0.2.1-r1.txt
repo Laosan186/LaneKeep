@@ -1,0 +1,10 @@
+luci-app-lanekeep-0.2.1-r1.apk: OK
+(1/1) Upgrading luci-app-lanekeep (0.2.0-r1 -> 0.2.1-r1)
+  Executing luci-app-lanekeep-0.2.1-r1.pre-upgrade
+  Installing file to etc/config/lanekeep.apk-new
+  Installing file to etc/lanekeep-proxy/nodes.json.apk-new
+  Executing luci-app-lanekeep-0.2.1-r1.post-upgrade
+OK: 108.6 MiB in 236 packages
+  * Command failed: ubus call service delete { "name": "lanekeep-telemetry" } (Not found)
+  * Command failed: ubus call service delete { "name": "lanekeep-xray" } (Not found)
+  * Command failed: ubus call service delete { "name": "lanekeep-dns" } (Not found)

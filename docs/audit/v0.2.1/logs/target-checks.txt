@@ -1,0 +1,36 @@
+# ip-rule-cases.uc
+{ "total": 41, "fails": [ ] }
+rc=0
+
+# rules-check.sh (previous: v0.1.0 tree)
+PASS generator without IP rules (xray -test included)
+PASS generator with IP rules (xray -test included)
+PASS previous and new generator output identical without IP rules
+PASS previous generator rejects ip type (invalid_rule_type)
+PASS IP rows separate, guarded and additive
+PASS rules page sequence numbers verified (s0)
+PASS rules page sequence numbers verified (s1)
+PASS bad_10_0_0_5 rejected (invalid_ip_rule)
+PASS bad_1_2_3_4_24 rejected (invalid_ip_rule)
+PASS bad_198_18_0_1 rejected (invalid_ip_rule)
+PASS bad_1_2_3 rejected (invalid_ip_rule)
+PASS bad_10_77_2_1 rejected (invalid_ip_rule)
+PASS bad_conflict rejected (conflicting_rule)
+PASS chain_node rejected (ip_rule_chain_forbidden)
+PASS chain_group rejected (ip_rule_chain_forbidden)
+PASS chain control without IP rules accepted
+ALL PASS
+rc=0
+
+# latency-check.sh
+PASS node-test normal (2s)
+PASS node-test noka (2s)
+PASS node-test bad204 (2s)
+PASS node-test stall (7s)
+PASS node-test silentclose (4s)
+PASS node-test slowwarm (9s)
+PASS node-test pingstall (13s)
+PASS chain-test normal (2s)
+PASS chain-test removed its work directory
+ALL PASS
+rc=0

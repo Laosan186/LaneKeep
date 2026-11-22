@@ -1,11 +1,13 @@
 # Changelog
 
-## Unreleased
+## 0.2.1 — 2026-11-21
 
 Fixed
 
 - The English Status page title reads “LaneKeep”, as the Chinese one does, instead of “Network”. Duplicate entries were removed from the English and Chinese string tables; no other text changes.
 - The Nodes page shows the kill switch as Standby or Triggered instead of always “Unknown”. In 0.1.0 and 0.2.0 the `nodes` RPC did not return the gate snapshot; it now returns the same `gate` object (`state`, `fresh`, `lease_valid`) as the status RPC, read by one shared function. If the gate cannot be read, the page still loads and shows “Unknown”.
+
+此版本的验收见 [v0.2.1 验收记录](docs/audit/v0.2.1/acceptance.md)。
 
 ## 0.2.0 — 2026-11-20
 

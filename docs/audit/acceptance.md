@@ -1,6 +1,6 @@
 # v0.1.0 发布包验收 / Release package acceptance
 
-> 本文为 v0.1.0 的记录。v0.2.0 见 [v0.2.0/acceptance.md](v0.2.0/acceptance.md)。 This is the v0.1.0 record; see [v0.2.0/acceptance.md](v0.2.0/acceptance.md) for v0.2.0.
+> 本文为 v0.1.0 的记录。v0.2.0 见 [v0.2.0/acceptance.md](v0.2.0/acceptance.md)，v0.2.1 见 [v0.2.1/acceptance.md](v0.2.1/acceptance.md)。 This is the v0.1.0 record; see [v0.2.0/acceptance.md](v0.2.0/acceptance.md) for v0.2.0 and [v0.2.1/acceptance.md](v0.2.1/acceptance.md) for v0.2.1.
 
 日期：2026-11-16。本文记录 **v0.1.0 通用 APK 的安装、升级和卸载验收**。本次发布包验收在电脑上的独立 QEMU 虚拟机进行，未连接或修改已有实体路由器。
 
