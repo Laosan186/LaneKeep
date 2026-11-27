@@ -103,6 +103,14 @@ check('form rejects reversed range',update_result({hop_ports:'50000-20000'},plai
 check('form rejects bad pin',update_result({pin_sha256:'abc'},plain)=='param_invalid:pin_sha256');
 u=update_result({name:'renamed'},hop);
 check('form edit of other field keeps hop and pin',type(u)=='object'&&u.hop_ports=='20000-50000'&&u.pin_sha256==PIN);
+// Panel read path: the node RPC returns both fields unmasked and the edit form (nodes.js) resends
+// every field it shows, '' for empty ones, so a rename must keep them and a plain node must stay plain.
+let pub=nodes.public_node(hop,store(7,hop));
+check('node RPC returns hop and pin',pub.hop_ports=='20000-50000'&&pub.pin_sha256==PIN&&pub.model_version==7,sprintf('%J',[pub.hop_ports,pub.pin_sha256,pub.model_version]));
+u=update_result({id:hop.id,name:'renamed',protocol:'hysteria2',server:hop.server,port:hop.port,sni:hop.sni,password:'',alpn:[],insecure:false,hop_ports:pub.hop_ports,pin_sha256:pub.pin_sha256},hop);
+check('form round trip keeps hop and pin',type(u)=='object'&&u.name=='renamed'&&u.hop_ports=='20000-50000'&&u.pin_sha256==PIN&&u.password==hop.password,sprintf('%J',type(u)=='object'?[u.hop_ports,u.pin_sha256]:u));
+u=update_result({id:plain.id,name:'renamed',protocol:'hysteria2',server:plain.server,port:plain.port,sni:plain.sni,password:'',alpn:['h3'],insecure:false,hop_ports:'',pin_sha256:''},plain);
+check('form round trip of a plain node adds nothing',type(u)=='object'&&!has(u,'hop_ports')&&!has(u,'pin_sha256')&&nodes.minimum_version(u)==1,sprintf('%J',u));
 u=vl?update_result({hop_ports:'20000-30000'},vl):null;
 check('form hop on VLESS is refused when the store is saved',type(u)=='object'&&store_result(store(nodes.version_for(store(1,u)),u))=='combo_unsupported:hop_ports',sprintf('%J',u));
 check('version_for picks 7 for hop/pin stores',nodes.version_for(store(1,hop))==7&&nodes.version_for(store(1,plain))<7);
