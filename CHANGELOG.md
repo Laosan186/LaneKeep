@@ -1,5 +1,14 @@
 # Changelog
 
+## Unreleased
+
+Added
+
+- HY2 share links can carry port hopping and a certificate pin. Hop ports are accepted in the address (`host:443,20000-50000`) or as `mport`; they render as Xray's `finalmask` `udphop` (new local socket and random port every 30 s, as in the official client). `pinSHA256` renders as `pinnedPeerCertSha256`; with a pin Xray trusts only that certificate. `insecure=1` is now accepted only together with a valid pin. Both fields come from the imported link and can be changed or cleared in the edit form of an existing HY2 node. Nodes that use them need node store format 7; LaneKeep 0.2.1 and older cannot read such a store. Deleting or clearing those nodes returns the store to format 6 when it is saved, so do that before downgrading.
+- The connection monitor counts sockets to any hop port of a node as node traffic. A chain is rejected when its HY2 entry hops over the exit's port on the same server.
+
+`capabilities.json` is unchanged, so existing trial confirmations stay valid. Existing HY2 nodes keep the same generated configuration and identity.
+
 ## 0.2.1 — 2026-11-21
 
 Fixed

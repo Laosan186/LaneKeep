@@ -7,18 +7,20 @@ function inc(o,k){o[k]=(o[k]||0)+1;}
 function address(s){let a=iptoarr(s);if(!a)return null;if(length(a)==16&&join(',',slice(a,0,12))=='0,0,0,0,0,0,0,0,0,0,255,255')a=slice(a,12);return join('.',a);}
 function procaddr(h){let a=[];for(let i=0;i<length(h);i+=8)for(let j=6;j>=0;j-=2)push(a,int(substr(h,i+j,2),16));if(length(a)==16&&join(',',slice(a,0,12))=='0,0,0,0,0,0,0,0,0,0,255,255')a=slice(a,12);return join('.',a);}
 function group(ip,ctx){if(ctx.local_addresses?.[ip])return 'router';if(ctx.members[ip])return ctx.members[ip];if(ctx.groups_available===false)return 'unknown';if(lan.member(ip))return 'standard';return ip==ctx.router?'router':'unknown';}
+// HY2 port hopping: the core's UDP sockets reach any port of the node's udphop list.
+function hop_ranges(o){let out=[];for(let m in o?.streamSettings?.finalmask?.udp||[]){if(m?.type!='udphop'||type(m.settings?.remotePorts)!='string')continue;for(let part in split(m.settings.remotePorts,',')){let p=split(part,'-'),a=int(p[0]),b=int(p[length(p)-1]);if(length(p)<=2&&a>=1&&a<=b&&b<=65535)push(out,[a,b]);}}return out;}
 function category(ip,port,ctx){
- if(ctx.nodes[ip+':'+port])return 'node_server';let a=map(split(ip,'.'),x=>int(x));
+ if(ctx.nodes[ip+':'+port])return 'node_server';for(let r in ctx.node_ranges?.[ip]||[])if(port>=r[0]&&port<=r[1])return 'node_server';let a=map(split(ip,'.'),x=>int(x));
  if(length(a)==4){if((a[0]==255&&a[1]==255&&a[2]==255&&a[3]==255)||ip==lan.address(lan.context().broadcast))return 'broadcast';if(a[0]>=224&&a[0]<=239)return 'multicast';if(a[0]==10||a[0]==127||(a[0]==172&&a[1]>=16&&a[1]<=31)||(a[0]==192&&a[1]==168)||(a[0]==169&&a[1]==254)||a[0]==0)return 'lan';return ctx.unresolved_node_endpoints>0?'public_unclassified':'direct_public';}
  if(length(a)==16){if(a[0]==255)return 'multicast';if(a[0]>=252&&a[0]<=253||(a[0]==254&&a[1]>=128&&a[1]<=191)||join('.',a)=='0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.1')return 'lan';return ctx.unresolved_node_endpoints>0?'public_unclassified':'direct_public';}return 'unknown';
 }
 function portclass(p){if(p==null)return 'none';if(p==53)return 'dns_53';if(p==853)return 'encrypted_dns_853';if(p==443)return 'https_443';if(p==80)return 'http_80';if(p==123)return 'ntp_123';if(p==67||p==68)return 'dhcp';if(p==1900||p==5353||p==5355)return 'discovery';if(p==500||p==4500)return 'ipsec';if(p==22||p==3389)return 'remote_admin';if(p>=12345&&p<=12348)return 'proxy_entry';return p<1024?'other_system':p<49152?'other_registered':'dynamic';}
 function table(){let f=fs.popen('timeout 1 nft -j list table inet lanekeep_phone','r');if(!f)return null;let text=f.read(262145),code=f.close();if(code!=0||!text||length(text)>262144)return null;try{return json(text);}catch(e){return null;}}
 function context(p){
- let out={members:{},nodes:{},flow_entries:{},local_addresses:{},inbound_ports:{'12345':true,'12346':true,'12347':true,'12348':true},router:lan.context().address,unresolved_node_endpoints:0,groups_available:false,nodes_available:false};
+ let out={members:{},nodes:{},node_ranges:{},flow_entries:{},local_addresses:{},inbound_ports:{'12345':true,'12346':true,'12347':true,'12348':true},router:lan.context().address,unresolved_node_endpoints:0,groups_available:false,nodes_available:false};
  try{let n=table();if(n){for(let x in n.nftables||[]){if(x.table?.name=='lanekeep_phone')out.group_table_handle=x.table.handle;if(x.set?.name&&match(x.set.name,/^lanekeep_grp_(global|enhanced|ondemand)$/)){let g=substr(x.set.name,length('lanekeep_grp_'));for(let item in x.set.elem||[]){let a=address(type(item)=='string'?item:item.elem?.val);if(a)out.members[a]=g;}}}out.groups_available=true;}}catch(e){}
  for(let item in p?.local_addresses||[]){let ip=address(item);if(ip)out.local_addresses[ip]=true;}
- try{let cfg=json(fs.readfile('/etc/lanekeep-proxy/config.json'));for(let i in cfg.inbounds||[])if(match(i.tag||'',/^dedicated-(global|enhanced|ondemand)-[0-9]+$/))out.inbound_ports[''+i.port]=true;for(let o in cfg.outbounds||[]){if(index(['freedom','blackhole','dns'],o.protocol)>=0)continue;let settings=o.settings||{},servers=settings.vnext||settings.servers||(settings.address?[settings]:[]);for(let server in servers){let a=address(server.address);if(a&&server.port)out.nodes[a+':'+server.port]=true;else out.unresolved_node_endpoints++;}}out.nodes_available=true;}catch(e){}
+ try{let cfg=json(fs.readfile('/etc/lanekeep-proxy/config.json'));for(let i in cfg.inbounds||[])if(match(i.tag||'',/^dedicated-(global|enhanced|ondemand)-[0-9]+$/))out.inbound_ports[''+i.port]=true;for(let o in cfg.outbounds||[]){if(index(['freedom','blackhole','dns'],o.protocol)>=0)continue;let settings=o.settings||{},servers=settings.vnext||settings.servers||(settings.address?[settings]:[]);let hops=hop_ranges(o);for(let server in servers){let a=address(server.address);if(a&&server.port){out.nodes[a+':'+server.port]=true;if(length(hops)){if(!out.node_ranges[a])out.node_ranges[a]=[];for(let r in hops)push(out.node_ranges[a],r);}}else out.unresolved_node_endpoints++;}}out.nodes_available=true;}catch(e){}
  return out;
 }
 function counters(){
@@ -47,4 +49,4 @@ function capture(p,light,budget){
  out.connections.conntrack_top10=slice(sort(map(keys(top),k=>{let v=split(k,'|');return {group:v[0],protocol:v[1],destination_port_class:v[2],count:top[k]};}),(a,b)=>b.count-a.count),0,10);
  out.fd_sample_wall=p.wall;out.non_atomic_observation=true;out.duration_ms=int((mono()-begin)*1000);return out;
 }
-export {capture,counters,context,init_summary,socketrow,ctrow,category,group,portclass,procaddr};
+export {capture,counters,context,init_summary,socketrow,ctrow,category,group,portclass,procaddr,hop_ranges};

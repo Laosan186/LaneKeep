@@ -431,8 +431,16 @@ var entries={
   "This node is set to skip certificate verification, which LaneKeep doesn’t support. Saving will fail rather than silently ignore it."
  ],
  "F-faa266219d": [
-  "只接受验证证书的连接，带 insecure=1 的链接会被拒绝。",
-  "Only connections that verify certificates are accepted; links with insecure=1 are rejected."
+  "只接受验证证书的连接。带 insecure=1 的链接只有同时提供证书指纹（pinSHA256）才会接受，并且只认这张证书。",
+  "Only connections that verify certificates are accepted. Links with insecure=1 are accepted only together with a certificate pin (pinSHA256), and then only that certificate is trusted."
+ ],
+ "H-1": [
+  "端口跳跃（如 20000-50000，可留空）",
+  "Port hopping (e.g. 20000-50000, optional)"
+ ],
+ "H-2": [
+  "证书指纹 SHA-256（64 位十六进制，可留空）",
+  "Certificate pin, SHA-256 (64 hex digits, optional)"
  ],
  "F-6f4c8c00df": [
   "编辑节点",

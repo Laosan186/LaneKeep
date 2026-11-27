@@ -18,7 +18,36 @@ function member(a,v) { return index(a,v)>=0; }
 function valid_node_id(id) { return str(id,32) && match(id,/^[a-z][a-z0-9_]{0,31}$/)!=null; }
 function mask(v) { if(!v) return ''; return length(v)<=8?'********':substr(v,0,4)+'…'+substr(v,-4); }
 let secrets=['username','uuid','password','public_key','short_id','mldsa65','obfs_password','spiderX'];
-let fields=['id','name','protocol','server','port','uuid','password','sni','flow','fingerprint','public_key','short_id','mldsa65','alpn','insecure','obfs','obfs_password','spiderX','import_hints','security','transport','path','host','service_name','mode','authority','method','scy','aid','username','provider_udp','source','front','rear','udp','udp_expected_ip'];
+let fields=['id','name','protocol','server','port','uuid','password','sni','flow','fingerprint','public_key','short_id','mldsa65','alpn','insecure','obfs','obfs_password','spiderX','import_hints','security','transport','path','host','service_name','mode','authority','method','scy','aid','username','provider_udp','source','front','rear','udp','udp_expected_ip','hop_ports','pin_sha256'];
+// HY2 share-link extensions are declared here, not in capabilities.json: user
+// confirmations are bound to that file's hash and must survive this addition.
+let hy2_params=['mport','pinSHA256'];
+// Port union as in official Hysteria: comma list of ports or "a-b" ranges; mport also accepts "a:b".
+// Returns the sorted, merged canonical text, or null for one port equal to the main port.
+function hop_value(value,param,main,colon){
+    let msg='端口跳跃须为端口或“起点-终点”区间，用逗号分隔';
+    require_value(type(value)=='string'&&length(value)>0&&length(value)<=128,'param_invalid',param,msg);
+    let parts=split(value,','),ranges=[],merged=[],total=0;
+    require_value(length(parts)<=8,'limit_exceeded',param,'端口跳跃最多 8 段');
+    for(let part in parts){
+        let p=split(trim(part),colon?/[-:]/:'-'),last=p[length(p)-1];
+        require_value(length(p)<=2&&match(p[0],/^[0-9]{1,5}$/)!=null&&match(last,/^[0-9]{1,5}$/)!=null,'param_invalid',param,msg);
+        let a=int(p[0]),b=int(last);
+        require_value(a>=1&&b<=65535&&a<=b,'param_invalid',param,'端口须在 1–65535 之间，区间起点不能大于终点');
+        push(ranges,[a,b]);
+    }
+    for(let r in sort(ranges,(x,y)=>x[0]-y[0])){let top=length(merged)?merged[length(merged)-1]:null;if(top&&r[0]<=top[1]+1){if(r[1]>top[1])top[1]=r[1];}else push(merged,[r[0],r[1]]);}
+    for(let r in merged)total+=r[1]-r[0]+1;
+    if(total==1){require_value(merged[0][0]==main,'param_invalid',param,'端口跳跃至少需要两个端口');return null;}
+    return join(',',map(merged,r=>r[0]==r[1]?sprintf('%d',r[0]):sprintf('%d-%d',r[0],r[1])));
+}
+// Official Hysteria normalizes the pin by lowercasing and removing ':' and '-'.
+function pin_value(value,param){
+    let msg='证书指纹须为 64 位十六进制 SHA-256，可带冒号';
+    require_value(type(value)=='string'&&length(value)<=128,'param_invalid',param,msg);
+    let v=lc(replace(value,/[:-]/g,''));
+    require_value(match(v,/^[0-9a-f]{64}$/)!=null,'param_invalid',param,msg);return v;
+}
 function connection_only(n){let out=cp(n);delete out.source;return out;}
 function source_valid(s){if(type(s)!='object'||length(keys(s))!=4||!match(s.id||'',/^sub_[a-f0-9]{24}$/)||!match(s.item_id||'',/^[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}$/)||type(s.id)!='string'||type(s.item_id)!='string'||type(s.fp_schema)!='int'||s.fp_schema!=1||type(s.fp)!='string'||!match(s.fp||'',/^[a-f0-9]{64}$/))fail('param_invalid','source','来源关联格式不正确');}
 function extended(n){return !member(['vless','hysteria2'],n.protocol)||length(filter(['security','transport','path','host','service_name','mode','authority','method','scy','aid','username','provider_udp'],k=>member(keys(n),k)))>0;}
@@ -47,13 +76,18 @@ function render(n) {
         out.protocol='hysteria';out.settings={version:2,address:n.server,port:n.port};
         out.streamSettings={network:'hysteria',security:'tls',tlsSettings:{serverName:n.sni},hysteriaSettings:{version:2,auth:n.password}};
         if(length(n.alpn || [])) out.streamSettings.tlsSettings.alpn=n.alpn;
+        // Xray 26.10.21 checks every handshake against the pin; a leaf match replaces CA validation.
+        if(n.pin_sha256) out.streamSettings.tlsSettings.pinnedPeerCertSha256=n.pin_sha256;
+        // Official Hysteria hopping: random first port, new local socket and port every 30 s.
+        // udphop must stay the last finalmask.udp entry; remoteIPs would replace the server address.
+        if(n.hop_ports) out.streamSettings.finalmask={udp:[{type:'udphop',settings:{mode:'intervalLocal,intervalRemote',interval:30,remotePorts:n.hop_ports}}]};
         // Fixed Xray version has not validated obfuscation extensions. Reject rather than drop.
     }
     delete out.tag;delete out.streamSettings.sockopt;
     return out;
 }
 function validate_store(store) {
-    if(type(store)!='object' || type(store.version)!='int' || !member([1,2,3,4,5,6],store.version) || (store.default_node!='' && !valid_node_id(store.default_node)) || type(store.nodes)!='array' || length(store.nodes)>21) bad();
+    if(type(store)!='object' || type(store.version)!='int' || !member([1,2,3,4,5,6,7],store.version) || (store.default_node!='' && !valid_node_id(store.default_node)) || type(store.nodes)!='array' || length(store.nodes)>21) bad();
     for(let k in keys(store)) if(!member(['version','default_node','nodes'],k)) bad();
     if(length(sprintf('%J\n',store))>524288)fail('limit_exceeded','nodes','面板试用节点库最多 21 条 / 512 KiB');
     if(store.version<4&&(length(store.nodes)>21||length(sprintf('%J\n',store))>524288))fail('param_invalid','version','扩大容量需要节点库版本 4');
@@ -112,10 +146,16 @@ function update_node(input,previous) {
         if(k=='source'){if(input[k]!=null)fail('param_invalid','source','来源关联只由缓存导入建立；可明确清除');delete n.source;continue;}
         if(member(['socks5','http'],n.protocol)&&member(['username','password'],k)&&input.username==null&&input.password==null&&member(keys(input),'username')&&member(keys(input),'password')){delete n.username;delete n.password;continue;}
         if(k=='import_hints'&&input[k]==null){delete n.import_hints;continue;}
+        if(member(['hop_ports','pin_sha256'],k)&&(input[k]==null||input[k]=='')){delete n[k];continue;}
         if(k=='spiderX'&&input[k]==''&&(!previous||previous.spiderX==null))continue;
         if(member(secrets,k) && input[k]=='' && previous) continue;n[k]=input[k];
     }
     if(previous && n.protocol!=previous.protocol) bad();
+    // Form input is normalized like a share link; validate_store then accepts only canonical text.
+    if(n.protocol=='hysteria2'&&!extended(n)){
+        if(member(keys(input),'hop_ports')&&n.hop_ports!=null){let v=hop_value(n.hop_ports,'hop_ports',n.port,true);if(v==null)delete n.hop_ports;else n.hop_ports=v;}
+        if(member(keys(input),'pin_sha256')&&n.pin_sha256!=null)n.pin_sha256=pin_value(n.pin_sha256,'pin_sha256');
+    }
     if(n.protocol=='chain'){if(!n.udp){delete n.udp_verification;delete n.udp_expected_ip;}chains.shape(n);return n;}
     if(extended(n)&&previous){
         if(previous.native_outbound)fail('combo_unsupported','node','现有原生节点不能隐式转换组合，请新增条目');
@@ -141,8 +181,10 @@ display_name = function(s){
     for(let i=0;i<length(s)&&count<24;){let b=ord(substr(s,i,1)),n=b<128?1:b<224?2:b<240?3:4;out+=substr(s,i,n);i+=n;count++;}
     return out;
 };
-minimum_version = function(n){if(n.protocol=='chain'&&(n.udp==true||n.udp_expected_ip!=null||n.udp_verification!=null))return 6;if(n.protocol=='chain'||member(keys(n),'front')||member(keys(n),'rear')||member(keys(n),'udp'))return 5;if(member(keys(n),'source'))return 4;if(extended(n))return 3;return member(keys(n),'spiderX')||member(keys(n),'import_hints')?2:1;};
-function version_for(store){let v=store.version;if(v<4&&(length(store.nodes)>21||length(sprintf('%J\n',store))>524288))v=4;for(let n in store.nodes)if(minimum_version(n)>v)v=minimum_version(n);return v;}
+minimum_version = function(n){if(n.protocol=='chain'&&(n.udp==true||n.udp_expected_ip!=null||n.udp_verification!=null))return 6;if(n.protocol=='chain'||member(keys(n),'front')||member(keys(n),'rear')||member(keys(n),'udp'))return 5;if(member(keys(n),'hop_ports')||member(keys(n),'pin_sha256'))return 7;if(member(keys(n),'source'))return 4;if(extended(n))return 3;return member(keys(n),'spiderX')||member(keys(n),'import_hints')?2:1;};
+// Format 7 exists only for HY2 hop/pin fields; without them the store returns to 6, so removing
+// those nodes is enough to downgrade to 0.2.1 (which reads formats 1-6).
+function version_for(store){let v=store.version;if(v==7&&length(filter(store.nodes,n=>minimum_version(n)>=7))==0)v=6;if(v<4&&(length(store.nodes)>21||length(sprintf('%J\n',store))>524288))v=4;for(let n in store.nodes)if(minimum_version(n)>v)v=minimum_version(n);return v;}
 validate_new_fields = function(n,allow_pending){
     if(member(keys(n),'spiderX')){
         require_value(n.protocol=='vless','combo_unsupported','spx','此参数仅适用于 REALITY');
@@ -156,6 +198,14 @@ validate_new_fields = function(n,allow_pending){
         require_value(n.protocol=='vless'&&type(h)=='object'&&length(keys(h))==1&&type(h.support_x25519mlkem768)=='bool'&&h.support_x25519mlkem768==true,'param_invalid','support-x25519mlkem768','兼容提示格式不正确');
         require_value(caps.hint_source_supported(n.fingerprint),'param_unsupported','fp','此指纹未满足该兼容提示，不会自动改写指纹');
         if(!allow_pending)require_value(caps.hint_allowed(n.fingerprint),'verification_pending','support-x25519mlkem768','此兼容提示已识别，固定版本握手验证尚未完成');
+    }
+    if(member(keys(n),'hop_ports')){
+        require_value(n.protocol=='hysteria2','combo_unsupported','hop_ports','端口跳跃仅适用于 HY2');
+        require_value(type(n.hop_ports)=='string'&&hop_value(n.hop_ports,'hop_ports',n.port,false)==n.hop_ports,'param_invalid','hop_ports','端口跳跃未按规范格式保存');
+    }
+    if(member(keys(n),'pin_sha256')){
+        require_value(n.protocol=='hysteria2','combo_unsupported','pin_sha256','证书指纹仅适用于 HY2');
+        require_value(type(n.pin_sha256)=='string'&&match(n.pin_sha256,/^[0-9a-f]{64}$/)!=null,'param_invalid','pin_sha256','证书指纹须为 64 位小写十六进制 SHA-256');
     }
 };
 function decode(s,param){
@@ -183,6 +233,9 @@ function parse_legacy(line,number){
     }else{
         let parts=split(authority,':');require_value(length(parts)<=2,'param_invalid','server','服务器地址格式不正确');server=parts[0];if(length(parts)==2)port=parts[1];
     }
+    // Official HY2 multi-port form host:443,20000-50000; the first listed port is the main port.
+    let multi=null;
+    if(protocol=='hysteria2'&&match(port,/[,-]/)){multi=port;port=split(split(port,',')[0],'-')[0];}
     require_value(match(port,/^[0-9]{1,5}$/)!=null&&int(port)>=1&&int(port)<=65535,'param_invalid','port','端口须在有效范围内');
     require_value(str(server,253)&&match(server,/^[A-Za-z0-9][A-Za-z0-9.:-]*$/)!=null,'param_invalid','server','服务器地址格式不正确');
     let q={};
@@ -191,7 +244,7 @@ function parse_legacy(line,number){
         let key=decode(substr(pair,0,eq),'query');
         require_value(match(key,/^[A-Za-z][A-Za-z0-9_-]{0,63}$/)!=null,'param_invalid','query','参数名格式不正确');
         require_value(q[key]==null,'param_invalid',key,'参数重复');
-        require_value(caps.classify(protocol,key)!='unknown','param_unsupported',key,'不支持此参数');
+        require_value(protocol=='hysteria2'&&member(hy2_params,key)||caps.classify(protocol,key)!='unknown','param_unsupported',key,'不支持此参数');
         q[key]=decode(substr(pair,eq+1),key);
         require_value(length(q[key])<=4096,'value_too_long',key,'参数超过长度上限');
     }
@@ -222,10 +275,17 @@ function parse_legacy(line,number){
         }
     }else{
         n.password=decode(credential,'password');require_value(length(n.password)>0&&length(n.password)<=4096,'value_too_long','password','认证字段为空或超过长度上限');
+        // Empty mport/pinSHA256 values mean "not set", as in the official client and v2rayN.
+        let pin=q.pinSHA256?pin_value(q.pinSHA256,'pinSHA256'):null;
         for(let key in ['insecure','allowInsecure']){
             require_value(q[key]==null||member(['0','1'],q[key]),'param_invalid',key,'证书验证参数格式不正确');
-            require_value(q[key]!='1','security_rejected',key,'不允许跳过证书验证');
+            // insecure=1 with a pin means "accept only this certificate", which Xray enforces.
+            require_value(q[key]!='1'||pin!=null,'security_rejected',key,'不允许跳过证书验证；同时提供证书指纹 pinSHA256 时按指纹校验');
         }
+        require_value(multi==null||!q.mport,'param_invalid','mport','端口跳跃不能同时写在地址和 mport 中');
+        let hop=multi!=null?hop_value(multi,'port',n.port,false):q.mport?hop_value(q.mport,'mport',n.port,true):null;
+        if(hop!=null)n.hop_ports=hop;
+        if(pin!=null)n.pin_sha256=pin;
         require_value(!q.obfs,'param_unsupported','obfs','此版本不支持混淆参数');
         require_value(!q['obfs-password'],'param_unsupported','obfs-password','此版本不支持混淆参数');
         n.insecure=false;n.alpn=q.alpn?split(q.alpn,','):[];
@@ -301,6 +361,8 @@ function connection(n){
         out.import_hints=n.import_hints||null;
     }else{
         out.auth={password:n.password};out.alpn=n.alpn||[];out.insecure=n.insecure==true;out.obfs=n.obfs||'';out.obfs_password=n.obfs_password||'';
+        // Added only when set, so identities of existing HY2 nodes stay byte-identical.
+        if(n.hop_ports)out.hop_ports=n.hop_ports;if(n.pin_sha256)out.pin_sha256=n.pin_sha256;
     }
     return out;
 }

@@ -39,6 +39,8 @@ Import diagnostics can show unsupported parameter names without returning creden
 
 Refresh updates a source cache. Choosing differences, importing, selecting a default and applying are separate actions. A successful refresh does not prove node connectivity; a successful node test does not cover every device, DNS or WebRTC scenario.
 
+HY2 links support port hopping and certificate pinning. Hop ports can be given in the address (`host:443,20000-50000`) or as `mport=20000-50000`, but not both; up to 8 segments, ports 1–65535, and a range may not start above its end. `pinSHA256` is the SHA-256 of the whole certificate, 64 hex digits, colons allowed. With a pin, Xray trusts only that certificate (self-signed certificates work) and no longer consults CAs. `insecure=1` is accepted only together with a pin; without one it is still rejected. Obfuscation (obfs) and bandwidth parameters are not supported yet.
+
 ## Installation and recovery
 
 Configuration can be saved while disabled. Only explicit activation creates network rules and changes DNS. Removal stops LaneKeep and restores its owned network state. If another tool changed DNS later, restoration touches only fields still owned by LaneKeep and preserves those external edits.
