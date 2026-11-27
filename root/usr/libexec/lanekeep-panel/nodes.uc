@@ -18,7 +18,8 @@ function member(a,v) { return index(a,v)>=0; }
 function valid_node_id(id) { return str(id,32) && match(id,/^[a-z][a-z0-9_]{0,31}$/)!=null; }
 function mask(v) { if(!v) return ''; return length(v)<=8?'********':substr(v,0,4)+'…'+substr(v,-4); }
 let secrets=['username','uuid','password','public_key','short_id','mldsa65','obfs_password','spiderX'];
-let fields=['id','name','protocol','server','port','uuid','password','sni','flow','fingerprint','public_key','short_id','mldsa65','alpn','insecure','obfs','obfs_password','spiderX','import_hints','security','transport','path','host','service_name','mode','authority','method','scy','aid','username','provider_udp','source','front','rear','udp','udp_expected_ip','hop_ports','pin_sha256'];
+let fields=['id','name','protocol','server','port','uuid','password','sni','flow','fingerprint','public_key','short_id','mldsa65','alpn','insecure','obfs','obfs_password','spiderX','import_hints','security','transport','path','host','service_name','mode','authority','method','scy','aid','username','provider_udp','source','front','rear','udp','udp_expected_ip','hop_ports','pin_sha256','hop_interval','up_mbps','down_mbps'];
+let hy2_fields=['hop_ports','pin_sha256','hop_interval','up_mbps','down_mbps'];
 // HY2 share-link extensions are declared here, not in capabilities.json: user
 // confirmations are bound to that file's hash and must survive this addition.
 let hy2_params=['mport','pinSHA256'];
@@ -47,6 +48,21 @@ function pin_value(value,param){
     require_value(type(value)=='string'&&length(value)<=128,'param_invalid',param,msg);
     let v=lc(replace(value,/[:-]/g,''));
     require_value(match(v,/^[0-9a-f]{64}$/)!=null,'param_invalid',param,msg);return v;
+}
+// Form-only HY2 tuning: neither the official URI nor v2rayN links carry these values.
+// Hop interval in seconds (Xray minimum 5); 30 is the default and is not stored.
+function interval_value(value,param){
+    let msg='跳跃间隔须为 5–3600 秒的整数',s=type(value)=='int'?sprintf('%d',value):value;
+    let m=type(s)=='string'?match(lc(trim(s)),/^([0-9]{1,4}) *s?$/):null;
+    require_value(m!=null,'param_invalid',param,msg);
+    let v=int(m[1]);require_value(v>=5&&v<=3600,'param_invalid',param,msg);return v==30?null:v;
+}
+// Bandwidth in Mbps for Brutal congestion control, as in the official client.
+function mbps_value(value,param){
+    let msg='带宽须为 1–10000 的整数，单位 Mbps',s=type(value)=='int'?sprintf('%d',value):value;
+    let m=type(s)=='string'?match(lc(trim(s)),/^([0-9]{1,5}) *(m|mbps)?$/):null;
+    require_value(m!=null,'param_invalid',param,msg);
+    let v=int(m[1]);require_value(v>=1&&v<=10000,'param_invalid',param,msg);return v;
 }
 function connection_only(n){let out=cp(n);delete out.source;return out;}
 function source_valid(s){if(type(s)!='object'||length(keys(s))!=4||!match(s.id||'',/^sub_[a-f0-9]{24}$/)||!match(s.item_id||'',/^[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}$/)||type(s.id)!='string'||type(s.item_id)!='string'||type(s.fp_schema)!='int'||s.fp_schema!=1||type(s.fp)!='string'||!match(s.fp||'',/^[a-f0-9]{64}$/))fail('param_invalid','source','来源关联格式不正确');}
@@ -78,9 +94,13 @@ function render(n) {
         if(length(n.alpn || [])) out.streamSettings.tlsSettings.alpn=n.alpn;
         // Xray 26.10.21 checks every handshake against the pin; a leaf match replaces CA validation.
         if(n.pin_sha256) out.streamSettings.tlsSettings.pinnedPeerCertSha256=n.pin_sha256;
-        // Official Hysteria hopping: random first port, new local socket and port every 30 s.
+        // Official Hysteria hopping: random first port, new local socket and port every interval (30 s default).
         // udphop must stay the last finalmask.udp entry; remoteIPs would replace the server address.
-        if(n.hop_ports) out.streamSettings.finalmask={udp:[{type:'udphop',settings:{mode:'intervalLocal,intervalRemote',interval:30,remotePorts:n.hop_ports}}]};
+        if(n.hop_ports) out.streamSettings.finalmask={udp:[{type:'udphop',settings:{mode:'intervalLocal,intervalRemote',interval:n.hop_interval??30,remotePorts:n.hop_ports}}]};
+        // Xray's default congestion: Brutal at min(up, server receive rate) when both are known, else BBR
+        // (the official client would use up alone when the server reports none); down is sent to the
+        // server as this client's receive rate.
+        if(n.up_mbps||n.down_mbps){let q={};if(n.up_mbps)q.brutalUp=sprintf('%dmbps',n.up_mbps);if(n.down_mbps)q.brutalDown=sprintf('%dmbps',n.down_mbps);if(!out.streamSettings.finalmask)out.streamSettings.finalmask={};out.streamSettings.finalmask.quicParams=q;}
         // Fixed Xray version has not validated obfuscation extensions. Reject rather than drop.
     }
     delete out.tag;delete out.streamSettings.sockopt;
@@ -146,7 +166,7 @@ function update_node(input,previous) {
         if(k=='source'){if(input[k]!=null)fail('param_invalid','source','来源关联只由缓存导入建立；可明确清除');delete n.source;continue;}
         if(member(['socks5','http'],n.protocol)&&member(['username','password'],k)&&input.username==null&&input.password==null&&member(keys(input),'username')&&member(keys(input),'password')){delete n.username;delete n.password;continue;}
         if(k=='import_hints'&&input[k]==null){delete n.import_hints;continue;}
-        if(member(['hop_ports','pin_sha256'],k)&&(input[k]==null||input[k]=='')){delete n[k];continue;}
+        if(member(hy2_fields,k)&&(input[k]==null||input[k]=='')){delete n[k];continue;}
         if(k=='spiderX'&&input[k]==''&&(!previous||previous.spiderX==null))continue;
         if(member(secrets,k) && input[k]=='' && previous) continue;n[k]=input[k];
     }
@@ -155,6 +175,10 @@ function update_node(input,previous) {
     if(n.protocol=='hysteria2'&&!extended(n)){
         if(member(keys(input),'hop_ports')&&n.hop_ports!=null){let v=hop_value(n.hop_ports,'hop_ports',n.port,true);if(v==null)delete n.hop_ports;else n.hop_ports=v;}
         if(member(keys(input),'pin_sha256')&&n.pin_sha256!=null)n.pin_sha256=pin_value(n.pin_sha256,'pin_sha256');
+        if(member(keys(input),'hop_interval')&&n.hop_interval!=null){let v=interval_value(n.hop_interval,'hop_interval');if(v==null)delete n.hop_interval;else n.hop_interval=v;}
+        for(let k in ['up_mbps','down_mbps'])if(member(keys(input),k)&&n[k]!=null)n[k]=mbps_value(n[k],k);
+        // The interval belongs to hopping; clearing the hop ports clears it too.
+        if(n.hop_ports==null)delete n.hop_interval;
     }
     if(n.protocol=='chain'){if(!n.udp){delete n.udp_verification;delete n.udp_expected_ip;}chains.shape(n);return n;}
     if(extended(n)&&previous){
@@ -181,7 +205,7 @@ display_name = function(s){
     for(let i=0;i<length(s)&&count<24;){let b=ord(substr(s,i,1)),n=b<128?1:b<224?2:b<240?3:4;out+=substr(s,i,n);i+=n;count++;}
     return out;
 };
-minimum_version = function(n){if(n.protocol=='chain'&&(n.udp==true||n.udp_expected_ip!=null||n.udp_verification!=null))return 6;if(n.protocol=='chain'||member(keys(n),'front')||member(keys(n),'rear')||member(keys(n),'udp'))return 5;if(member(keys(n),'hop_ports')||member(keys(n),'pin_sha256'))return 7;if(member(keys(n),'source'))return 4;if(extended(n))return 3;return member(keys(n),'spiderX')||member(keys(n),'import_hints')?2:1;};
+minimum_version = function(n){if(n.protocol=='chain'&&(n.udp==true||n.udp_expected_ip!=null||n.udp_verification!=null))return 6;if(n.protocol=='chain'||member(keys(n),'front')||member(keys(n),'rear')||member(keys(n),'udp'))return 5;if(length(filter(hy2_fields,k=>member(keys(n),k))))return 7;if(member(keys(n),'source'))return 4;if(extended(n))return 3;return member(keys(n),'spiderX')||member(keys(n),'import_hints')?2:1;};
 // Format 7 exists only for HY2 hop/pin fields; without them the store returns to 6, so removing
 // those nodes is enough to downgrade to 0.2.1 (which reads formats 1-6).
 function version_for(store){let v=store.version;if(v==7&&length(filter(store.nodes,n=>minimum_version(n)>=7))==0)v=6;if(v<4&&(length(store.nodes)>21||length(sprintf('%J\n',store))>524288))v=4;for(let n in store.nodes)if(minimum_version(n)>v)v=minimum_version(n);return v;}
@@ -206,6 +230,15 @@ validate_new_fields = function(n,allow_pending){
     if(member(keys(n),'pin_sha256')){
         require_value(n.protocol=='hysteria2','combo_unsupported','pin_sha256','证书指纹仅适用于 HY2');
         require_value(type(n.pin_sha256)=='string'&&match(n.pin_sha256,/^[0-9a-f]{64}$/)!=null,'param_invalid','pin_sha256','证书指纹须为 64 位小写十六进制 SHA-256');
+    }
+    if(member(keys(n),'hop_interval')){
+        require_value(n.protocol=='hysteria2','combo_unsupported','hop_interval','跳跃间隔仅适用于 HY2');
+        require_value(n.hop_ports!=null,'param_invalid','hop_interval','跳跃间隔需要同时设置端口跳跃');
+        require_value(type(n.hop_interval)=='int'&&n.hop_interval>=5&&n.hop_interval<=3600&&n.hop_interval!=30,'param_invalid','hop_interval','跳跃间隔未按规范格式保存');
+    }
+    for(let k in ['up_mbps','down_mbps'])if(member(keys(n),k)){
+        require_value(n.protocol=='hysteria2','combo_unsupported',k,'带宽仅适用于 HY2');
+        require_value(type(n[k])=='int'&&n[k]>=1&&n[k]<=10000,'param_invalid',k,'带宽须为 1–10000 的整数，单位 Mbps');
     }
 };
 function decode(s,param){
@@ -362,7 +395,7 @@ function connection(n){
     }else{
         out.auth={password:n.password};out.alpn=n.alpn||[];out.insecure=n.insecure==true;out.obfs=n.obfs||'';out.obfs_password=n.obfs_password||'';
         // Added only when set, so identities of existing HY2 nodes stay byte-identical.
-        if(n.hop_ports)out.hop_ports=n.hop_ports;if(n.pin_sha256)out.pin_sha256=n.pin_sha256;
+        for(let k in ['hop_ports','pin_sha256','hop_interval','up_mbps','down_mbps'])if(n[k])out[k]=n[k];
     }
     return out;
 }

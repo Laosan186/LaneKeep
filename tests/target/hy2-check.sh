@@ -35,6 +35,8 @@ let hop=[one('hysteria2://PASSWORD@203.0.113.20:443/?sni=example.com&alpn=h3&mpo
  one('hy2://PASSWORD@203.0.113.21:443,20000-30000,40000/?sni=example.net','node_b','HY2 B'),
  one('hysteria2://PASSWORD@203.0.113.22:8443/?sni=example.org&insecure=1&pinSHA256='+PIN2,'node_c','HY2 C'),one(V,'node_v','VLESS V')];
 function write(name,version,list){let s={version:version,default_node:'node_a',nodes:list};fs.writefile(ARGV[0]+'/'+name,sprintf('%J\n',s));}
+// Form-only tuning: node A hops every 60 s with bandwidth, node C has a download bandwidth only.
+hop[0].hop_interval=60;hop[0].up_mbps=60;hop[0].down_mbps=200;hop[2].down_mbps=100;
 write('plain.json',6,plain);write('hop.json',7,hop);write('hop-v6.json',6,hop);
 EOF
 } >"$T/stores.uc"

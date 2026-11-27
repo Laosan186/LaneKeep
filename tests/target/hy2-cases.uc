@@ -116,6 +116,44 @@ check('form hop on VLESS is refused when the store is saved',type(u)=='object'&&
 check('version_for picks 7 for hop/pin stores',nodes.version_for(store(1,hop))==7&&nodes.version_for(store(1,plain))<7);
 check('format 7 returns to 6 when no node needs it',nodes.version_for(store(7,plain))==6&&nodes.version_for({version:7,default_node:'',nodes:[]})==6&&nodes.version_for(store(7,hop))==7);
 
+// Form-only tuning: hop interval and Brutal bandwidth.
+let tuned=update_result({hop_interval:'60s',up_mbps:'60m',down_mbps:' 200 Mbps'},hop);
+check('form normalizes interval and bandwidth',type(tuned)=='object'&&tuned.hop_interval==60&&tuned.up_mbps==60&&tuned.down_mbps==200,sprintf('%J',type(tuned)=='object'?[tuned.hop_interval,tuned.up_mbps,tuned.down_mbps]:tuned));
+u=update_result({hop_interval:'30'},hop);
+check('form drops the default interval',type(u)=='object'&&!has(u,'hop_interval'));
+for(let c in [['4','below 5'],['3601','above 3600'],['abc','text'],['1.5','fraction'],['-10','negative']])
+ check('form rejects interval ('+c[1]+')',update_result({hop_interval:c[0]},hop)=='param_invalid:hop_interval',sprintf('%J',update_result({hop_interval:c[0]},hop)));
+for(let c in [['0','zero'],['10001','above 10000'],['1g','gigabit unit'],['500k','kilobit unit'],['fast','text'],['2.5','fraction']])
+ check('form rejects bandwidth ('+c[1]+')',update_result({up_mbps:c[0]},hop)=='param_invalid:up_mbps',sprintf('%J',update_result({up_mbps:c[0]},hop)));
+u=update_result({hop_ports:'',hop_interval:'60'},tuned);
+check('clearing hop ports clears the interval',type(u)=='object'&&!has(u,'hop_ports')&&!has(u,'hop_interval')&&u.up_mbps==60);
+u=update_result({hop_interval:'',up_mbps:'',down_mbps:''},tuned);
+check('form clears interval and bandwidth',type(u)=='object'&&!has(u,'hop_interval')&&!has(u,'up_mbps')&&!has(u,'down_mbps')&&u.hop_ports=='20000-50000');
+u=update_result({hop_interval:'60'},plain);
+check('interval without hop ports is not kept',type(u)=='object'&&!has(u,'hop_interval'));
+let bw=update_result({down_mbps:'100'},plain);
+check('bandwidth alone needs format 7',type(bw)=='object'&&nodes.minimum_version(bw)==7&&store_result(store(7,bw))=='ok'&&store_result(store(6,bw))=='param_invalid:version');
+check('store v7 accepts tuned node',store_result(store(7,tuned))=='ok',store_result(store(7,tuned)));
+check('store rejects interval without hop',store_result(store(7,with(plain,{hop_interval:60})))=='param_invalid:hop_interval');
+check('store rejects stored default interval',store_result(store(7,with(hop,{hop_interval:30})))=='param_invalid:hop_interval');
+check('store rejects interval as text',store_result(store(7,with(hop,{hop_interval:'60'})))=='param_invalid:hop_interval');
+check('store rejects zero bandwidth',store_result(store(7,with(hop,{up_mbps:0})))=='param_invalid:up_mbps');
+check('store rejects bandwidth as text',store_result(store(7,with(hop,{down_mbps:'200'})))=='param_invalid:down_mbps');
+check('store rejects bandwidth on VLESS',vl!=null&&store_result(store(7,with(vl,{up_mbps:60})))=='combo_unsupported:up_mbps');
+check('store rejects interval on VLESS',vl!=null&&store_result(store(7,with(vl,{hop_interval:60})))=='combo_unsupported:hop_interval',vl?store_result(store(7,with(vl,{hop_interval:60}))):'no vless');
+check('format 7 returns to 6 after clearing the tuning',nodes.version_for(store(7,update_result({down_mbps:''},bw)))==6);
+let to=nodes.render(tuned),tq=to.streamSettings.finalmask;
+check('render interval',tq?.udp?.[0]?.settings?.interval==60);
+check('render brutal bandwidth',sprintf('%J',tq?.quicParams)==sprintf('%J',{brutalUp:'60mbps',brutalDown:'200mbps'})&&!has(tq?.quicParams,'congestion'),sprintf('%J',tq?.quicParams));
+check('render udphop still last',tq?.udp?.[length(tq.udp)-1]?.type=='udphop');
+let bo=nodes.render(bw);
+check('render bandwidth without hopping',sprintf('%J',bo.streamSettings.finalmask)==sprintf('%J',{quicParams:{brutalDown:'100mbps'}}),sprintf('%J',bo.streamSettings.finalmask));
+check('bandwidth changes identity',nodes.canonical(nodes.connection(tuned))!=nodes.canonical(nodes.connection(update_result({up_mbps:'61'},tuned))));
+let tp=nodes.public_node(tuned,store(7,tuned));
+check('node RPC returns interval and bandwidth',tp.hop_interval==60&&tp.up_mbps==60&&tp.down_mbps==200);
+u=update_result({name:'renamed',hop_ports:tp.hop_ports,hop_interval:''+tp.hop_interval,up_mbps:''+tp.up_mbps,down_mbps:''+tp.down_mbps,pin_sha256:tp.pin_sha256},tuned);
+check('form round trip keeps interval and bandwidth',type(u)=='object'&&u.hop_interval==60&&u.up_mbps==60&&u.down_mbps==200);
+
 // Rendering.
 let o=nodes.render(hop),t=o.streamSettings.tlsSettings,m=o.streamSettings.finalmask;
 check('render pin',t.pinnedPeerCertSha256==PIN&&!has(t,'allowInsecure'),sprintf('%J',t));

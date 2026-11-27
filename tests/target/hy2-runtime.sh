@@ -8,13 +8,15 @@
 # DNS gate (renamed table) drops marked traffic without a lease. Checks: the gate blocks before the
 # lease and after it is removed; with a lease the correct pin connects and the hop sockets change
 # local and remote ports; every packet to a hop port carries the mark; a wrong pin and no pin fail.
+# The form path (update_node) adds a 10 s hop interval and Brutal bandwidth; the server announces a
+# receive rate so Xray's client takes its Brutal path (the congestion controller itself is not asserted).
 # Nothing leaves the machine. The test tables inet lanekeep_hy2_test and inet lanekeep_hy2_gate are
 # removed on exit. Refuses to run while LaneKeep's own gate table exists.
 set -u
 REPO=$(cd "${1:?usage: hy2-runtime.sh REPO}" && pwd)
 HERE=$(cd "$(dirname "$0")" && pwd)
 NODES=$REPO/root/usr/libexec/lanekeep-panel/nodes.uc
-SERVER_PORT=28443 SOCKS=21080 HOP=20000-20049 WAIT=${HY2_HOP_WAIT:-75}
+SERVER_PORT=28443 SOCKS=21080 HOP=20000-20049 WAIT=${HY2_HOP_WAIT:-50}
 failed=0 pids=''
 pass() { echo "PASS $*"; }
 fail() { echo "FAIL $*"; failed=1; }
@@ -44,14 +46,15 @@ COLONS=$(echo "$PIN" | tr a-f A-F | sed 's/../&:/g; s/:$//')
 cat >"$T/server.json" <<EOF
 {"log":{"loglevel":"warning"},
  "inbounds":[{"tag":"hy2-in","listen":"127.0.0.1","port":$SERVER_PORT,"protocol":"hysteria","settings":{"version":2,"clients":[{"auth":"PASSWORD"}]},
-  "streamSettings":{"network":"hysteria","security":"tls","tlsSettings":{"certificates":[{"certificateFile":"$T/cert.pem","keyFile":"$T/key.pem"}]},"hysteriaSettings":{"version":2}}}],
+  "streamSettings":{"network":"hysteria","security":"tls","tlsSettings":{"certificates":[{"certificateFile":"$T/cert.pem","keyFile":"$T/key.pem"}]},"hysteriaSettings":{"version":2},"finalmask":{"quicParams":{"brutalUp":"1000mbps","brutalDown":"1000mbps"}}}}],
  "outbounds":[{"tag":"out","protocol":"freedom","settings":{"finalRules":[{"action":"allow","network":"tcp","ip":["127.0.0.1/32"],"port":"18080"}]}}]}
 EOF
 { printf "import * as nodes from '%s';\n" "$NODES"; cat <<EOF
 import * as fs from 'fs';
 let r=nodes.parse_preview(ARGV[0])[0];
 if(r.status!='ok'){print(sprintf('%J\n',r.error));exit(2);}
-let o=nodes.render(r.node);o.tag='hy2-test';o.streamSettings.sockopt={mark:30241};
+let n=r.node;try{n=nodes.update_node({hop_interval:'10',up_mbps:'100',down_mbps:'100'},n);}catch(e){print(sprintf('%J',nodes.take_error()));exit(2);}
+let o=nodes.render(n);o.tag='hy2-test';o.streamSettings.sockopt={mark:30241};
 fs.writefile(ARGV[1],sprintf('%J\n',{log:{loglevel:'warning'},inbounds:[{tag:'in',listen:'127.0.0.1',port:$SOCKS,protocol:'socks',settings:{auth:'noauth',udp:false}}],outbounds:[o]}));
 EOF
 } >"$T/client.uc"
@@ -96,7 +99,8 @@ lease() { nft "$1" element inet lanekeep_hy2_gate healthy_data "{ 0x7621${2:-} }
 LINK="hysteria2://PASSWORD@127.0.0.1:20000/?sni=hy2.test&mport=$HOP&pinSHA256=$COLONS#loopback"
 start_client "$LINK" || { echo 'FAIL client config from share link'; exit 1; }
 grep -q '"pinnedPeerCertSha256": *"'"$PIN"'"' "$T/client.json" && grep -q '"remotePorts": *"'"$HOP"'"' "$T/client.json" \
-  && pass 'client outbound rendered from link (pin normalized, udphop set)' || fail 'rendered client outbound'
+  && grep -q '"interval": *10' "$T/client.json" && grep -q '"brutalUp": *"100mbps"' "$T/client.json" \
+  && pass 'client outbound rendered from link and form (pin normalized, udphop every 10 s, Brutal 100 Mbps)' || fail 'rendered client outbound'
 code=$(request 5)
 [ "$code" != 204 ] && [ "$(gate_drops)" -gt 0 ] && [ "$(counter marked)" -gt 0 ] \
   && pass "gate closed without lease: request failed ($code), marked hop packets dropped" || fail "gate without lease: code=$code drops=$(gate_drops) marked=$(counter marked)"
@@ -106,8 +110,8 @@ ok=0 bad=0 end=$(( $(date +%s) + WAIT ))
 while [ "$(date +%s)" -lt "$end" ]; do [ "$(request)" = 204 ] && ok=$((ok+1)) || bad=$((bad+1)); sleep 3; done
 [ "$bad" = 0 ] && [ "$ok" -gt 0 ] && pass "requests during ${WAIT}s of hopping: $ok ok, 0 failed" || fail "requests during hopping: $ok ok, $bad failed"
 d=$(elements dports) s=$(elements sports)
-[ "${d:-0}" -ge 2 ] && pass "remote hop ports seen: $d (within $HOP)" || fail "remote hop ports seen: ${d:-0}"
-[ "${s:-0}" -ge 2 ] && pass "local sockets seen: $s (new socket per hop)" || fail "local sockets seen: ${s:-0}"
+[ "${d:-0}" -ge 3 ] && pass "remote hop ports seen: $d (within $HOP)" || fail "remote hop ports seen: ${d:-0}"
+[ "${s:-0}" -ge 3 ] && pass "local sockets seen: $s (new socket per hop)" || fail "local sockets seen: ${s:-0}"
 [ "$(counter unmarked)" = 0 ] && pass "all $(counter marked) packets to hop ports carried mark 0x7621" || fail "unmarked packets to hop ports: $(counter unmarked)"
 lease delete; before=$(gate_drops); code=$(request 5)
 [ "$code" != 204 ] && [ "$(gate_drops)" -gt "$before" ] && pass "lease removed: established tunnel blocked ($code)" || fail "after lease removal: code=$code"

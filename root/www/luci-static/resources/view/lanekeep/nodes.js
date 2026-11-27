@@ -55,7 +55,7 @@ return foundation.view(view,{
     fields={}; controls=[];
     var contents=[entry('name',copy.t("F-ed7729b91d"),false),entry('server',copy.t("F-3388f2b740"),false),entry('port',copy.t("F-06a2b5f71d"),false,'443'),entry('sni',copy.t("F-33231324e8"),false)];
     if(values.protocol==='vless') contents=contents.concat([entry('uuid',copy.t("F-edddcf2c9c"),true),entry('flow',copy.t("F-f09bb0d0b7"),false,'xtls-rprx-vision'),entry('fingerprint',copy.t("F-8950c8c4cd"),false,'chrome'),entry('public_key',copy.t("F-0db490eb57"),true),entry('short_id',copy.t("F-bdedea9cf6"),true),entry('mldsa65',copy.t("F-1fe4fc6ded"),true),entry(copy.t("F-3a35f7e3d7"),copy.t("F-30845b2da9"),true)]);
-    else contents=contents.concat([entry('password',copy.t("F-0f9ced841b"),true),entry('alpn',copy.t("F-28a12db198"),false),entry('hop_ports',copy.t("H-1"),false),entry('pin_sha256',copy.t("H-2"),false),panel.message(copy.t("F-8932cdae75"))]);
+    else contents=contents.concat([entry('password',copy.t("F-0f9ced841b"),true),entry('alpn',copy.t("F-28a12db198"),false),entry('hop_ports',copy.t("H-1"),false),entry('hop_interval',copy.t("H-3"),false),entry('down_mbps',copy.t("H-4"),false),entry('up_mbps',copy.t("H-5"),false),E('div',{'class':'lk-field','data-field':'hy2_tuning_note'},[panel.message(copy.t("H-6"))]),entry('pin_sha256',copy.t("H-2"),false),panel.message(copy.t("F-8932cdae75"))]);
     if(values.protocol==='vless') {
      values.import_hints=item && item.import_hints ? Object.assign({},item.import_hints) : null;
      var hint=panel.select({unspecified:copy.t("F-b2941e07c4"),required:copy.t("F-84ad1d3ea2")},values.import_hints?'required':'unspecified',function(v){values.import_hints=v==='required'?{support_x25519mlkem768:true}:null;});
@@ -69,7 +69,7 @@ return foundation.view(view,{
     function take(k){return contents.find(function(el){return el.dataset.field===k;});}
     if(take('name'))top.appendChild(take('name'));top.appendChild(nui.field('protocol',protocol,item?copy.t('N-26'):null));
     ['server','port'].forEach(function(k){if(take(k))top.appendChild(take(k));});
-    contents.forEach(function(el){if(['name','server','port'].indexOf(el.dataset.field)>=0)return;if(['mldsa65','spiderX','alpn','hop_ports','pin_sha256','import_hints'].indexOf(el.dataset.field)>=0)advanced.push(el);else rest.appendChild(el);});
+    contents.forEach(function(el){if(['name','server','port'].indexOf(el.dataset.field)>=0)return;if(['mldsa65','spiderX','alpn','hop_ports','hop_interval','down_mbps','up_mbps','hy2_tuning_note','pin_sha256','import_hints'].indexOf(el.dataset.field)>=0)advanced.push(el);else rest.appendChild(el);});
     body.replaceChildren(top,rest,nui.details(copy.t('N-28'),[E('div',{'class':'lk-form-grid'},advanced)]));
    }
    var protocolOptions={};Object.keys(data.capabilities.protocols).forEach(function(key){var c=data.capabilities.protocols[key];if((c.combos||[]).some(function(x){return x.legacy || x.status==='loopback' || x.status==='verified';}))protocolOptions[key]=nui.protocol(key);});
