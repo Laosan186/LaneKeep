@@ -53,7 +53,7 @@ The tests ran on the isolated QEMU VM of the v1.0.2 acceptance, with **no host o
 | 构建 | 在测试机内用 apk-tools 3 构建 `luci-app-lanekeep-1.0.3-r1.apk`，308,972 字节，SHA256 `54480697beba49c7145a20d802cc60728a89187332fac4dad2771fb5043322ea`。构建输入取自提交 `938c2e9`，与测试构建 `7052c7c` 相比只多出 `VERSION` 和 `Makefile` 的版本号。 |
 | 正式包与测试构建的载荷 | 用 `tools/build/materialize.py` 分别从 `7052c7c`（1.0.2-r2）和 `938c2e9`（1.0.3-r1）生成安装树，各 106 个文件。去掉模块路径中的版本命名空间和 `foundation.js` 里的版本字符串后，两者逐字一致。 |
 | 正式包安装 | 在已停用的测试机上把 1.0.3-r1 覆盖安装到测试构建之上，`apk info -L` 列出 109 个文件：<br>• 103 个与从 `938c2e9` 生成的安装树 SHA256 相同；<br>• 3 个是 apk 数据库文件；<br>• 3 个配置文件（`/etc/config/lanekeep`、`lanekeep_runtime`、`/etc/lanekeep-proxy/nodes.json`）保留了测试机上的测试配置。<br>装上的生成器 SHA256 `896cbb13…a63df` 与 `GENERATOR_SHA` 一致。 |
-| 正式包升级路径 | 把已发布的 1.0.2-r1 装回（`apk del` 后 `apk add`，配置文件保留），重启测试机，经 rpcd 加节点、启用，未分组=常规，成员同上。然后在已启用状态下用正式包 1.0.3-r1 执行 `apk add --upgrade`：<br>• 返回 0；<br>• 规则表已重新生成，三条链末尾有丢弃规则，`capture_phone` 不变；<br>• 面板无警告，规则核对全部一致，门控 OPEN，五个入口都在听。 |
+| 正式包升级路径 | 把已发布的 1.0.2-r1 装回（`apk del` 后 `apk add`），配置文件保留：节点、未分组=常规和成员都沿用原配置，设置步骤对这几项均报告“未改动”。重启测试机后经 rpcd 启用。然后在已启用状态下用正式包 1.0.3-r1 执行 `apk add --upgrade`：<br>• 返回 0；<br>• 规则表已重新生成，三条链末尾有丢弃规则，`capture_phone` 不变；<br>• 面板无警告，规则核对全部一致，门控 OPEN，五个入口都在听。 |
 | 正式包 quick 套件 | 全局、增强 `PPP`。按需 `PDD`：一项经节点，两项直连；按需没列入规则的流量默认直连，属于设计行为。三条链末尾的丢弃计数在套件前后都是 0。 |
 | 正式包强制状态对照 | 条件同修前复现。全局、增强、按需均为 `------`，三条链末尾各丢弃 14 个包；这三组向路由器查询 DNS 都超时。未分组对照组 `PDDD-D`，DNS 拿到 FakeIP。测完停用 LaneKeep。 |
 

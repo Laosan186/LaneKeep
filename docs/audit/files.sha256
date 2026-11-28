@@ -50,8 +50,8 @@ d9b8c897aaee95e771f11db27f77d9564d7fb10cf4559d4968fad7d1c5f716cd  docs/audit/v1.
 5f436111198b26b642b15b32808f9f3f5a370956bed222927cc7705e4c0517c3  docs/audit/v1.0.2/logs/target-checks.txt
 2e418593fc3c8ac45ca3f42591ed9d0dec1e69acc75d0df6c69a8162b3ef32da  docs/audit/v1.0.2/logs/uninstall.txt
 67bbc5343edd309d03443691a08c637150d31dea26ffecdc266bd7e21547c9d1  docs/audit/v1.0.2/logs/upgrade-0.2.1-r1-to-1.0.2-r1.txt
-e3c3e390ddb5a96939515fd90baf8d60ae323c4f0f93c564f11824121da9a9a8  docs/audit/v1.0.3/acceptance.json
-ba2a6faff5dab4a3b715f731303dc345d7dd3f649a3e06ba4d7eb1ca870d8428  docs/audit/v1.0.3/acceptance.md
+a3e2cc43cb7e5b789864d6b559570ee3b76389a0ba722d9164742b2f7b1a7d44  docs/audit/v1.0.3/acceptance.json
+d268ce3fac6c66fa5d573fe864f0bb921e1279f31cdc307a10b03221e09a55d3  docs/audit/v1.0.3/acceptance.md
 15cf10d6523bf2539c30d35816aad8f5cc29892ff88a98012826bce889ef1bce  docs/audit/v1.0.3/logs/build.txt
 46524ad31b37dd7c586f30dcf1536dc64fefae20ff0c8adcc1004af5b3b2d5fb  docs/audit/v1.0.3/logs/fallthrough.txt
 ae13e56934d0865e79849042ff1121efc194012e115186a74fdfee453fcf3508  docs/audit/v1.0.3/logs/quick.txt

@@ -50,7 +50,7 @@
   "lifecycle": {
     "enabled_upgrade_to_test_build": "apk rc 0; rules regenerated with the three tail drops; capture_phone unchanged; no panel warning; policy check all true; gate OPEN",
     "release_package_install": "over the test build with LaneKeep disabled",
-    "enabled_upgrade_release_package": "published 1.0.2-r1 reinstalled, fresh boot, node added, enabled, unassigned=standard, same members; apk add --upgrade to 1.0.3-r1: rc 0; rules regenerated with the three tail drops; capture_phone unchanged; no panel warning; policy check all true; gate OPEN; all five inbounds listening; LaneKeep disabled after the tests",
+    "enabled_upgrade_release_package": "published 1.0.2-r1 reinstalled with conffiles kept (node, unassigned=standard and members carried over; the setup steps report unchanged), fresh boot, enabled through rpcd; apk add --upgrade to 1.0.3-r1: rc 0; rules regenerated with the three tail drops; capture_phone unchanged; no panel warning; policy check all true; gate OPEN; all five inbounds listening; LaneKeep disabled after the tests",
     "evidence": ["logs/fallthrough.txt", "logs/build.txt", "logs/release-upgrade.txt"]
   },
   "target_checks": {"rules_check": "ALL PASS against aad799b, including the exact text of the three chains for unassigned Standard and Direct and nft -c as root", "tree": "7052c7c; later commits change nothing under root/, tests/, tools/ or packaging/, so it was not rerun on the release tree", "evidence": "logs/target-checks.txt"},
