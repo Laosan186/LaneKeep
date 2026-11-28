@@ -31,6 +31,29 @@ mkdir -m 700 "$LOCK" 2>/dev/null || exit 75
 probe_pid=; probe_start=; parser_pid=; parser_start=; timer_pid=; timer_start=
 probe_elapsed_ms=; probe_finished_cs=0
 rounds=0; successes=0; failures=0; streak=0; state=CLOSED; generation=; gate_owned=0; last_success_cs=0; gate_token=
+lan_dev=; lan_ipv6=unknown
+
+# The capture is IPv4-only and enabling requires LAN IPv6 to be off. Keep requiring it:
+# a LAN whose IPv6 was switched back on, or cannot be read, never holds an open gate.
+resolve_lan() {
+    lan_name=$(uci -q get lanekeep_runtime.main.lan_interface) || lan_name=lan
+    case "$lan_name" in ''|*[!A-Za-z0-9_]*) return 1 ;; esac
+    lan_status=$(ubus -t 2 call "network.interface.$lan_name" status 2>/dev/null) || return 1
+    lan_found=$(printf '%s\n' "$lan_status" | jsonfilter -e '@.l3_device' 2>/dev/null) || lan_found=
+    [ -n "$lan_found" ] || lan_found=$(printf '%s\n' "$lan_status" | jsonfilter -e '@.device' 2>/dev/null) || return 1
+    case "$lan_found" in ''|*[!A-Za-z0-9_.:-]*) return 1 ;; esac
+    lan_dev=$lan_found
+}
+
+lan_ipv6_off() {
+    [ -n "$lan_dev" ] || resolve_lan || return 1
+    [ -r "/proc/sys/net/ipv6/conf/$lan_dev/disable_ipv6" ] || { lan_dev=; return 1; }
+    # A sysctl file read one byte at a time ends before its newline, so read reports
+    # end-of-file even though it stored the value. Judge by the value alone.
+    lan_flag=
+    IFS= read -r lan_flag < "/proc/sys/net/ipv6/conf/$lan_dev/disable_ipv6" || :
+    [ "$lan_flag" = 1 ]
+}
 
 proc_start() {
     case "${1:-}" in ''|*[!0-9]*) return 1 ;; esac
@@ -158,6 +181,7 @@ write_state() {
         "$state" "$uptime_seconds" "$rounds" "$successes" "$failures" "$streak" \
         > "$RUNDIR/status.next" || return 1
     printf 'probe_elapsed_ms=%s\nprobe_finished_cs=%s\n' "$probe_elapsed_ms" "$probe_finished_cs" >> "$RUNDIR/status.next" || return 1
+    printf 'lan_ipv6=%s\n' "$lan_ipv6" >> "$RUNDIR/status.next" || return 1
     mv -f "$RUNDIR/status.next" "$RUNDIR/status"
 }
 
@@ -267,7 +291,8 @@ while :; do
     rounds=$((rounds + 1))
     round_generation=$(read_generation) || exit 70
     round_started=$(uptime_cs) || exit 70
-    if run_round; then
+    if lan_ipv6_off; then lan_ipv6=off; else lan_ipv6=on; fi
+    if [ "$lan_ipv6" = off ] && run_round; then
         round_passed=1
     else
         round_passed=0

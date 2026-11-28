@@ -1,0 +1,11 @@
+#!/bin/sh /etc/rc.common
+# SPDX-License-Identifier: GPL-3.0-only
+# Reload the saved fail-closed guard before the network and firewall start, so LAN
+# clients are not forwarded directly while LaneKeep is enabled but not running yet.
+# The lifecycle script writes and removes the saved table.
+START=18
+start() {
+    [ "$(uci -q get lanekeep_runtime.main.enabled)" = 1 ] || return 0
+    [ -f /etc/lanekeep-state/boot-guard.nft ] && [ ! -L /etc/lanekeep-state/boot-guard.nft ] || return 0
+    nft -f /etc/lanekeep-state/boot-guard.nft
+}

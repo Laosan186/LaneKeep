@@ -347,7 +347,7 @@ function builtins(config) {
     let store=current_nodes();
     let result={standard:[],global:[],enhanced:[],ondemand:[]};
     let positions={}, layout={builtin:result,positions:positions,verified:false};
-    if(fingerprint(PROXY+'/template.json')!='02e6567842a2cf930b54e4b32b5ca4ecfe983d5f70afbce6bdfba1cb08ac4941') return layout;
+    if(fingerprint(PROXY+'/template.json')!='d1d8df48c9836161c6e1d2bb142b7b6f9eeed9adeb8c45b31c4d619e4db99d8e') return layout;
     let template=obj(PROXY+'/template.json'),active=obj(PROXY+'/config.json');
     try{active=settings.standard_dns_base(active);}catch(e){return layout;}
     let live=active?.routing?.rules,offset=0;
@@ -419,7 +419,7 @@ function builtins(config) {
                 if(row.port)push(conditions,'目标端口 '+row.port);
                 for(let field in ['domain','ip'])if(type(row[field])=='array')push(conditions,join(' / ',map(row[field],v=>names[v]||v)));
                 let final=settings.fallback_group(r)==g&&row.outboundTag==r.outboundTag;
-                let end=row.domain==null&&row.ip==null&&row.port==null?'（本组最终默认）':'';
+                let end=settings.fallback_group(r)==g&&row.domain==null&&row.ip==null&&row.port==null?'（本组最终默认）':'';
                 push(result[g],{position:offset,kind:final?'fallback':'fixed',text:join('，',conditions)+' → '+(final?exit_label(config.fallbacks[g]):actions[row.outboundTag]||(substr(row.outboundTag,0,6)=='chain-'?'链 '+substr(row.outboundTag,6):substr(row.outboundTag,0,5)=='node-'?'节点 '+substr(row.outboundTag,5):'固定内部处理'))+end});
             }
         }
@@ -501,6 +501,8 @@ function status(args) {
     if(!gate.fresh) push(warnings,'门控状态过期或不可读，按CLOSED显示');
     if(fingerprint(ENGINE+'/lanekeep-gen.uc')!=GENERATOR_SHA) push(warnings,'生成器版本不同，已禁用提交；请先核对广播/组播保护');
     if(enabled()&&!settings.standard_dns_active(obj(PROXY+'/config.json')))push(warnings,'常规组受保护DNS解析未完整启用；增强、全局及按需保持原解析，不代表已通过客户端泄露测试');
+    if(enabled()&&fs.lstat('/etc/lanekeep-state/owned-network')==null)push(warnings,'已启用但保护未在运行：局域网设备的上网和DNS已被阻断，不会改走直连。请排除原因后重新启动，或先关闭 LaneKeep');
+    if(enabled()&&trim(fs.readfile('/proc/sys/net/ipv6/conf/'+lan.context().device+'/disable_ipv6')||'')!='1')push(warnings,'LAN 的 IPv6 处于开启状态：保护闸门保持关闭，IPv6 转发被阻断。请关闭 LAN IPv6 并保存为开机设置');
     let history=logs(),layout=builtins(config);
     if(!layout.verified) push(warnings,'现役规则与模板/用户配置不一致，暂不显示生效序号；请先核对配置');
     for(let r in config.rules) r.positions=layout.verified ? layout.positions[r.id] : [];

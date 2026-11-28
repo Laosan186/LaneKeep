@@ -1,9 +1,13 @@
 #!/bin/sh
 # SPDX-License-Identifier: GPL-3.0-only
 set -eu
-/usr/libexec/lanekeep-panel/lifecycle prepare
+# A failed prepare is reported at the end, after the enabled case below has had the
+# chance to put its fail-closed guard in place.
+prepared=1
+/usr/libexec/lanekeep-panel/lifecycle prepare || prepared=0
 for child in lanekeep-xray lanekeep-dns lanekeep-telemetry; do /etc/init.d/"$child" disable; done
 /etc/init.d/lanekeep enable
+/etc/init.d/lanekeep-guard enable
 # Only LuCI-generated caches; never touch system configuration here.
 rm -f /tmp/luci-indexcache*
 rm -rf /tmp/luci-modulecache/
@@ -11,3 +15,4 @@ rm -rf /tmp/luci-modulecache/
 if [ "$(uci -q get lanekeep_runtime.main.enabled)" = 1 ]; then
     /usr/libexec/lanekeep-panel/lifecycle boot
 fi
+[ "$prepared" = 1 ]

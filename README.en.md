@@ -40,7 +40,7 @@ When enabled, fixed rules handle TCP/UDP 53 and block 853, known DoH categories,
 
 A DNS health check through the default node controls protected proxy data traffic, including other nodes selected by individual modes. Failure closes the gate without falling back to direct. Detection has a bounded window; it is not instantaneous. Direct traffic still depends on the core and DNS and is not guaranteed to work during a fault.
 
-Administrators must disable IPv6 on the selected LAN beforehand. This package does not change IPv6 configuration. Activation refuses an incompatible LAN. WebRTC exposure depends on actual routing; even Global can have explicit direct exceptions. A known-DoH list cannot cover arbitrary app-specific encrypted DNS.
+Administrators must disable IPv6 on the selected LAN beforehand and make the setting survive a reboot. This package does not change IPv6 configuration. Activation refuses an incompatible LAN; once enabled, a failed boot-time check leaves the LAN blocked rather than direct. WebRTC exposure depends on actual routing; even Global can have explicit direct exceptions. A known-DoH list cannot cover arbitrary app-specific encrypted DNS.
 
 Xray access, error and DNS logs are disabled. Monitoring retains numbers, aggregate categories and operation summaries, not browsing sites or per-connection destinations. Node and subscription credentials still have to be stored with restricted permissions. See the [full protection matrix](docs/leak-protection.en.md).
 
@@ -72,7 +72,7 @@ Upgrade with `apk add --upgrade --allow-untrusted ./NEW-PACKAGE.apk`, after back
 apk del luci-app-lanekeep
 ```
 
-Before removal, LaneKeep stops its services, removes its owned nft tables and policy routes, and restores the DNS fields saved before activation. If another program edited DHCP meanwhile, only still-owned fields are restored. IPv6 disabled manually by the administrator stays disabled. APK may remove dependencies that are no longer needed; LaneKeep removal scripts do not explicitly delete other applications. APK may retain modified configuration and nodes; inspect and remove sensitive data before transferring a device.
+Before removal, LaneKeep stops its services, removes its owned nft tables (including the guard table kept while enabled and its saved copy) and policy routes, and restores the DNS fields saved before activation. If another program edited DHCP meanwhile, only still-owned fields are restored. IPv6 disabled manually by the administrator stays disabled. APK may remove dependencies that are no longer needed; LaneKeep removal scripts do not explicitly delete other applications. APK may retain modified configuration and nodes; inspect and remove sensitive data before transferring a device.
 
 ## Getting started
 

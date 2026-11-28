@@ -8,6 +8,7 @@ CODE=/usr/libexec/lanekeep-panel
 PROXY=/etc/lanekeep-proxy
 STATE=/etc/lanekeep-state
 ENGINE=/usr/libexec/lanekeep-xray
+GUARD=$STATE/boot-guard.nft
 mkdir -p "$STATE"
 chmod 700 "$STATE"
 [ ! -L /var/lock/lanekeep-apply.lock ] || exit 1
@@ -18,6 +19,28 @@ generate() {
     "$ENGINE/lanekeep-gen" --output-dir "$stage/generated" >"$stage/result" 2>&1 || { cat "$stage/result" >&2; return 1; }
     for name in config.json phone-pilot.nft; do cp "$stage/generated/$name" "$PROXY/$name.next"; chmod 600 "$PROXY/$name.next"; mv "$PROXY/$name.next" "$PROXY/$name"; done
 }
+# Fail-closed guard table. Its saved copy records ownership, as owned-network does for
+# the runtime tables, and lets the lanekeep-guard init script reload it early at boot.
+guard_install() {
+    [ ! -L "$GUARD" ] && [ ! -L "$GUARD.next" ] || return 1
+    # Never replace a same-named table that this package did not record.
+    [ -f "$GUARD" ] || ! nft list table inet lanekeep_guard >/dev/null 2>&1 || return 1
+    if ucode "$CODE/guard.uc" >"$GUARD.next" 2>/dev/null && nft -c -f "$GUARD.next" 2>/dev/null; then
+        mv -f "$GUARD.next" "$GUARD"
+    else
+        # The LAN cannot be read right now: keep the copy saved for the previous one.
+        rm -f "$GUARD.next"
+    fi
+    [ -f "$GUARD" ] || return 1
+    nft -f "$GUARD"
+}
+guard_remove() {
+    [ -f "$GUARD" ] || return 0
+    nft delete table inet lanekeep_guard 2>/dev/null || :
+    rm -f "$GUARD"
+}
+# Stops the runtime only. The guard stays until an explicit disable, so a stopped or
+# failed runtime leaves the LAN blocked instead of forwarded directly.
 stop_runtime() {
     for service in lanekeep-telemetry lanekeep-xray lanekeep-dns; do /etc/init.d/"$service" stop || :; done
     # Delete only names reserved and recorded by this activation.
@@ -33,20 +56,30 @@ stop_runtime() {
         /etc/init.d/dnsmasq restart
     fi
 }
-case "${1:-}" in
+mode=${1:-}
+case "$mode" in
     prepare) generate; exit 0 ;;
     disable)
         uci set lanekeep_runtime.main.enabled=0
         uci commit lanekeep_runtime
         stop_runtime
+        guard_remove
         echo '{"ok":true,"enabled":false}'
         exit 0 ;;
     stop) stop_runtime; exit 0 ;;
     enable) ucode "$CODE/lifecycle-preflight.uc" >/dev/null ;;
-    boot) [ "$(uci -q get lanekeep_runtime.main.enabled)" = 1 ] || exit 0; ucode "$CODE/lifecycle-preflight.uc" >/dev/null ;;
+    boot)
+        [ "$(uci -q get lanekeep_runtime.main.enabled)" = 1 ] || exit 0
+        # Enabled means fail closed: the guard goes in before any check that can refuse
+        # to start, and every failure below leaves it and the enabled flag in place.
+        guard_install || :
+        ucode "$CODE/lifecycle-preflight.uc" >/dev/null ;;
     *) echo 'unsupported lifecycle action' >&2; exit 2 ;;
 esac
-if [ -f "$STATE/owned-network" ] && nft list table inet lanekeep_phone >/dev/null 2>&1; then echo '{"ok":true,"enabled":true}'; exit 0; fi
+if [ -f "$STATE/owned-network" ] && nft list table inet lanekeep_phone >/dev/null 2>&1; then
+    [ "$mode" = boot ] || guard_install
+    echo '{"ok":true,"enabled":true}'; exit 0
+fi
 # Refuse collisions, do not flush someone else's routing table or rules.
 ! nft list table inet lanekeep_phone >/dev/null 2>&1 || exit 1
 ! nft list table inet lanekeep_dns_gate >/dev/null 2>&1 || exit 1
@@ -59,14 +92,21 @@ nft -c -f "$PROXY/dns-gate.nft"
 xray run -test -config "$PROXY/domestic-dns.json" >/dev/null 2>&1
 success=0
 cleanup() {
-    if [ "$success" = 0 ]; then
+    [ "$success" = 0 ] || return 0
+    if [ "$mode" = enable ]; then
+        # An interactive enable that fails returns to the disabled state it started from.
         uci set lanekeep_runtime.main.enabled=0
         uci commit lanekeep_runtime
+        stop_runtime
+        guard_remove
+    else
+        # A failed start at boot keeps the enabled flag and the guard.
         stop_runtime
     fi
 }
 trap cleanup EXIT
 trap 'exit 1' HUP INT TERM
+[ "$mode" = boot ] || guard_install
 touch "$STATE/owned-network"
 nft -f "$PROXY/dns-gate.nft"
 ip -4 route add local default dev lo table 210

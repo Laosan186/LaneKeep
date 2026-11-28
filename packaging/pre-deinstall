@@ -3,3 +3,4 @@ set -eu
 [ -z "${IPKG_INSTROOT:-}" ] || exit 0
 /usr/libexec/lanekeep-panel/lifecycle disable
 /etc/init.d/lanekeep disable
+/etc/init.d/lanekeep-guard disable

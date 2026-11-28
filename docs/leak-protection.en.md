@@ -15,6 +15,8 @@ This describes the v0.2.1 source mechanisms, including the custom IP rules added
 | Block unresolved FakeIP destinations | Yes | Yes | Yes | Yes |
 | UDP 443 | Broad block | Broad block | Broad block | Selected service categories and custom proxied domains and IPs |
 | Dedicated iCloud Private Relay category block | No | Yes | No | No |
+| UDP to private addresses (`geoip:private`) | Direct | Blocked | Blocked | Direct |
+| All other UDP (after user rules) | Later rules | Proxy | Always this mode's proxy, never direct | Later rules |
 
 The matrix follows `root/etc/lanekeep-proxy/template.json` and the generator. FakeIP guards include `198.18.0.0/15` and `2001:2::/48`, but interception is IPv4-only. An IPv6 range in JSON does not establish IPv6 protection. Valid FakeDNS mappings restored to domain names continue through domain routing.
 
@@ -43,11 +45,30 @@ Factory FakeIP exceptions are empty. `domain:` and `full:` exceptions select rea
 
 ## WebRTC, UDP and IPv6
 
-Transparent TCP/UDP and routing jointly determine the exit. Proxied WebRTC destinations can use the proxy exit; direct destinations may see the direct public address. Unknown DoH, explicit direct exceptions and app behavior prevent an absolute guarantee.
+Transparent TCP/UDP and routing jointly determine the exit. Proxied WebRTC destinations use the proxy exit; direct destinations see the direct public address. Unknown DoH, explicit direct exceptions and app behavior prevent an absolute guarantee.
 
-The package does not disable or reconfigure IPv6. Administrators must remove LAN IPv6 addressing, RA / DHCPv6 and explicitly disable IPv6 on the selected device before activation. Disabling RA alone is insufficient. Preflight refuses an incompatible LAN. Uninstall does not undo manually applied IPv6 settings.
+Xray's transparent UDP keeps one session per source socket: the first packet a socket sends picks the exit, and later packets to other destinations reuse it. A socket that first matches a direct rule therefore sends everything after it, including packets to any STUN server, from the direct exit. In 0.2.1 and earlier the private-address direct rules of Global and Enhanced, and the domestic direct rules of Enhanced, could trigger this. After 0.2.1:
+
+- **Global and Enhanced**: UDP to private addresses (including `100.64.0.0/10`) is blocked, ahead of the private direct rules. Devices on the same LAN segment talk to each other without passing the router and are unaffected. UDP routed to another private network, and non-DNS UDP to the router's LAN address (an NTP server on the router, for example), do not work in these two modes. TCP is unchanged.
+- **Enhanced**: all UDP after the user rules leaves through this mode's proxy node, whether or not the destination is classified as domestic. Domestic voice and video calls, games and other UDP services use the proxy exit, with more latency and possible failures; put devices that need direct domestic UDP in Standard or On-demand. TCP still goes direct for domestic destinations.
+- **Still exposes the direct address**: in Enhanced, destinations classified as domestic are reached directly over TCP. That includes TURN over TCP/TLS, DoH or HTTPDNS on any domestic address, and plain HTTPS. A web page can pick such a destination and read the direct address, so Enhanced must not be used as a mode that hides it; use Global for that. The same holds for user direct rules, and a socket that first matches a user direct rule sends its later UDP directly as well. Domains in user direct rules are resolved by the domestic resolver chain.
+- **Global also has one known direct path**: the built-in "private domains direct" rule matches by domain, and `geosite:private` lists some names that resolve to public addresses (for example `plex.direct`, `ts.net` and some router vendors' names). HTTP and TLS connections to such names go direct in Global and Enhanced, so the destination sees the direct address, and a web page can connect to such a name on purpose. The rule is left as it is so that these local services stay direct.
+- Standard and On-demand are direct by default; neither rule applies to them and their sockets keep the exit of their first packet as before.
+
+The package does not disable or reconfigure IPv6. Administrators must remove LAN IPv6 addressing, RA / DHCPv6 and explicitly disable IPv6 on the selected device before activation, and make that setting survive a reboot. Disabling RA alone is insufficient. Preflight refuses an incompatible LAN. Uninstall does not undo manually applied IPv6 settings.
+
+The requirement stays in force after activation. Every watchdog round reads `disable_ipv6` of the LAN device; if it is not `1`, or cannot be read, the gate stays closed and the Status page says so. The guard table kept while enabled also drops all IPv6 forwarded from the LAN device and IPv6 DNS sent to the router itself. This covers only traffic that passes this router: IPv6 handed out by another device on the same layer-2 segment (an access point or modem, for example) never reaches it and has to be turned off on that device.
 
 ## Kill switch
+
+While enabled, a separate nft table, `lanekeep_guard`, is kept and saved in `/etc/lanekeep-state/boot-guard.nft`; the `lanekeep-guard` init script loads it before the network and firewall start. It drops IPv4 forwarded from the selected LAN subnet, IPv6 forwarded from the LAN device, and LAN DNS requests that the transparent capture did not take. Captured traffic is delivered locally and is not affected. LAN devices therefore get no network, instead of a direct one, in these cases:
+
+- after boot, until LaneKeep has started;
+- when the boot-time check refuses or startup fails (the enabled flag stays 1);
+- when the runtime is stopped with `stop`;
+- during a package upgrade. This holds from this version on: the one upgrade from 0.2.1 or earlier still runs the old upgrade script, which removes the rules first, so the LAN is direct until the new version is installed.
+
+The router's own management pages stay reachable. Only an explicit disable (or uninstall) removes the table; an interactive enable that fails returns to the disabled state.
 
 Protected data uses mark `0x7621`; DNS probes use a separate mark. The nft `healthy_data` set carries an 8-second lease. Each bounded DNS round is followed by a 2-second sleep. Probe and lock time beyond 3 seconds fails the round. Two consecutive successes open/renew the gate; failure clears the lease. A stopped watchdog cannot keep an old lease alive indefinitely.
 

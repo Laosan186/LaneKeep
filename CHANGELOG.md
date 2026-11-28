@@ -1,5 +1,15 @@
 # Changelog
 
+## Unreleased
+
+Changed
+
+- Global and Enhanced block UDP to private addresses (`geoip:private`, CGNAT included) ahead of the private direct rules. Xray keeps one transparent UDP session per source socket, so a socket whose first packet went to a private address used to send its later packets, including STUN, from the direct exit.
+- Enhanced sends all UDP after the user rules through its proxy node instead of sending UDP to domestic destinations directly. Domestic UDP services (calls, games) now use the proxy exit. Domestic TCP is still direct, so Enhanced still exposes the direct address to domestic destinations, including TURN over TCP/TLS.
+- A fail-closed guard table (`lanekeep_guard`) is kept for as long as LaneKeep is enabled and is loaded by a new `lanekeep-guard` init script before the network starts. It drops forwarded LAN IPv4, forwarded LAN IPv6 and uncaptured LAN DNS. A boot-time check that refuses, or a start that fails at boot, now leaves the enabled flag set and the LAN blocked instead of forwarding it directly; `stop` and later package upgrades keep the table, and only disable or uninstall removes it. The upgrade from 0.2.1 or earlier still runs the old pre-upgrade script, so that one upgrade has a direct window.
+- The watchdog reads the LAN device's `disable_ipv6` every round and keeps the gate closed while it is not `1`. The Status page warns when LAN IPv6 is on and when LaneKeep is enabled but not running.
+- The rules page labels only each mode's fallback rule as the final default.
+
 ## 0.2.1 — 2026-11-21
 
 Fixed
