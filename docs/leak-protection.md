@@ -2,7 +2,7 @@
 
 [English](leak-protection.en.md) · [返回 README](../README.md)
 
-本文描述 v1.0.2 源码中的机制，包括 v0.2.0 加入的自定义 IP 规则，以及 1.0.2 加入的防泄漏加固和直连模式（见 [CHANGELOG](../CHANGELOG.md)）；0.2.1 及更早的安装包不含这些改动。机制存在不等于所有终端、应用和网络条件已经验证。默认安装处于停用状态；下面的流量保护只在用户明确启用后运行。
+本文描述 v1.0.3 源码中的机制，包括 v0.2.0 加入的自定义 IP 规则、1.0.2 加入的防泄漏加固和直连模式，以及 1.0.3 对全局、增强、按需模式入口不可用时一律丢弃的修正（见 [CHANGELOG](../CHANGELOG.md)）；0.2.1 及更早的安装包不含 1.0.2 的改动，1.0.2 不含 1.0.3 的修正。机制存在不等于所有终端、应用和网络条件已经验证。默认安装处于停用状态；下面的流量保护只在用户明确启用后运行。
 
 ## 固定规则矩阵
 
@@ -109,4 +109,4 @@ Xray 的透明 UDP 按源套接字建立会话：同一个套接字发出的第�
 4. 在测试环境主动中断默认节点，观察门控延迟与恢复；不要用一次成功推断所有故障场景。
 5. 停用或卸载，核对原 DNS、策略路由和本包 nft 表恢复情况。
 
-可公开记录见 [v1.0.2 验收记录](audit/v1.0.2/acceptance.md)、[v0.2.1 验收记录](audit/v0.2.1/acceptance.md)、[v0.2.0 验收记录](audit/v0.2.0/acceptance.md) 和 [v0.1.0 验收记录](audit/acceptance.md)，技术说法改动见 [文档核对](audit/document-audit.md)。
+可公开记录见 [v1.0.3 验收记录](audit/v1.0.3/acceptance.md)、[v1.0.2 验收记录](audit/v1.0.2/acceptance.md)、[v0.2.1 验收记录](audit/v0.2.1/acceptance.md)、[v0.2.0 验收记录](audit/v0.2.0/acceptance.md) 和 [v0.1.0 验收记录](audit/acceptance.md)，技术说法改动见 [文档核对](audit/document-audit.md)。

@@ -4,7 +4,9 @@
 
 A per-device routing panel for OpenWrt, with node management, controlled DNS paths and a proxy kill switch.
 
-**v1.0.2 is disabled on first installation. Installing it, adding nodes and saving settings do not activate interception.** Select a default node, then separately confirm **Enable LaneKeep** on the Nodes page.
+**v1.0.3 is disabled on first installation. Installing it, adding nodes and saving settings do not activate interception.** Select a default node, then separately confirm **Enable LaneKeep** on the Nodes page.
+
+1.0.3 fixes a leak: while the Global, Enhanced or On-demand inbound cannot take traffic (core start, stop, failure or any other reason), those devices now lose access instead of being handed to Standard or Direct mode; in 1.0.2, with “Devices without a mode” on Standard, they could be handled by Standard mode in that window. Upgrade from 1.0.2 with `apk add --upgrade`; the core stop at the start of that upgrade still runs under the 1.0.2 rules, and the start after it uses the new ones.
 
 1.0.2 adds Direct mode and “Devices without a mode” (Direct on a first install), hardens Global and Enhanced against UDP leaks and keeps the LAN blocked during boot, a failed start and stop, and supports HY2 port hopping and certificate pins; 0.2.1 fixed the kill-switch state on the Nodes page and the English Status page title; see the [CHANGELOG](CHANGELOG.md). Upgrade from 0.2.1 with `apk add --upgrade`; devices without a mode stay on Standard. During that one upgrade from 0.2.1 the old pre-upgrade script still leaves the LAN direct (see [leak protection](docs/leak-protection.en.md)). The 1.0.2 acceptance covers upgrading an enabled instance from 0.2.1-r1; see the [acceptance limits](docs/audit/v1.0.2/acceptance.md#验证边界). Before downgrading to 0.2.1, remove the `standard` and `direct` group sections and the `unassigned` section, and delete or clear nodes that use HY2 hopping or certificate pins; before downgrading to 0.1.0, also delete all IP rules.
 
@@ -59,12 +61,12 @@ Dependencies: `luci-base`, `rpcd`, `rpcd-mod-ucode`, `uhttpd-mod-ubus`, `xray-co
 
 ## Install, upgrade and uninstall
 
-Download the APK and its SHA256 file from this repository's **Releases**. Check the hash before copying it to your own test router. v1.0.2 is an unsigned standalone package; use `--allow-untrusted` only after verifying its source.
+Download the APK and its SHA256 file from this repository's **Releases**. Check the hash before copying it to your own test router. v1.0.3 is an unsigned standalone package; use `--allow-untrusted` only after verifying its source.
 
 ```sh
-sha256sum -c luci-app-lanekeep-1.0.2-r1.apk.sha256
+sha256sum -c luci-app-lanekeep-1.0.3-r1.apk.sha256
 apk update
-apk add --allow-untrusted ./luci-app-lanekeep-1.0.2-r1.apk
+apk add --allow-untrusted ./luci-app-lanekeep-1.0.3-r1.apk
 ```
 
 Check available storage first: this test added about 56 MiB of dependencies, and upgrades need temporary headroom. Dependencies come from the router's configured 25.12 repositories. Do not mix OpenWrt releases or kernel repositories. Open **Services → LaneKeep**. First installation prepares package files, menus and a disabled startup entry; it creates no interception tables or policy routes, changes no DNS settings and enables no kill switch.
