@@ -1,0 +1,223 @@
+{
+  "date": "2026-11-28",
+  "platform": {
+    "openwrt": "25.12.6",
+    "architecture": "x86_64",
+    "kernel": "6.12.112",
+    "xray": "26.10.21",
+    "isolation": "QEMU user networking with restrict=on (no host or internet access); SSH forward to localhost only; clients, upstream and node are network namespaces inside the VM"
+  },
+  "artifact": {
+    "name": "luci-app-lanekeep-1.0.2-r1.apk",
+    "sha256": "e8135ca6e125ebc487263019e9ae1aa43f7191fd48177787757908f16ff0a529",
+    "bytes": 308935,
+    "payload_files": 109,
+    "build_commit": "46b5d87",
+    "package_inputs_unchanged_to_release_commit": true
+  },
+  "start_state": "Copy of the leak-hardening test disk: the v0.2.1 acceptance disk with the published 0.2.1-r1 installed and enabled, plus an offline test CA and test node. Clients: .101 Global, .102 Enhanced, .105 explicit Direct (static lease), .110 without a mode.",
+  "verdicts": {
+    "D": "a test server saw the test WAN address (direct exit)",
+    "P": "traffic left only through the simulated node",
+    "-": "nothing reached a test server"
+  },
+  "lifecycle": [
+    {
+      "step": "upgrade_enabled_0.2.1_r1",
+      "apk_add_rc": 0,
+      "config_hashes_unchanged": true,
+      "guard_table": "present",
+      "guard_saved": true,
+      "rc_d": [
+        "K9lanekeep",
+        "S18lanekeep-guard",
+        "S96lanekeep"
+      ],
+      "unassigned": "standard",
+      "template_sha256_prefix": "31e8d3cc7de5f7bc",
+      "policy_check_all_match": true,
+      "gate": "OPEN",
+      "non_config_files_equal_package": 106
+    },
+    {
+      "step": "leak_regression_upgraded",
+      "unassigned": "standard",
+      "groups": [
+        "global",
+        "enhanced"
+      ],
+      "cases": 160,
+      "baseline": "hardening r3",
+      "changed": 0,
+      "regressions": 0
+    },
+    {
+      "step": "start_stop_window_review_finding",
+      "before_fix_build": "bd9c13d",
+      "fix_commit": "46b5d87",
+      "case_a": {
+        "unassigned": "direct",
+        "listening": [
+          12345,
+          12348,
+          12349
+        ],
+        "probes": 12,
+        "before": "12 D, real DNS answer from the router",
+        "after": "12 -, 14 packets per group dropped at the head of capture_direct"
+      },
+      "case_b": {
+        "unassigned": "standard",
+        "listening": [
+          12345,
+          12346,
+          12347,
+          12348
+        ],
+        "client": "explicit Direct member",
+        "before": "handled by Standard: one STUN probe via the node (P), FakeIP DNS answer",
+        "after": "6 -, 14 packets dropped at the tail of capture_direct"
+      }
+    },
+    {
+      "step": "restart_loop",
+      "unassigned": "direct",
+      "events": {
+        "core_restarts": 5,
+        "runtime_restarts": 1,
+        "rule_applies": 2
+      },
+      "packets_sent": 12542,
+      "direct_exit": 0,
+      "via_node": 3714,
+      "fallen_through_dropped_in_capture_direct_over_5_core_restarts": {
+        "global": 382,
+        "enhanced": 382
+      }
+    },
+    {
+      "step": "sysupgrade_reinstall_simulation",
+      "a_user_config_kept": "standard (PASS)",
+      "b_only_nodes_changed": "standard (PASS)",
+      "c_all_shipped_defaults": "direct (PASS)"
+    },
+    {
+      "step": "fresh_install",
+      "network_dhcp_firewall_dnsmasq_rules_routes_unchanged": true,
+      "nft_unchanged_apart_from_counters": true,
+      "unassigned": "direct",
+      "enabled": false
+    },
+    {
+      "step": "enable_via_rpc",
+      "gate": "OPEN",
+      "policy_check_all_match": true,
+      "members": {
+        "global": [
+          "10.77.2.101"
+        ],
+        "enhanced": [
+          "10.77.2.102"
+        ],
+        "direct": [
+          "10.77.2.105"
+        ]
+      }
+    },
+    {
+      "step": "leak_regression_fresh",
+      "unassigned": "direct",
+      "groups": [
+        "global",
+        "enhanced"
+      ],
+      "cases": 160,
+      "baseline": "hardening r3",
+      "changed": 0,
+      "regressions": 0
+    },
+    {
+      "step": "direct_mode_with_guard",
+      "cases": 28,
+      "baseline": "direct-mode development results (r92)",
+      "verdict_changes": 0,
+      "router_dns_answered": {
+        "udp": true,
+        "tcp": true
+      },
+      "guard_counters_during_suite": 0,
+      "internal_port_drops": 90,
+      "wan_address_probes_reaching_upstream": 0,
+      "hardening_rules_only_global_enhanced": true,
+      "direct_rules_last_four": true
+    },
+    {
+      "step": "node_failure_and_core_stop",
+      "groups": [
+        "global",
+        "enhanced",
+        "direct",
+        "none"
+      ],
+      "node_failure": "global/enhanced blocked; direct/none direct (Direct mode uses no node)",
+      "core_stop": "all blocked",
+      "verdict_changes_vs_r92": 0
+    },
+    {
+      "step": "stop_cases",
+      "s1_core_stopped": "all four blocked",
+      "s2_runtime_stopped_guard_only": "all four blocked",
+      "s3_disabled_positive_control": "3 of 6 probes D per group"
+    },
+    {
+      "step": "boot",
+      "guard_only": "24 probes blocked",
+      "boot_check_refuses_lan_ipv6_on": "enabled flag kept, guard present, all blocked",
+      "normal_boot": "LaneKeep started by itself, gate OPEN, global/enhanced via node, direct/none direct"
+    },
+    {
+      "step": "builtin_rows",
+      "groups": {
+        "standard": 14,
+        "global": 13,
+        "enhanced": 17,
+        "ondemand": 11
+      },
+      "final_default_only_last_row": true,
+      "warnings": 0
+    },
+    {
+      "step": "uninstall",
+      "network_dhcp_firewall_dnsmasq_rules_routes_same_as_before_install": true,
+      "nft_same_apart_from_counters": true,
+      "guard_table_and_boot_script_removed": true,
+      "processes_left": 0
+    }
+  ],
+  "target_checks": {
+    "where": "same VM, LaneKeep disabled, release source tree 68a0cd0",
+    "ip_rule_cases": "41/41",
+    "rules_check": "all pass (previous tree: aad799b)",
+    "latency_check": "9/9",
+    "hy2_cases": "128/128",
+    "hy2_check": "all pass (previous tree: this release with nodes.uc and chain-model.uc from aad799b)",
+    "hy2_runtime": "all pass"
+  },
+  "offline_tests": "11/11",
+  "known_issues": [
+    "after uninstall, the modified configuration (/etc/config/lanekeep*, /etc/lanekeep-proxy), an empty /etc/lanekeep-state and a dangling /etc/rc.d/K9lanekeep remain (as in 0.2.x); runtime directories under /tmp remain until reboot (not compared with 0.2.1)",
+    "the connection monitor has no receive-queue metric for 12349",
+    "with Devices without a mode on Standard, Global/Enhanced/On-demand members can be handled by Standard mode while the core starts or stops (as in earlier versions)",
+    "existing connections stay on the previous inbound after a device changes mode, until they end (as in earlier versions)"
+  ],
+  "logs": "docs/audit/v1.0.2/logs: rig outputs with the test tool's exit-code lines and repeated offline-cache warnings removed",
+  "not_covered": [
+    "actual order and length of the inbound open/close window in a real core restart",
+    "a later upgrade from 1.0.2 keeping the guard table, and connectivity during any upgrade",
+    "the direct window of the one upgrade from 0.2.1 (old pre-upgrade script)",
+    "direct upgrades from 0.1.0 or 0.2.0",
+    "a real sysupgrade and firmware-image builds",
+    "logged-in LuCI pages, real nodes and subscriptions, a real HY2 server",
+    "IPv6 clients, Wi-Fi/AP access, other architectures and physical devices"
+  ]
+}

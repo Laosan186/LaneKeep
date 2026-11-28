@@ -1,0 +1,30 @@
+##### apk del of the enabled 1.0.2-r1 instance
+/tmp/lk-leak/uninstall-check.sh: line 12: diff: not found
+network file restored (test-only IPv6 change undone)
+before: package=luci-app-lanekeep-1.0.2-r1 enabled=1 tables: table inet fw4 table inet lanekeep_guard table inet lanekeep_dns_gate table inet lanekeep_phone 
+apk_del_rc=0
+  * udhcpc: broadcasting discover
+  * udhcpc: broadcasting select for 10.77.2.15, server 10.77.2.2
+  * udhcpc: lease of 10.77.2.15 obtained from 10.77.2.2, lease time 86400
+  * {"ok":true,"enabled":false}
+  Executing luci-app-lanekeep-1.0.2-r1.post-deinstall
+OK: 107.7 MiB in 235 packages
+DIFFERS from before install: nft.txt
+same as before install: rules.txt
+same as before install: routes.txt
+same as before install: network
+same as before install: dhcp
+same as before install: firewall
+same as before install: dnsmasq-server.txt
+nft tables: table inet fw4 
+processes: core=0 lanekeep=0
+rc.d: K9lanekeep -> ../init.d/lanekeep;
+init.d: 
+left files: /etc/config/lanekeep /etc/config/lanekeep_runtime /etc/lanekeep-proxy /etc/lanekeep-state /tmp/lanekeep-dns-gate /tmp/lanekeep-home /tmp/lanekeep-prepare.OPBGhB /tmp/lanekeep-sampler-supervisor /tmp/lanekeep-telemetry 
+state dir: 
+proxy dir: config.json nodes.json panel-apply.log phone-pilot.nft trial-verifications.json versions 
+br-lan disable_ipv6=1
+UNINSTALL_CHECK_DONE
+nft same apart from counter values
+lrwxrwxrwx    1 root     root            18 Nov 28 09:22 /etc/rc.d/K9lanekeep -> ../init.d/lanekeep
+lanekeep-dns-gate lanekeep-home lanekeep-prepare.OPBGhB lanekeep-sampler-supervisor lanekeep-telemetry 

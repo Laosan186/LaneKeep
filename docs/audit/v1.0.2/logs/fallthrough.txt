@@ -1,0 +1,186 @@
+##### A before the fix (candidate bd9c13d): only 12345/12348/12349 listen, unassigned=direct
+=== ft-a-pre: unassigned=direct, hand-started core without inbounds on 12346,12347, probes from global,enhanced
+set unassigned direct: success
+package: luci-app-lanekeep-1.0.2-r1 unassigned=direct gate=OPEN
+dispatch_device last rule: 		meta l4proto { tcp, udp } jump capture_direct
+after stop: core_procs=0 listening: 
+hand config: inbound ports 12345,1053,12348,12349 xray -test: Configuration OK.
+hand core: procs=1 listening: :12345 :12348 :12349 
+before: 		fib daddr type local ip daddr != 10.77.2.15 meta l4proto { tcp, udp } th dport 53 counter packets 0 bytes 0 drop
+before: 		fib daddr type local meta l4proto { tcp, udp } th dport { 853, 1053, 5053, 10811-10860, 12345-12349 } counter packets 0 bytes 0 drop
+before: 		meta l4proto { tcp, udp } tproxy to :12349 meta mark set 0x00007610 counter name "captured" accept
+uplink: fw4 accept + masquerade installed
+W01 global {'direct': 2} 203.0.113.2:46498
+W03 global {'direct': 1} 203.0.113.2:54744
+W07 global {'direct': 1} 203.0.113.2:59972
+W08 global {'direct': 1} 203.0.113.2:42341
+D01 global {'direct': 1} ['74.125.250.129']
+C01 global {'direct': 1} {"ip": "203.0.113.2", "country": "ZZ"}
+W01 enhanced {'direct': 1} 203.0.113.2:58842
+W03 enhanced {'direct': 1} 203.0.113.2:47504
+W07 enhanced {'direct': 1} 203.0.113.2:36165
+W08 enhanced {'direct': 1} 203.0.113.2:48107
+D01 enhanced {'direct': 1} ['74.125.250.129']
+C01 enhanced {'direct': 1} {"ip": "203.0.113.2", "country": "ZZ"}
+dns to router from lkg: {"answers": ["74.125.250.129"], "name": "stun.l.google.com", "probe": "dns", "rcode": 0, "server": "10.77.2.15", "tcp": false, "type": "A"}
+dns to router from lke: {"answers": ["74.125.250.129"], "name": "stun.l.google.com", "probe": "dns", "rcode": 0, "server": "10.77.2.15", "tcp": false, "type": "A"}
+uplink: removed
+after: 		fib daddr type local ip daddr != 10.77.2.15 meta l4proto { tcp, udp } th dport 53 counter packets 0 bytes 0 drop
+after: 		fib daddr type local meta l4proto { tcp, udp } th dport { 853, 1053, 5053, 10811-10860, 12345-12349 } counter packets 0 bytes 0 drop
+after: 		meta l4proto { tcp, udp } tproxy to :12349 meta mark set 0x00007610 counter name "captured" accept
+verdict W01 global D {'direct': 2}
+verdict W03 global D {'direct': 1}
+verdict W07 global D {'direct': 1}
+verdict W08 global D {'direct': 1}
+verdict D01 global D {'direct': 1}
+verdict C01 global D {'direct': 1}
+verdict W01 enhanced D {'direct': 1}
+verdict W03 enhanced D {'direct': 1}
+verdict W07 enhanced D {'direct': 1}
+verdict W08 enhanced D {'direct': 1}
+verdict D01 enhanced D {'direct': 1}
+verdict C01 enhanced D {'direct': 1}
+verdict_summary {'enhanced': 'DDDDDD', 'global': 'DDDDDD'}
+/tmp/lk-leak/fallthrough.sh: line 62: pkill: not found
+hand core stopped: procs=1
+gate=OPEN after 4s
+restore unassigned standard: success
+end: unassigned=standard gate=OPEN listening: :12345 :12346 :12347 :12348 :12349 
+FALLTHROUGH_DONE
+
+##### B before the fix (bd9c13d): only 12345-12348 listen, unassigned=standard, .105 explicit Direct
+=== ft-b-pre: unassigned=standard, hand-started core without inbounds on 12349, probes from direct
+package: luci-app-lanekeep-1.0.2-r1 unassigned=standard gate=OPEN
+dispatch_device last rule: 		meta l4proto { tcp, udp } jump capture_phone
+after stop: core_procs=0 listening: 
+hand config: inbound ports 12345,1053,12346,12347,12348 xray -test: Configuration OK.
+hand core: procs=1 listening: :12345 :12346 :12347 :12348 
+before: 		fib daddr type local ip daddr != 10.77.2.15 meta l4proto { tcp, udp } th dport 53 counter packets 0 bytes 0 drop
+before: 		fib daddr type local meta l4proto { tcp, udp } th dport { 853, 1053, 5053, 10811-10860, 12345-12349 } counter packets 0 bytes 0 drop
+before: 		meta l4proto { tcp, udp } tproxy to :12349 meta mark set 0x00007610 counter name "captured" accept
+uplink: fw4 accept + masquerade installed
+W01 direct {'proxied': 1, 'tunnel': 1} timeout
+W03 direct {'direct': 1} 203.0.113.2:36718
+W07 direct {'direct': 1} 203.0.113.2:41537
+W08 direct {'direct': 1} 203.0.113.2:54760
+D01 direct {} ['198.18.151.136']
+C01 direct {'direct': 1} {"ip": "203.0.113.2", "country": "ZZ"}
+dns to router from lkd: {"answers": ["198.18.151.136"], "name": "stun.l.google.com", "probe": "dns", "rcode": 0, "server": "10.77.2.15", "tcp": false, "type": "A"}
+uplink: removed
+after: 		fib daddr type local ip daddr != 10.77.2.15 meta l4proto { tcp, udp } th dport 53 counter packets 0 bytes 0 drop
+after: 		fib daddr type local meta l4proto { tcp, udp } th dport { 853, 1053, 5053, 10811-10860, 12345-12349 } counter packets 0 bytes 0 drop
+after: 		meta l4proto { tcp, udp } tproxy to :12349 meta mark set 0x00007610 counter name "captured" accept
+verdict W01 direct P {'proxied': 1, 'tunnel': 1}
+verdict W03 direct D {'direct': 1}
+verdict W07 direct D {'direct': 1}
+verdict W08 direct D {'direct': 1}
+verdict D01 direct - {}
+verdict C01 direct D {'direct': 1}
+verdict_summary {'direct': 'PDDD-D'}
+hand core stopped: procs=0
+gate=OPEN after 8s
+end: unassigned=standard gate=OPEN listening: :12345 :12346 :12347 :12348 :12349 
+FALLTHROUGH_DONE
+
+##### A after the fix (46b5d87)
+=== ft-a-post: unassigned=direct, hand-started core without inbounds on 12346,12347, probes from global,enhanced
+set unassigned direct: success
+package: luci-app-lanekeep-1.0.2-r1 unassigned=direct gate=OPEN
+dispatch_device last rule: 		meta l4proto { tcp, udp } jump capture_direct
+after stop: core_procs=0 listening: 
+hand config: inbound ports 12345,1053,12348,12349 xray -test: Configuration OK.
+hand core: procs=1 listening: :12345 :12348 :12349 
+before: 		ip saddr @lanekeep_grp_global counter packets 0 bytes 0 drop
+before: 		ip saddr @lanekeep_grp_enhanced counter packets 0 bytes 0 drop
+before: 		ip saddr @lanekeep_grp_ondemand counter packets 0 bytes 0 drop
+before: 		ip saddr @lanekeep_grp_standard counter packets 0 bytes 0 drop
+before: 		fib daddr type local ip daddr != 10.77.2.15 meta l4proto { tcp, udp } th dport 53 counter packets 0 bytes 0 drop
+before: 		fib daddr type local meta l4proto { tcp, udp } th dport { 853, 1053, 5053, 10811-10860, 12345-12349 } counter packets 0 bytes 0 drop
+before: 		meta l4proto { tcp, udp } tproxy to :12349 meta mark set 0x00007610 counter name "captured" accept
+before: 		meta l4proto { tcp, udp } counter packets 0 bytes 0 drop
+uplink: fw4 accept + masquerade installed
+W01 global {} None
+W03 global {} None
+W07 global {} timeout
+W08 global {} timeout
+D01 global {} TimeoutError
+C01 global {} ConnectionRefusedError
+W01 enhanced {} None
+W03 enhanced {} None
+W07 enhanced {} timeout
+W08 enhanced {} timeout
+D01 enhanced {} TimeoutError
+C01 enhanced {} ConnectionRefusedError
+dns to router from lkg: {"error": "TimeoutError", "name": "stun.l.google.com", "probe": "dns", "server": "10.77.2.15", "tcp": false, "type": "A"}
+dns to router from lke: {"error": "TimeoutError", "name": "stun.l.google.com", "probe": "dns", "server": "10.77.2.15", "tcp": false, "type": "A"}
+uplink: removed
+after: 		ip saddr @lanekeep_grp_global counter packets 14 bytes 800 drop
+after: 		ip saddr @lanekeep_grp_enhanced counter packets 14 bytes 800 drop
+after: 		ip saddr @lanekeep_grp_ondemand counter packets 0 bytes 0 drop
+after: 		ip saddr @lanekeep_grp_standard counter packets 0 bytes 0 drop
+after: 		fib daddr type local ip daddr != 10.77.2.15 meta l4proto { tcp, udp } th dport 53 counter packets 0 bytes 0 drop
+after: 		fib daddr type local meta l4proto { tcp, udp } th dport { 853, 1053, 5053, 10811-10860, 12345-12349 } counter packets 0 bytes 0 drop
+after: 		meta l4proto { tcp, udp } tproxy to :12349 meta mark set 0x00007610 counter name "captured" accept
+after: 		meta l4proto { tcp, udp } counter packets 0 bytes 0 drop
+verdict W01 global - {}
+verdict W03 global - {}
+verdict W07 global - {}
+verdict W08 global - {}
+verdict D01 global - {}
+verdict C01 global - {}
+verdict W01 enhanced - {}
+verdict W03 enhanced - {}
+verdict W07 enhanced - {}
+verdict W08 enhanced - {}
+verdict D01 enhanced - {}
+verdict C01 enhanced - {}
+verdict_summary {'enhanced': '------', 'global': '------'}
+hand core stopped: procs=0
+gate=OPEN after 6s
+restore unassigned standard: success
+end: unassigned=standard gate=OPEN listening: :12345 :12346 :12347 :12348 :12349 
+FALLTHROUGH_DONE
+
+##### B after the fix (46b5d87)
+=== ft-b-post: unassigned=standard, hand-started core without inbounds on 12349, probes from direct
+package: luci-app-lanekeep-1.0.2-r1 unassigned=standard gate=OPEN
+dispatch_device last rule: 		meta l4proto { tcp, udp } jump capture_phone
+after stop: core_procs=0 listening: 
+hand config: inbound ports 12345,1053,12346,12347,12348 xray -test: Configuration OK.
+hand core: procs=1 listening: :12345 :12346 :12347 :12348 
+before: 		ip saddr @lanekeep_grp_global counter packets 0 bytes 0 drop
+before: 		ip saddr @lanekeep_grp_enhanced counter packets 0 bytes 0 drop
+before: 		ip saddr @lanekeep_grp_ondemand counter packets 0 bytes 0 drop
+before: 		ip saddr @lanekeep_grp_standard counter packets 0 bytes 0 drop
+before: 		fib daddr type local ip daddr != 10.77.2.15 meta l4proto { tcp, udp } th dport 53 counter packets 0 bytes 0 drop
+before: 		fib daddr type local meta l4proto { tcp, udp } th dport { 853, 1053, 5053, 10811-10860, 12345-12349 } counter packets 0 bytes 0 drop
+before: 		meta l4proto { tcp, udp } tproxy to :12349 meta mark set 0x00007610 counter name "captured" accept
+before: 		meta l4proto { tcp, udp } counter packets 0 bytes 0 drop
+uplink: fw4 accept + masquerade installed
+W01 direct {} None
+W03 direct {} None
+W07 direct {} timeout
+W08 direct {} timeout
+D01 direct {} TimeoutError
+C01 direct {} ConnectionRefusedError
+dns to router from lkd: {"error": "TimeoutError", "name": "stun.l.google.com", "probe": "dns", "server": "10.77.2.15", "tcp": false, "type": "A"}
+uplink: removed
+after: 		ip saddr @lanekeep_grp_global counter packets 0 bytes 0 drop
+after: 		ip saddr @lanekeep_grp_enhanced counter packets 0 bytes 0 drop
+after: 		ip saddr @lanekeep_grp_ondemand counter packets 0 bytes 0 drop
+after: 		ip saddr @lanekeep_grp_standard counter packets 0 bytes 0 drop
+after: 		fib daddr type local ip daddr != 10.77.2.15 meta l4proto { tcp, udp } th dport 53 counter packets 0 bytes 0 drop
+after: 		fib daddr type local meta l4proto { tcp, udp } th dport { 853, 1053, 5053, 10811-10860, 12345-12349 } counter packets 0 bytes 0 drop
+after: 		meta l4proto { tcp, udp } tproxy to :12349 meta mark set 0x00007610 counter name "captured" accept
+after: 		meta l4proto { tcp, udp } counter packets 14 bytes 800 drop
+verdict W01 direct - {}
+verdict W03 direct - {}
+verdict W07 direct - {}
+verdict W08 direct - {}
+verdict D01 direct - {}
+verdict C01 direct - {}
+verdict_summary {'direct': '------'}
+hand core stopped: procs=0
+gate=OPEN after 8s
+end: unassigned=standard gate=OPEN listening: :12345 :12346 :12347 :12348 :12349 
+FALLTHROUGH_DONE

@@ -1,0 +1,9 @@
+##### rules page builtin rows reported by the status RPC
+builtin config core count_basis counts current_version default_node devices gate home lan last_apply lifecycle nodes_revision ok policy_check revision rule_types warnings
+builtin type=object groups=standard,global,enhanced,ondemand
+saved
+standard rows=14 first=UDP，目标端口 53 → 共享DNS处理 last=TCP或UDP → 直连（本组最终默认）
+global rows=13 first=UDP，目标端口 53 → 共享DNS处理 last=TCP或UDP → 本组代理节点（本组最终默认）
+enhanced rows=17 first=UDP，目标端口 53 → 共享DNS处理 last=TCP或UDP → 本组代理节点（本组最终默认）
+ondemand rows=11 first=UDP，目标端口 53 → 共享DNS处理 last=TCP或UDP → 直连（本组最终默认）
+policy_check true warnings=0

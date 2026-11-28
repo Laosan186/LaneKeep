@@ -1,0 +1,32 @@
+##### apk add --upgrade of the enabled 0.2.1-r1 instance
+=== before
+package: luci-app-lanekeep-0.2.1-r1 enabled=1 unassigned=none gate=OPEN
+c0d511daf97b7abe /etc/config/lanekeep
+9cb732403b2b44f4 /etc/config/lanekeep_runtime
+26811a6d1e9d4bf7 /etc/lanekeep-proxy/nodes.json
+81019c4cd209308b /etc/config/dhcp
+cc7a8c529901ff07 /etc/config/network
+tables: table inet fw4 table inet lanekeep_dns_gate table inet lanekeep_phone 
+members: lanekeep.global.member='10.77.2.101' lanekeep.enhanced.member='10.77.2.102' lanekeep.ondemand.member='10.77.2.103' 
+=== upgrade
+apk_add_rc=0 seconds=9
+  Installing file to etc/lanekeep-proxy/nodes.json.apk-new
+  Executing luci-app-lanekeep-1.0.2-r1.post-upgrade
+  * udhcpc: started, v1.37.0
+  * udhcpc: broadcasting discover
+  * udhcpc: broadcasting select for 10.77.2.15, server 10.77.2.2
+  * udhcpc: lease of 10.77.2.15 obtained from 10.77.2.2, lease time 86400
+  * {"ok":true,"enabled":true}
+OK: 108.7 MiB in 236 packages
+=== after
+package: luci-app-lanekeep-1.0.2-r1 enabled=1 unassigned=none gate=OPEN
+configuration hashes: unchanged
+tables: table inet fw4 table inet lanekeep_guard table inet lanekeep_dns_gate table inet lanekeep_phone 
+guard_table=present guard_saved=present rc.d: K9lanekeep S18lanekeep-guard S96lanekeep 
+dispatch fallback: meta l4proto { tcp, udp } jump capture_phone
+7612_in_table=0 router_dns_outbound=1 direct_inbound=1
+template_sha=31e8d3cc7de5f7bc baseline_sha=31e8d3cc7de5f7bc
+web namespace: v1_0_2_r1 
+status: core=true gate=OPEN unassigned=standard policy_check={ "rules_match": true, "members_match": true, "groups": { "global": true, "enhanced": true, "ondemand": true, "standard": true, "direct": true }, "unassigned_match": true }
+members: { "global": [ "10.77.2.101" ], "enhanced": [ "10.77.2.102" ], "ondemand": [ "10.77.2.103" ], "standard": [ ], "direct": [ ] }
+UPGRADE_CHECK_DONE

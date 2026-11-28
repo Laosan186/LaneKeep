@@ -1,0 +1,99 @@
+##### boot window: only S18lanekeep-guard, LaneKeep itself not started
+TOPOLOGY_READY
+FIXTURES_UP
+=== boot-window
+uptime=98.71 package=luci-app-lanekeep-1.0.2-r1
+enabled_flag=1 br-lan_disable_ipv6=1 network.lan.ipv6=
+nft_tables: table inet lanekeep_guard table inet fw4 
+guard_file=present owned_network=absent
+rc.d: K9lanekeep S18lanekeep-guard 
+ip_rule_30210=0
+dnsmasq_server= noresolv=
+status: core=false gate=CLOSED fresh=false
+warning: 门控状态过期或不可读，按CLOSED显示
+warning: 已启用但保护未在运行：局域网设备的上网和DNS已被阻断，不会改走直连。请排除原因后重新启动，或先关闭 LaneKeep
+guard_forward4=0 guard_forward6=0 guard_dns=0 
+uplink: fw4 accept + masquerade installed
+W01 global {} None
+W03 global {} None
+W07 global {} timeout
+W08 global {} timeout
+D01 global {} TimeoutError
+C01 global {} ConnectionRefusedError
+W01 enhanced {} None
+W03 enhanced {} None
+W07 enhanced {} timeout
+W08 enhanced {} timeout
+D01 enhanced {} TimeoutError
+C01 enhanced {} ConnectionRefusedError
+W01 direct {} None
+W03 direct {} None
+W07 direct {} timeout
+W08 direct {} timeout
+D01 direct {} TimeoutError
+C01 direct {} ConnectionRefusedError
+W01 none {} None
+W03 none {} None
+W07 none {} timeout
+W08 none {} timeout
+D01 none {} TimeoutError
+C01 none {} ConnectionRefusedError
+dns to router from lkg: {"error": "TimeoutError", "name": "stun.l.google.com", "probe": "dns", "server": "10.77.2.15", "tcp": false, "type": "A"}
+dns to router from lke: {"error": "TimeoutError", "name": "stun.l.google.com", "probe": "dns", "server": "10.77.2.15", "tcp": false, "type": "A"}
+dns to router from lkd: {"error": "TimeoutError", "name": "stun.l.google.com", "probe": "dns", "server": "10.77.2.15", "tcp": false, "type": "A"}
+dns to router from lkn: {"error": "TimeoutError", "name": "stun.l.google.com", "probe": "dns", "server": "10.77.2.15", "tcp": false, "type": "A"}
+guard counters after probes: guard_forward4=28 guard_forward6=0 guard_dns=28 
+uplink: removed
+
+##### boot check refuses (LAN IPv6 not off at boot)
+uptime=271.13 package=luci-app-lanekeep-1.0.2-r1
+enabled_flag=1 br-lan_disable_ipv6=0 network.lan.ipv6=
+nft_tables: table inet fw4 table inet lanekeep_guard 
+guard_file=present owned_network=absent
+rc.d: K9lanekeep S18lanekeep-guard S96lanekeep 
+ip_rule_30210=0
+dnsmasq_server= noresolv=
+status: core=false gate=CLOSED fresh=false
+warning: 门控状态过期或不可读，按CLOSED显示
+gate=CLOSED at uptime 273.08
+TOPOLOGY_READY
+FIXTURES_UP
+gate=CLOSED
+W01 global {} None
+W01 enhanced {} None
+W01 direct {} None
+W01 none {} None
+W03 global {} None
+W03 enhanced {} None
+W03 direct {} None
+W03 none {} None
+W08 global {} timeout
+W08 enhanced {} timeout
+W08 direct {} timeout
+W08 none {} timeout
+
+##### normal boot (LAN IPv6 off in the network configuration)
+=== right after boot, before the test topology exists
+uptime=92.17 package=luci-app-lanekeep-1.0.2-r1
+enabled_flag=1 br-lan_disable_ipv6=1 network.lan.ipv6=
+nft_tables: table inet fw4 table inet lanekeep_guard table inet lanekeep_dns_gate table inet lanekeep_phone 
+guard_file=present owned_network=present
+rc.d: K9lanekeep S18lanekeep-guard S96lanekeep 
+ip_rule_30210=1
+dnsmasq_server=127.0.0.1#5053 noresolv=1
+status: core=true gate=CLOSED fresh=true
+watchdog: state=CLOSED uptime_seconds=92 rounds=18 successes=0 failures=18 streak=0 probe_elapsed_ms=2040 probe_finished_cs=9212 lan_ipv6=off 
+guard_forward4=0 guard_forward6=0 guard_dns=0 
+gate=OPEN after 1x2s once the upstream exists
+W01 global {'proxied': 1, 'tunnel': 1} 198.51.100.2:42344
+W01 enhanced {'proxied': 1, 'tunnel': 1} 198.51.100.2:33361
+W01 direct {'direct': 2} 203.0.113.2:47934
+W01 none {'direct': 1} 203.0.113.2:58264
+W03 global {'proxied': 1, 'tunnel': 1} 198.51.100.2:43914
+W03 enhanced {'proxied': 1, 'tunnel': 1} 198.51.100.2:33449
+W03 direct {'direct': 1} 203.0.113.2:38945
+W03 none {'direct': 1} 203.0.113.2:38687
+W08 global {'proxied': 1, 'tunnel': 1} 198.51.100.2:41151
+W08 enhanced {'proxied': 1, 'tunnel': 1} 198.51.100.2:41654
+W08 direct {'direct': 1} 203.0.113.2:53793
+W08 none {'direct': 1} 203.0.113.2:41735

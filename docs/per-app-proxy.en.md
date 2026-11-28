@@ -74,7 +74,7 @@ Notes:
 - **Only devices in the same mode can use the port.** A device moved out of the mode is refused. The port has no password.
 - **SOCKS5 TCP only, no UDP.** Voice and video calls (UDP) and WebRTC in the program do not use the dedicated entry; they follow the device's mode.
 - Dedicated entries have their own protection (private addresses, fake IPs, internal ports) and are not part of the custom rule order on the Rules page.
-- **The kill switch still applies:** traffic is blocked when the default node is down; it does not switch to direct.
+- **The kill switch still applies when the exit is the proxy:** traffic is blocked when the default node is down; it does not switch to direct. A dedicated entry whose exit is direct does not use a node and is not covered by the kill switch.
 - **Before disabling or deleting a port, change the program's proxy setting back** (or run the browser's disable file), or the program loses internet access.
 
 ## FAQ

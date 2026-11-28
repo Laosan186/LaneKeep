@@ -1,0 +1,47 @@
+##### upgraded instance (unassigned devices on Standard) vs the hardening baseline r3
+suite     id   group    old new change     new result
+
+cases compared: 138, changed: 0, regressions: 0
+still D in the fixed build: webrtc/W13/enhanced, webrtc/W14/enhanced, webrtc/W16/enhanced, webrtc/W18/enhanced, webrtc/W19/enhanced, dns/D09/enhanced, dns/D13/enhanced, dns/D15/enhanced, httpdns/D15/enhanced, control/C02/enhanced, user/C01/global, user/D12/global, user/W06/global, user/W07/global, user/W15/global
+
+##### fresh instance (unassigned devices on Direct) vs r3
+suite     id   group    old new change     new result
+
+cases compared: 138, changed: 0, regressions: 0
+still D in the fixed build: webrtc/W13/enhanced, webrtc/W14/enhanced, webrtc/W16/enhanced, webrtc/W18/enhanced, webrtc/W19/enhanced, dns/D09/enhanced, dns/D13/enhanced, dns/D15/enhanced, httpdns/D15/enhanced, control/C02/enhanced, user/C01/global, user/D12/global, user/W06/global, user/W07/global, user/W15/global
+
+##### private-domain and quick suites vs r3 (both instances)
+== up102
+privdom   P05  global   P   P              198.51.100.2:60505
+quick     W01  enhanced P   P              198.51.100.2:48274
+quick     W01  global   P   P              198.51.100.2:35092
+quick     W03  enhanced P   P              198.51.100.2:46429
+quick     W03  global   P   P              198.51.100.2:51385
+quick     W08  enhanced P   P              198.51.100.2:46469
+quick     W08  global   P   P              198.51.100.2:33198
+quick-after W01  enhanced P   P              198.51.100.2:41793
+quick-after W01  global   P   P              198.51.100.2:35198
+quick-after W03  enhanced P   P              198.51.100.2:59304
+quick-after W03  global   P   P              198.51.100.2:56713
+quick-after W08  enhanced P   P              198.51.100.2:41801
+quick-after W08  global   P   P              198.51.100.2:45950
+
+cases compared: 22, changed: 0, regressions: 0
+still D in the fixed build: privdom/P01/enhanced, privdom/P01/global, privdom/P02/enhanced, privdom/P02/global, privdom/P04/enhanced, privdom/P04/global
+== fr102
+privdom   P05  global   P   P              198.51.100.2:59467
+quick     W01  enhanced P   P              198.51.100.2:34918
+quick     W01  global   P   P              198.51.100.2:40057
+quick     W03  enhanced P   P              198.51.100.2:55900
+quick     W03  global   P   P              198.51.100.2:60759
+quick     W08  enhanced P   P              198.51.100.2:54850
+quick     W08  global   P   P              198.51.100.2:48150
+quick-after W01  enhanced P   P              198.51.100.2:45553
+quick-after W01  global   P   P              198.51.100.2:51677
+quick-after W03  enhanced P   P              198.51.100.2:42626
+quick-after W03  global   P   P              198.51.100.2:51059
+quick-after W08  enhanced P   P              198.51.100.2:46839
+quick-after W08  global   P   P              198.51.100.2:37519
+
+cases compared: 22, changed: 0, regressions: 0
+still D in the fixed build: privdom/P01/enhanced, privdom/P01/global, privdom/P02/enhanced, privdom/P02/global, privdom/P04/enhanced, privdom/P04/global

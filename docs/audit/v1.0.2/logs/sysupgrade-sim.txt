@@ -1,0 +1,20 @@
+##### sysupgrade then reinstall, cases a/b/c
+##### case a
+case=a apk_del_rc=0
+before: state=no lanekeep=d32042c80e31/50d23e3577c3 runtime=59ed0d65a30e/27616300eab7 nodes=26811a6d1e9d/dfa61d95b808
+apk_add_rc=0 OK: 108.7 MiB in 236 packages
+after: unassigned=none state=yes
+SIM a PASS (want none)
+##### case b
+case=b apk_del_rc=0
+before: state=no lanekeep=50d23e3577c3/50d23e3577c3 runtime=27616300eab7/27616300eab7 nodes=26811a6d1e9d/dfa61d95b808
+apk_add_rc=0 OK: 108.7 MiB in 236 packages
+after: unassigned=none state=yes
+SIM b PASS (want none)
+##### case c
+case=c apk_del_rc=0
+before: state=no lanekeep=50d23e3577c3/50d23e3577c3 runtime=27616300eab7/27616300eab7 nodes=dfa61d95b808/dfa61d95b808
+apk_add_rc=0 OK: 108.7 MiB in 236 packages
+after: unassigned=direct state=yes
+SIM c PASS (want direct)
+enabled=0 tables: table inet fw4 

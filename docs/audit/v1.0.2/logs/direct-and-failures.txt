@@ -1,0 +1,221 @@
+##### Direct mode with the guard table (generated rules, guard counters, Direct suite)
+##### generated rules
+hardening rule #12 of 38: { "inboundTag": [ "global-transparent", "enhanced-transparent" ], "ip": [ "geoip:private" ], "network": "udp", "outboundTag": "block", "type": "field" }
+hardening rule #18 of 38: { "inboundTag": [ "enhanced-transparent" ], "network": "udp", "outboundTag": "proxy-default", "type": "field" }
+last four rules inboundTag: [ [ "direct-transparent" ], [ "direct-transparent" ], [ "direct-transparent" ], [ "direct-transparent" ] ] outbounds: [ "direct-router-dns", "block", "block", "direct" ]
+direct-transparent rules before the last four: 0
+direct-router-dns outbound: [ { "protocol": "dns", "settings": { "rewriteAddress": "127.0.0.1", "rewritePort": 53, "rules": [ { "action": "direct" } ], "userLevel": 53 }, "tag": "direct-router-dns" } ]
+direct-transparent inbound: port=12349 sniffing={ "enabled": false }
+capture_direct:
+	chain capture_direct {
+		ip saddr @lanekeep_grp_global counter packets 13 bytes 737 drop
+		ip saddr @lanekeep_grp_enhanced counter packets 13 bytes 737 drop
+		ip saddr @lanekeep_grp_ondemand counter packets 0 bytes 0 drop
+guard input:
+		type filter hook input priority filter - 2; policy accept;
+		iifname != "br-lan" return
+		meta nfproto ipv6 meta l4proto { tcp, udp } th dport 53 counter name "guard_dns" drop
+		ip saddr 10.77.2.0/24 meta l4proto { tcp, udp } th dport 53 meta mark != 0x00007610 counter name "guard_dns" drop
+##### guard counters around the Direct-mode suite
+before: guard_forward4=0 guard_forward6=0 guard_dns=0 
+after:  guard_forward4=0 guard_forward6=0 guard_dns=0 
+X03 direct {} ['74.125.250.129']
+X03 none {} ['74.125.250.129']
+X04 direct {} ['39.156.66.10']
+X04 none {} ['39.156.66.10']
+X05 direct {'direct': 1} ['39.156.66.10']
+X05 none {'direct': 1} ['39.156.66.10']
+fib_drops_before=0
+0 core_fds_before=35
+fib_drops_after_suite=0
+ledger_after_alias_probes: }}
+fib_drops_after_alias=0
+core_fds_after=19 core_same_pid=yes
+INTERACTION_DONE
+
+##### Direct suite verdicts vs r92
+r92-directx cases 28 verdict changes []
+r92f-directx cases 28 verdict changes []
+new verdicts: X01/d=D X01/n=D X02/d=D X02/n=D X03/d=- X03/n=- X04/d=- X04/n=- X05/d=D X05/n=D X06/d=D X06/n=D X07/d=- X07/n=- X08/d=- X08/n=- X09/d=- X09/n=- X10/d=- X10/n=- X11/d=- X11/n=- X12/d=- X12/n=- X13/d=- X13/n=- X14/d=- X14/n=-
+
+##### node failure, core stop and stop-case verdicts, four client types
+fail-node groups ['direct', 'enhanced', 'global', 'none'] verdicts C01/d=D C01/e=- C01/g=- C01/n=D D01/d=D D01/e=- D01/g=- D01/n=D W01/d=D W01/e=- W01/g=- W01/n=D W03/d=D W03/e=- W03/g=- W03/n=D W07/d=D W07/e=- W07/g=- W07/n=D W08/d=D W08/e=- W08/g=- W08/n=D
+  vs r92-fail-node cases 18 changes [] missing in base ['enhanced']
+fail-core groups ['direct', 'enhanced', 'global', 'none'] verdicts C01/d=- C01/e=- C01/g=- C01/n=- D01/d=- D01/e=- D01/g=- D01/n=- W01/d=- W01/e=- W01/g=- W01/n=- W03/d=- W03/e=- W03/g=- W03/n=- W07/d=- W07/e=- W07/g=- W07/n=- W08/d=- W08/e=- W08/g=- W08/n=-
+  vs r92-fail-core cases 18 changes [] missing in base ['enhanced']
+  vs r92f-fail-core cases 24 changes [] missing in base []
+s1-core-stopped {'direct': '------', 'enhanced': '------', 'global': '------', 'none': '------'}
+s2-lanekeep-stopped {'direct': '------', 'enhanced': '------', 'global': '------', 'none': '------'}
+s3-disabled {'direct': '-D--DD', 'enhanced': '-D--DD', 'global': '-D--DD', 'none': '-D--DD'}
+
+##### stop cases S1-S3
+uplink: fw4 accept + masquerade installed
+##### S1 core stopped (lanekeep-xray stop)
+core_procs=0
+=== s1-core-stopped
+uptime=3479.71 package=luci-app-lanekeep-1.0.2-r1
+enabled_flag=1 br-lan_disable_ipv6=1 network.lan.ipv6=
+nft_tables: table inet fw4 table inet lanekeep_guard table inet lanekeep_dns_gate table inet lanekeep_phone table ip leaktest_nat 
+guard_file=present owned_network=present
+rc.d: K9lanekeep S18lanekeep-guard S96lanekeep 
+ip_rule_30210=1
+dnsmasq_server=127.0.0.1#5053 noresolv=1
+status: core=false gate=CLOSED fresh=true
+watchdog: state=CLOSED uptime_seconds=3478 rounds=4 successes=3 failures=1 streak=0 probe_elapsed_ms=40 probe_finished_cs=347616 lan_ipv6=off 
+guard_forward4=0 guard_forward6=0 guard_dns=0 
+Sat Nov 28 08:50:33 2026 daemon.notice procd: /etc/rc.d/S96lanekeep:  `if(length(ctx.ipv6)||length(ctx.ipv6_prefix)||trim(fs.readfile('/proc/sys/net/ipv6/conf/'+ctx.device+'/disable_ipv6')||'')!='1')d
+Sat Nov 28 08:50:33 2026 daemon.notice procd: /etc/rc.d/S96lanekeep:   Near here -----------------------------------------------------------------------------------------------------------------------
+Sat Nov 28 08:50:33 2026 daemon.notice procd: /etc/rc.d/S96lanekeep:
+Sat Nov 28 08:50:33 2026 daemon.notice procd: /etc/rc.d/S96lanekeep:
+uplink: fw4 accept + masquerade installed
+W01 global {} None
+W03 global {} None
+W07 global {} timeout
+W08 global {} timeout
+D01 global {} TimeoutError
+C01 global {} ConnectionRefusedError
+W01 enhanced {} None
+W03 enhanced {} None
+W07 enhanced {} timeout
+W08 enhanced {} timeout
+D01 enhanced {} TimeoutError
+C01 enhanced {} ConnectionRefusedError
+W01 direct {} None
+W03 direct {} None
+W07 direct {} timeout
+W08 direct {} timeout
+D01 direct {} TimeoutError
+C01 direct {} ConnectionRefusedError
+W01 none {'direct': 1} None
+W03 none {} None
+W07 none {} timeout
+W08 none {} timeout
+D01 none {} TimeoutError
+C01 none {} ConnectionRefusedError
+dns to router from lkg: {"error": "TimeoutError", "name": "stun.l.google.com", "probe": "dns", "server": "10.77.2.15", "tcp": false, "type": "A"}
+dns to router from lke: {"error": "TimeoutError", "name": "stun.l.google.com", "probe": "dns", "server": "10.77.2.15", "tcp": false, "type": "A"}
+dns to router from lkd: {"error": "TimeoutError", "name": "stun.l.google.com", "probe": "dns", "server": "10.77.2.15", "tcp": false, "type": "A"}
+dns to router from lkn: {"error": "TimeoutError", "name": "stun.l.google.com", "probe": "dns", "server": "10.77.2.15", "tcp": false, "type": "A"}
+guard counters after probes: guard_forward4=0 guard_forward6=0 guard_dns=0 
+gate=OPEN after 6s
+##### S2 lanekeep stop while enabled (guard only)
+udhcpc: started, v1.37.0
+udhcpc: broadcasting discover
+udhcpc: broadcasting select for 10.77.2.15, server 10.77.2.2
+udhcpc: lease of 10.77.2.15 obtained from 10.77.2.2, lease time 86400
+init_stop_rc=0
+=== s2-lanekeep-stopped
+uptime=3714.89 package=luci-app-lanekeep-1.0.2-r1
+enabled_flag=1 br-lan_disable_ipv6=1 network.lan.ipv6=
+nft_tables: table inet fw4 table inet lanekeep_guard table ip leaktest_nat 
+guard_file=present owned_network=absent
+rc.d: K9lanekeep S18lanekeep-guard S96lanekeep 
+ip_rule_30210=0
+dnsmasq_server= noresolv=
+status: core=false gate=CLOSED fresh=true
+warning: 已启用但保护未在运行：局域网设备的上网和DNS已被阻断，不会改走直连。请排除原因后重新启动，或先关闭 LaneKeep
+watchdog: state=GATE_UPDATE_FAILED uptime_seconds=3713 rounds=3 successes=2 failures=1 streak=0 probe_elapsed_ms=50 probe_finished_cs=371175 lan_ipv6=off 
+guard_forward4=0 guard_forward6=0 guard_dns=0 
+Sat Nov 28 08:50:33 2026 daemon.notice procd: /etc/rc.d/S96lanekeep:  `if(length(ctx.ipv6)||length(ctx.ipv6_prefix)||trim(fs.readfile('/proc/sys/net/ipv6/conf/'+ctx.device+'/disable_ipv6')||'')!='1')d
+Sat Nov 28 08:50:33 2026 daemon.notice procd: /etc/rc.d/S96lanekeep:   Near here -----------------------------------------------------------------------------------------------------------------------
+Sat Nov 28 08:50:33 2026 daemon.notice procd: /etc/rc.d/S96lanekeep:
+Sat Nov 28 08:50:33 2026 daemon.notice procd: /etc/rc.d/S96lanekeep:
+uplink: fw4 accept + masquerade installed
+W01 global {} None
+W03 global {} None
+W07 global {} timeout
+W08 global {} timeout
+D01 global {} TimeoutError
+C01 global {} ConnectionRefusedError
+W01 enhanced {} None
+W03 enhanced {} None
+W07 enhanced {} timeout
+W08 enhanced {} timeout
+D01 enhanced {} TimeoutError
+C01 enhanced {} ConnectionRefusedError
+W01 direct {} None
+W03 direct {} None
+W07 direct {} timeout
+W08 direct {} timeout
+D01 direct {} TimeoutError
+C01 direct {} ConnectionRefusedError
+W01 none {} None
+W03 none {} None
+W07 none {} timeout
+W08 none {} timeout
+D01 none {} TimeoutError
+C01 none {} ConnectionRefusedError
+dns to router from lkg: {"error": "TimeoutError", "name": "stun.l.google.com", "probe": "dns", "server": "10.77.2.15", "tcp": false, "type": "A"}
+dns to router from lke: {"error": "TimeoutError", "name": "stun.l.google.com", "probe": "dns", "server": "10.77.2.15", "tcp": false, "type": "A"}
+dns to router from lkd: {"error": "TimeoutError", "name": "stun.l.google.com", "probe": "dns", "server": "10.77.2.15", "tcp": false, "type": "A"}
+dns to router from lkn: {"error": "TimeoutError", "name": "stun.l.google.com", "probe": "dns", "server": "10.77.2.15", "tcp": false, "type": "A"}
+guard counters after probes: guard_forward4=28 guard_forward6=0 guard_dns=28 
+udhcpc: started, v1.37.0
+udhcpc: broadcasting discover
+udhcpc: broadcasting select for 10.77.2.15, server 10.77.2.2
+udhcpc: lease of 10.77.2.15 obtained from 10.77.2.2, lease time 86400
+{"ok":true,"enabled":true}
+start_rc=0
+gate=OPEN after 6s
+##### S3 positive control: lifecycle disable
+udhcpc: started, v1.37.0
+udhcpc: broadcasting discover
+udhcpc: broadcasting select for 10.77.2.15, server 10.77.2.2
+udhcpc: lease of 10.77.2.15 obtained from 10.77.2.2, lease time 86400
+{"ok":true,"enabled":false}
+disable_rc=0
+=== s3-disabled
+uptime=3953.52 package=luci-app-lanekeep-1.0.2-r1
+enabled_flag=0 br-lan_disable_ipv6=1 network.lan.ipv6=
+nft_tables: table inet fw4 table ip leaktest_nat 
+guard_file=absent owned_network=absent
+rc.d: K9lanekeep S18lanekeep-guard S96lanekeep 
+ip_rule_30210=0
+dnsmasq_server= noresolv=
+status: core=false gate=CLOSED fresh=true
+watchdog: state=GATE_UPDATE_FAILED uptime_seconds=3954 rounds=4 successes=3 failures=1 streak=0 probe_elapsed_ms=60 probe_finished_cs=395212 lan_ipv6=off 
+Sat Nov 28 08:50:33 2026 daemon.notice procd: /etc/rc.d/S96lanekeep:  `if(length(ctx.ipv6)||length(ctx.ipv6_prefix)||trim(fs.readfile('/proc/sys/net/ipv6/conf/'+ctx.device+'/disable_ipv6')||'')!='1')d
+Sat Nov 28 08:50:33 2026 daemon.notice procd: /etc/rc.d/S96lanekeep:   Near here -----------------------------------------------------------------------------------------------------------------------
+Sat Nov 28 08:50:33 2026 daemon.notice procd: /etc/rc.d/S96lanekeep:
+Sat Nov 28 08:50:33 2026 daemon.notice procd: /etc/rc.d/S96lanekeep:
+uplink: fw4 accept + masquerade installed
+W01 global {} None
+W03 global {} None
+W07 global {'direct': 1} 203.0.113.2:33974
+W08 global {'direct': 1} 203.0.113.2:39870
+D01 global {'direct': 1} ['74.125.250.129']
+C01 global {} ConnectionRefusedError
+W01 enhanced {} None
+W03 enhanced {} None
+W07 enhanced {'direct': 1} 203.0.113.2:51380
+W08 enhanced {'direct': 1} 203.0.113.2:57965
+D01 enhanced {'direct': 1} ['74.125.250.129']
+C01 enhanced {} ConnectionRefusedError
+W01 direct {} None
+W03 direct {} None
+W07 direct {'direct': 1} 203.0.113.2:39638
+W08 direct {'direct': 1} 203.0.113.2:57308
+D01 direct {'direct': 1} ['74.125.250.129']
+C01 direct {} ConnectionRefusedError
+W01 none {} None
+W03 none {} None
+W07 none {'direct': 1} 203.0.113.2:49821
+W08 none {'direct': 1} 203.0.113.2:56215
+D01 none {'direct': 1} ['74.125.250.129']
+C01 none {} ConnectionRefusedError
+dns to router from lkg: {"error": "TimeoutError", "name": "stun.l.google.com", "probe": "dns", "server": "10.77.2.15", "tcp": false, "type": "A"}
+dns to router from lke: {"error": "TimeoutError", "name": "stun.l.google.com", "probe": "dns", "server": "10.77.2.15", "tcp": false, "type": "A"}
+dns to router from lkd: {"error": "TimeoutError", "name": "stun.l.google.com", "probe": "dns", "server": "10.77.2.15", "tcp": false, "type": "A"}
+dns to router from lkn: {"error": "TimeoutError", "name": "stun.l.google.com", "probe": "dns", "server": "10.77.2.15", "tcp": false, "type": "A"}
+guard table: absent
+--- enable again through the panel RPC
+{ "step": "enable", "result": { "ok": true, "enabled": true } }
+gate=OPEN after 6s
+uplink: removed
+uptime=4102.42 package=luci-app-lanekeep-1.0.2-r1
+enabled_flag=1 br-lan_disable_ipv6=1 network.lan.ipv6=
+nft_tables: table inet fw4 table inet lanekeep_guard table inet lanekeep_dns_gate table inet lanekeep_phone 
+guard_file=present owned_network=present
+rc.d: K9lanekeep S18lanekeep-guard S96lanekeep 
+ip_rule_30210=1
+STOP_CASES_DONE

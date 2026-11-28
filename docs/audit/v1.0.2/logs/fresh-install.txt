@@ -1,0 +1,41 @@
+##### clean first install
+/tmp/lk-leak/fresh-clean.sh: line 23: diff: not found
+apk_del_rc=0
+left before install:  rc.d: K9lanekeep 
+nft tables: table inet fw4  ip_rule_30210=0
+apk_add_rc=0 OK: 108.7 MiB in 236 packages
+CHANGED by install: nft.txt
+unchanged by install: rules.txt
+unchanged by install: routes.txt
+unchanged by install: network
+unchanged by install: dhcp
+unchanged by install: firewall
+unchanged by install: dnsmasq-server.txt
+package: luci-app-lanekeep-1.0.2-r1 unassigned=direct enabled=0 state=yes
+rc.d: K9lanekeep S18lanekeep-guard S96lanekeep 
+running: 0 core, tables: table inet fw4 
+status: ok=true enabled=false unassigned=direct gate=CLOSED
+conffile 083cfa3e4fa770e8 /etc/config/lanekeep
+conffile 27616300eab7a81f /etc/config/lanekeep_runtime
+conffile dfa61d95b8082601 /etc/lanekeep-proxy/nodes.json
+FRESH_CLEAN_DONE
+
+##### enable through the real RPC methods
+start unassigned=direct enabled=0
+node: { "step": "node", "result": { "validate_ok": true, "change_kind": "metadata", "apply_ok": true, "apply_message": null, "job": { "state": "success", "message": "应用完成；请查看当前默认节点与门控状态" } }, "nodes": [ "leak_vps" ], "default_node": "" }
+test: { "step": "test", "result": { "ok": true, "message": "延迟为连接建立后两次请求的较小值；首次连接含与节点握手", "receipt_type": "string" }, "confirm": { "ok": true, "message": "已记录你的明确确认；只更新私有验证状态，未修改代码能力表、节点或�
+enable: { "step": "enable", "result": { "ok": true, "enabled": true } }
+gate=OPEN
+members: true members success members_applied 
+gate=OPEN core=true unassigned=direct
+policy_check={ "rules_match": true, "members_match": true, "groups": { "global": true, "enhanced": true, "ondemand": true, "standard": true, "direct": true }, "unassigned_match": true }
+members={ "global": [ "10.77.2.101" ], "enhanced": [ "10.77.2.102" ], "ondemand": [ ], "standard": [ ], "direct": [ "10.77.2.105" ] }
+		ip saddr @lanekeep_grp_global jump capture_global
+		ip saddr @lanekeep_grp_enhanced jump capture_enhanced
+		ip saddr @lanekeep_grp_ondemand jump capture_ondemand
+		ip saddr @lanekeep_grp_standard jump capture_phone
+		ip saddr @lanekeep_grp_direct jump capture_direct
+		meta l4proto { tcp, udp } jump capture_direct
+	chain capture_direct {
+		ip saddr @lanekeep_grp_global counter packets 0 bytes 0 drop
+7612_in_table=0 router_dns_outbound=1

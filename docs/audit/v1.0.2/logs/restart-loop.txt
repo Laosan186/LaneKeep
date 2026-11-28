@@ -1,0 +1,52 @@
+##### continuous Global/Enhanced UDP probes during core restarts, a runtime restart and rule applies
+=== rl-fr102: package luci-app-lanekeep-1.0.2-r1 unassigned=direct gate=OPEN rate=25/s per client
+members: global=elements = { 10.77.2.101 } enhanced=elements = { 10.77.2.102 }
+uplink: fw4 accept + masquerade installed
+steady (8 s): direct_stun=0 direct_dns=0 proxied_stun=313 proxied_dns=1 lan_raw=0 
+--- core restart 1 at 09:58:48
+gate=OPEN after 8s
+counters: direct_stun=0 direct_dns=0 proxied_stun=559 proxied_dns=5 lan_raw=0 
+capture_direct drops: ip saddr @lanekeep_grp_global counter packets 76 drop;ip saddr @lanekeep_grp_enhanced counter packets 76 drop;ip saddr @lanekeep_grp_ondemand counter packets 0 drop;ip saddr @lanekeep_grp_standard counter packets 0 drop;meta l4proto { tcp, udp } counter packets 0 drop;
+--- core restart 2 at 09:59:01
+gate=OPEN after 8s
+counters: direct_stun=0 direct_dns=0 proxied_stun=783 proxied_dns=5 lan_raw=0 
+capture_direct drops: ip saddr @lanekeep_grp_global counter packets 154 drop;ip saddr @lanekeep_grp_enhanced counter packets 154 drop;ip saddr @lanekeep_grp_ondemand counter packets 0 drop;ip saddr @lanekeep_grp_standard counter packets 0 drop;meta l4proto { tcp, udp } counter packets 0 drop;
+--- core restart 3 at 09:59:15
+gate=OPEN after 8s
+counters: direct_stun=0 direct_dns=0 proxied_stun=1011 proxied_dns=5 lan_raw=0 
+capture_direct drops: ip saddr @lanekeep_grp_global counter packets 236 drop;ip saddr @lanekeep_grp_enhanced counter packets 238 drop;ip saddr @lanekeep_grp_ondemand counter packets 0 drop;ip saddr @lanekeep_grp_standard counter packets 0 drop;meta l4proto { tcp, udp } counter packets 0 drop;
+--- core restart 4 at 09:59:28
+gate=OPEN after 8s
+counters: direct_stun=0 direct_dns=0 proxied_stun=1234 proxied_dns=6 lan_raw=0 
+capture_direct drops: ip saddr @lanekeep_grp_global counter packets 310 drop;ip saddr @lanekeep_grp_enhanced counter packets 312 drop;ip saddr @lanekeep_grp_ondemand counter packets 0 drop;ip saddr @lanekeep_grp_standard counter packets 0 drop;meta l4proto { tcp, udp } counter packets 0 drop;
+--- core restart 5 at 09:59:41
+gate=OPEN after 8s
+counters: direct_stun=0 direct_dns=0 proxied_stun=1457 proxied_dns=8 lan_raw=0 
+capture_direct drops: ip saddr @lanekeep_grp_global counter packets 382 drop;ip saddr @lanekeep_grp_enhanced counter packets 382 drop;ip saddr @lanekeep_grp_ondemand counter packets 0 drop;ip saddr @lanekeep_grp_standard counter packets 0 drop;meta l4proto { tcp, udp } counter packets 0 drop;
+--- runtime restart at 09:59:54
+udhcpc: started, v1.37.0
+udhcpc: broadcasting discover
+udhcpc: broadcasting select for 10.77.2.15, server 10.77.2.2
+udhcpc: lease of 10.77.2.15 obtained from 10.77.2.2, lease time 86400
+udhcpc: started, v1.37.0
+udhcpc: broadcasting discover
+udhcpc: broadcasting select for 10.77.2.15, server 10.77.2.2
+udhcpc: lease of 10.77.2.15 obtained from 10.77.2.2, lease time 86400
+{"ok":true,"enabled":true}
+gate=OPEN after 6s
+counters: direct_stun=0 direct_dns=0 proxied_stun=1602 proxied_dns=9 lan_raw=0 
+capture_direct drops: ip saddr @lanekeep_grp_global counter packets 104 drop;ip saddr @lanekeep_grp_enhanced counter packets 102 drop;ip saddr @lanekeep_grp_ondemand counter packets 0 drop;ip saddr @lanekeep_grp_standard counter packets 0 drop;meta l4proto { tcp, udp } counter packets 0 drop;
+--- rules apply: unassigned standard at 10:00:10: success
+gate=OPEN after 2s
+counters: direct_stun=0 direct_dns=0 proxied_stun=2583 proxied_dns=13 lan_raw=0 
+capture_direct drops: ip saddr @lanekeep_grp_global counter packets 0 drop;ip saddr @lanekeep_grp_enhanced counter packets 0 drop;ip saddr @lanekeep_grp_ondemand counter packets 0 drop;ip saddr @lanekeep_grp_standard counter packets 0 drop;meta l4proto { tcp, udp } counter packets 0 drop;
+--- rules apply: unassigned direct at 10:00:43: success
+gate=OPEN after 2s
+counters: direct_stun=0 direct_dns=0 proxied_stun=3510 proxied_dns=23 lan_raw=0 
+capture_direct drops: ip saddr @lanekeep_grp_global counter packets 84 drop;ip saddr @lanekeep_grp_enhanced counter packets 84 drop;ip saddr @lanekeep_grp_ondemand counter packets 0 drop;ip saddr @lanekeep_grp_standard counter packets 0 drop;meta l4proto { tcp, udp } counter packets 0 drop;
+uplink: removed
+probers: lkg {"rounds": 3138, "sent": 6276, "errors": 0, "seconds": 160.0} lke {"rounds": 3133, "sent": 6266, "errors": 0, "seconds": 160.1}
+final: direct_stun=0 direct_dns=0 proxied_stun=3714 proxied_dns=23 lan_raw=0 
+end: unassigned=direct gate=OPEN
+RESULT no direct exit from lkg/lke during the loop
+RESTART_LOOP_DONE

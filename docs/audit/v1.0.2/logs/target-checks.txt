@@ -1,0 +1,74 @@
+##### tests/target on the VM (release tree 68a0cd0, LaneKeep disabled)
+trees: new=1.0.2 aad_template=d1d8df48c983 new_template=31e8d3cc7de5 hy2old_template=31e8d3cc7de5
+gate_table_present=no
+##### ip-rule-cases.uc
+{ "total": 41, "fails": [ ] }
+##### rules-check.sh . ../aad
+PASS generator without IP rules (xray -test included)
+PASS generator with IP rules (xray -test included)
+PASS previous and new output differ only by the direct group (s0)
+PASS previous and new output differ only by the direct group (s1)
+PASS direct group: members, unknown devices to capture_direct, core config unchanged
+PASS rules page sequence numbers verified (direct_on)
+PASS nft -c accepts new-s0
+PASS nft -c accepts direct_on
+PASS IP rows separate, guarded and additive
+PASS direct rules last and isolated (s0)
+PASS direct rules last and isolated (s1)
+PASS direct rules last and isolated (direct_on)
+PASS rules page sequence numbers verified (s0)
+PASS rules page sequence numbers verified (s1)
+PASS bad_10_0_0_5 rejected (invalid_ip_rule)
+PASS bad_1_2_3_4_24 rejected (invalid_ip_rule)
+PASS bad_198_18_0_1 rejected (invalid_ip_rule)
+PASS bad_1_2_3 rejected (invalid_ip_rule)
+PASS bad_10_77_2_1 rejected (invalid_ip_rule)
+PASS bad_conflict rejected (conflicting_rule)
+PASS chain_node rejected (ip_rule_chain_forbidden)
+PASS chain_group rejected (ip_rule_chain_forbidden)
+PASS bad_unassigned rejected (generator_internal_error_at_read_current_uci)
+PASS bad_direct_rule rejected (invalid_rule_group)
+PASS bad_direct_cross rejected (member_duplicate_or_cross_group)
+PASS chain control without IP rules accepted
+ALL PASS
+##### latency-check.sh .
+PASS node-test normal (2s)
+PASS node-test noka (1s)
+PASS node-test bad204 (2s)
+PASS node-test stall (8s)
+PASS node-test silentclose (3s)
+PASS node-test slowwarm (9s)
+PASS node-test pingstall (13s)
+PASS chain-test normal (2s)
+PASS chain-test removed its work directory
+ALL PASS
+##### hy2-cases.uc
+PASS monitor reads a multi-segment list
+PASS monitor classifies hop ports
+PASS monitor leaves other ports alone
+PASS monitor ignores malformed udphop
+ALL PASS 128/128
+##### hy2-check.sh . ../hy2old
+PASS generator with plain HY2 nodes (xray -test included)
+PASS generator with HY2 hop/pin nodes as default, global and enhanced (xray -test included)
+PASS hop/pin outbounds: udphop last, pin set, no allowInsecure, marks kept, routes unchanged
+PASS hop/pin store changes no nft, rule or invariant output (only nodes_revision differs)
+PASS format 6 store with hop/pin rejected (generator_internal_error_at_read_nodes)
+PASS previous and new generator output identical for plain HY2 and VLESS nodes
+PASS previous generator rejects the format 7 store (generator_internal_error_at_read_nodes)
+PASS parse, render, identity and verification keys unchanged for links without the new parameters
+ALL PASS
+##### hy2-runtime.sh .
+PASS client outbound rendered from link and form (pin normalized, udphop every 10 s, Brutal 100 Mbps)
+PASS gate closed without lease: request failed (000), marked hop packets dropped
+PASS correct pin connects through hop ports with lease
+PASS requests during 50s of hopping: 15 ok, 0 failed
+PASS remote hop ports seen: 7 (within 20000-20049)
+PASS local sockets seen: 7 (new socket per hop)
+PASS all 113 packets to hop ports carried mark 0x7621
+PASS lease removed: established tunnel blocked (000)
+PASS wrong pin refused (000)
+PASS no pin with self-signed certificate refused (000)
+PASS insecure=1 with correct pin connects (validated by pin)
+ALL PASS
+TARGET_CHECKS_DONE
