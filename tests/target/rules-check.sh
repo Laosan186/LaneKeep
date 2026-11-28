@@ -113,16 +113,24 @@ if gen "$REPO" direct_on "$T/out/direct_on"; then
   grep -qx "        elements = { $M4 }" "$nft" && grep -qx "        elements = { $M5 }" "$nft" || ok=0
   grep -qx "add element inet lanekeep_phone lanekeep_grp_direct { $M5 }" "$T/out/direct_on/members.nft" || ok=0
   cmp -s "$T/out/new-s0/config.json" "$T/out/direct_on/config.json" || ok=0
-  # capture_direct: internal ports on any router address dropped (router DNS on the LAN address
-  # excepted), then the core; no other DNS path to dnsmasq, and the direct rule targets the same address.
+  # capture_direct: other groups' members dropped (they only get here when their own TPROXY found no
+  # socket), internal ports on any router address dropped (router DNS on the LAN address excepted),
+  # then the core, then drop; no other DNS path to dnsmasq, and the direct rule targets the same address.
   sed -n '/^    chain capture_direct {$/,/^    }$/p' "$nft" > "$T/capture_direct.txt"
   lan=$(sed -n 's/^        fib daddr type local ip daddr != \([0-9.]*\) meta l4proto { tcp, udp } th dport 53 counter drop$/\1/p' "$T/capture_direct.txt")
   [ -n "$lan" ] || ok=0
   printf '%s\n' '    chain capture_direct {' \
+    '        # Other groups get here only when their own TPROXY found no socket (core start or stop).' \
+    '        ip saddr @lanekeep_grp_global counter drop' \
+    '        ip saddr @lanekeep_grp_enhanced counter drop' \
+    '        ip saddr @lanekeep_grp_ondemand counter drop' \
+    '        ip saddr @lanekeep_grp_standard counter drop' \
     "        fib daddr type local ip daddr != $lan meta l4proto { tcp, udp } th dport 53 counter drop" \
     '        fib daddr type local meta l4proto { tcp, udp } th dport { 853, 1053, 5053, 10811-10860, 12345-12349 } counter drop' \
     '        meta l4proto { tcp, udp } counter name selected ct mark set 0x7611' \
     '        meta l4proto { tcp, udp } tproxy to :12349 meta mark set 0x7610 counter name captured accept' \
+    '        # No direct inbound socket: drop here, never in a later chain.' \
+    '        meta l4proto { tcp, udp } counter drop' \
     '    }' | cmp -s - "$T/capture_direct.txt" || ok=0
   ! grep -q '0x7612' "$nft" || ok=0
   grep -qF "\"inboundTag\":[\"direct-transparent\"],\"ip\":[\"$lan/32\"],\"network\":\"tcp,udp\",\"outboundTag\":\"direct-router-dns\",\"port\":\"53\"" "$T/out/direct_on/config.json" || ok=0

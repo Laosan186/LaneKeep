@@ -139,6 +139,14 @@ class ReleaseInvariants(unittest.TestCase):
             for line in body.splitlines():
                 if 'accept' in line or '0x7610' in line: self.assertIn(' tproxy to :1234',line,name)
                 for verb in ('return','jump','goto'): self.assertNotIn(verb,line,name)
+        # The direct inbound may already or still listen while another group's has no socket, so a
+        # fallen-through member of another group must be dropped before it, and what the direct
+        # inbound cannot take is dropped rather than passed on to a later chain (a proxy node).
+        direct=[l.strip() for l in dict(chains)['capture_direct'].splitlines() if l.strip() and not l.strip().startswith('#')]
+        self.assertEqual(direct[:4],['ip saddr @lanekeep_grp_%s counter drop'%g for g in ('global','enhanced','ondemand','standard')])
+        self.assertEqual(direct[-2:],['meta l4proto { tcp, udp } tproxy to :12349 meta mark set 0x7610 counter name captured accept','meta l4proto { tcp, udp } counter drop'])
+        dispatch=re.search(r'^    chain dispatch_device \{\n(.*?)^    \}$',nft,re.M|re.S).group(1)
+        self.assertEqual(re.findall(r'@lanekeep_grp_(\w+) jump',dispatch),['global','enhanced','ondemand','standard','direct'])
         # A shipped unassigned section could replace an unmodified conffile on upgrade; only a
         # first install, before lifecycle has created its state directory, writes direct.
         self.assertNotIn('unassigned',(ROOT/'root/etc/config/lanekeep').read_text(encoding='utf-8'))
