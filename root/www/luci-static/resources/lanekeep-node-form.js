@@ -19,6 +19,10 @@ return baseclass.extend({
   function combos(){return (catalog.protocols[protocol].combos||[]).filter(function(c){return !item||item.model_version<3||!c.legacy;});}
   function comboLabel(c){return nui.comboName(c);}
   function clear(){controls.forEach(function(c){if(c.type==='password')c.value='';});Object.keys(values).forEach(function(k){if(catalog.fields[k]&&catalog.fields[k].secret)delete values[k];});}
+  // HY2 hop, bandwidth and pin fields are declared in nodes.uc, not capabilities.json, so a new HY2 node gets them here.
+  // Existing plain HY2 nodes open the edit form in nodes.js, which shows the same fields; blank ones are not sent.
+  var hy2Keys=[['hop_ports','H-1'],['hop_interval','H-3'],['down_mbps','H-4'],['up_mbps','H-5'],['pin_sha256','H-2']];
+  function hy2Extras(){return !item&&protocol==='hysteria2'&&!!active&&active.legacy===true;}
   function drawCombo(){
    var list=combos(),options={};list.forEach(function(c){options[c.id]=comboLabel(c);});
    active=list.find(function(c){return c.id===comboId;})||list[0];comboId=active.id;
@@ -56,8 +60,14 @@ return baseclass.extend({
     var hint=spec.secret&&same?copy.t('F-ad7d56cbbd',{value:panel.text(item[key],copy.t('F-182455c533'))}):null;
     content.push(nui.field(key,control,hint));
    });
+   if(hy2Extras())hy2Keys.forEach(function(p){
+    var key=p[0],label=copy.t(p[1]),control=E('input',{type:'text','class':'cbi-input-text',value:'',autocomplete:'off',spellcheck:'false',maxlength:4096,input:function(){values[key]=this.value;}});
+    values[key]='';control.dataset.field=key;controls.push(control);panel.bindField(fields,'node.'+key,control,label);fields[key]=fields['node.'+key];
+    var row=nui.field(key,control,null);row.querySelector('.lk-field-label').textContent=label;content.push(row);
+    if(key==='up_mbps')content.push(E('div',{'class':'lk-field','data-field':'hy2_tuning_note'},[panel.message(copy.t('H-6'))]));
+   });
    if(active.role==='rear_only'&&item&&item.username){var clearAuth=E('input',{type:'checkbox',change:function(){clearRearAuth=this.checked;}});content.push(E('label',{},[clearAuth,copy.t("F-a0b276d485")]));}
-   var common=['name','server','port'],advanced=['import_hints','spiderX','spider_x','mldsa65','alpn'];
+   var common=['name','server','port'],advanced=['import_hints','spiderX','spider_x','mldsa65','alpn','hop_ports','hop_interval','down_mbps','up_mbps','hy2_tuning_note','pin_sha256'];
    var top=E('div',{'class':'lk-form-grid'}),secrets=E('div',{'class':'lk-form-grid'}),more=[];
    var byKey={};content.forEach(function(el){if(el.dataset.field)byKey[el.dataset.field]=el;});
    if(byKey.name)top.appendChild(byKey.name);
@@ -83,6 +93,7 @@ return baseclass.extend({
     if(spec.type==='array')v=String(v||'').split(',').map(function(x){return x.trim();}).filter(Boolean);
     if(v!=null)payload[key]=v;
    });
+   if(hy2Extras())hy2Keys.forEach(function(p){var v=values[p[0]];if(v!=null&&String(v).trim()!=='')payload[p[0]]=String(v);});
    if(active.role==='rear_only'&&clearRearAuth){payload.username=null;payload.password=null;}
    if(active.fields.indexOf('sni')>=0&&!payload.sni)payload.sni=payload.server;
    submit(payload,errors,fields,clear);

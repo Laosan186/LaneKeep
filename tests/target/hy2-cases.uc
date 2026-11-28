@@ -153,6 +153,16 @@ let tp=nodes.public_node(tuned,store(7,tuned));
 check('node RPC returns interval and bandwidth',tp.hop_interval==60&&tp.up_mbps==60&&tp.down_mbps==200);
 u=update_result({name:'renamed',hop_ports:tp.hop_ports,hop_interval:''+tp.hop_interval,up_mbps:''+tp.up_mbps,down_mbps:''+tp.down_mbps,pin_sha256:tp.pin_sha256},tuned);
 check('form round trip keeps interval and bandwidth',type(u)=='object'&&u.hop_interval==60&&u.up_mbps==60&&u.down_mbps==200);
+// New-node form (lanekeep-node-form.js): no previous node; it sends the HY2 fields only when they are filled in.
+let fresh={id:'n_new',name:'New HY2',protocol:'hysteria2',server:'203.0.113.30',port:443,password:'PASSWORD',sni:'example.com',alpn:[],insecure:false};
+u=update_result(with(fresh,{hop_ports:'20000:20049',hop_interval:'60',down_mbps:'200',up_mbps:'60',pin_sha256:COLONS}),null);
+check('new-node form normalizes hop, pin, interval and bandwidth',type(u)=='object'&&u.hop_ports=='20000-20049'&&u.pin_sha256==PIN&&u.hop_interval==60&&u.down_mbps==200&&u.up_mbps==60&&nodes.minimum_version(u)==7,sprintf('%J',u));
+check('new-node form store is valid at version_for',type(u)=='object'&&nodes.version_for(store(1,u))==7&&store_result(store(7,u))=='ok',type(u)=='object'?store_result(store(7,u)):u);
+let np=type(u)=='object'?nodes.public_node(u,store(7,u)):{};
+check('new HY2 node reopens in the plain edit form',np.extended_model===false&&np.combo=='hysteria2-tls'&&np.hop_ports=='20000-20049'&&np.hop_interval==60,sprintf('%J',[np.extended_model,np.combo,np.hop_ports,np.hop_interval]));
+u=update_result(fresh,null);
+check('new-node form without HY2 fields stays plain',type(u)=='object'&&!has(u,'hop_ports')&&!has(u,'pin_sha256')&&!has(u,'hop_interval')&&!has(u,'up_mbps')&&!has(u,'down_mbps')&&nodes.minimum_version(u)<7&&nodes.version_for(store(1,u))<7,sprintf('%J',u));
+check('new-node form rejects a bad hop range',update_result(with(fresh,{hop_ports:'50000-20000'}),null)=='param_invalid:hop_ports');
 
 // Rendering.
 let o=nodes.render(hop),t=o.streamSettings.tlsSettings,m=o.streamSettings.finalmask;
