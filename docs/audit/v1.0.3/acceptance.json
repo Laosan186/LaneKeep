@@ -43,24 +43,27 @@
     "before_1.0.2-r1": {"global": "PDDD-D", "enhanced": "-DDD-D", "ondemand": "-DDD-D", "no_mode_control": "-DDD-D", "router_dns": "FakeIP answers from the Standard inbound for all four"},
     "after_test_build": {"global": "------", "enhanced": "------", "ondemand": "------", "no_mode_control": "PDDD-D", "router_dns": "timeout for Global, Enhanced, On-demand; FakeIP for no mode", "tail_drop_packets": {"capture_global": 14, "capture_enhanced": 14, "capture_ondemand": 14}},
     "quick_suite": {"global": "PPP", "enhanced": "PPP", "tail_drop_counters_unchanged": true},
-    "evidence": ["logs/fallthrough.txt", "logs/quick.txt"]
+    "after_release_1.0.3-r1": {"global": "------", "enhanced": "------", "ondemand": "------", "no_mode_control": "PDDD-D", "router_dns": "timeout for Global, Enhanced, On-demand; FakeIP for no mode", "tail_drop_packets": {"capture_global": 14, "capture_enhanced": 14, "capture_ondemand": 14}},
+    "quick_suite_release_1.0.3-r1": {"global": "PPP", "enhanced": "PPP", "ondemand": "PDD", "ondemand_note": "On-demand sends what its rules do not list direct by default; D is that default", "tail_drop_packets_before_and_after": 0},
+    "evidence": ["logs/fallthrough.txt", "logs/quick.txt", "logs/release-upgrade.txt"]
   },
   "lifecycle": {
     "enabled_upgrade_to_test_build": "apk rc 0; rules regenerated with the three tail drops; capture_phone unchanged; no panel warning; policy check all true; gate OPEN",
     "release_package_install": "over the test build with LaneKeep disabled",
-    "evidence": ["logs/fallthrough.txt", "logs/build.txt"]
+    "enabled_upgrade_release_package": "published 1.0.2-r1 reinstalled, fresh boot, node added, enabled, unassigned=standard, same members; apk add --upgrade to 1.0.3-r1: rc 0; rules regenerated with the three tail drops; capture_phone unchanged; no panel warning; policy check all true; gate OPEN; all five inbounds listening; LaneKeep disabled after the tests",
+    "evidence": ["logs/fallthrough.txt", "logs/build.txt", "logs/release-upgrade.txt"]
   },
-  "target_checks": {"rules_check": "ALL PASS against aad799b, including the exact text of the three chains for unassigned Standard and Direct and nft -c as root", "evidence": "logs/target-checks.txt"},
+  "target_checks": {"rules_check": "ALL PASS against aad799b, including the exact text of the three chains for unassigned Standard and Direct and nft -c as root", "tree": "7052c7c; later commits change nothing under root/, tests/, tools/ or packaging/, so it was not rerun on the release tree", "evidence": "logs/target-checks.txt"},
   "offline_tests": {"passed": 11, "failed": 0},
   "known_issues": [
     "The core stop at the start of an upgrade from 1.0.2 runs under the 1.0.2 rules and can still hand these devices to Standard once"
   ],
   "not_covered": [
+    "the On-demand normal path beyond the three quick probes",
     "a real core start, stop or crash window (only the forced state)",
     "unassigned=direct after the fix",
     "explicit Standard members",
     "the 160-case Global/Enhanced regression, node failure and core stop suites, dedicated entries",
-    "fresh install, boot, simulated sysupgrade, removal",
-    "an enabled upgrade with the 1.0.3-r1 package itself (the test build was used; payload equal apart from version labels)"
+    "fresh install, boot, simulated sysupgrade, removal"
   ]
 }

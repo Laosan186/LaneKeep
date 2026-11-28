@@ -7,8 +7,8 @@ f78f5b8b3674987c0f69878bccad4cdb2f0d3f2ba96aa4a25b2bbbfaf111324a  .github/ISSUE_
 57eef8cce4bb512a60665320e5d7e848d4f94cd28f27ed6c49b87e79723ea2bd  CHANGELOG.md
 3972dc9744f6499f0f9b2dbf76696f2ae7ad8af9b23dde66d6af86c9dfb36986  LICENSE
 91158a6a5a6b70a18ff87106c68c8dd89b283f890cb0470fb0825247451ab8a6  Makefile
-0c12ad12689dc4c5169ec07b2fdc1effe194d78ec500d66b04c54b52be17d05c  README.en.md
-2a99ac3c23aa01242e0f1ea8a70631cb86d0ec4f27745875eb02aaa49d89f4ca  README.md
+1f7927308d585fc4c5568d850d2754a2266a25db5050c669b0026084667a246d  README.en.md
+47fea2c9bdbc47945a412563c0d543e939a11442d49e300816a725e753560d72  README.md
 4355a46b19d348dc2f57c046f8ef63d4538ebb936000f3c9ee954a27460dd865  RELEASE
 1a1b44e3f39c497fe2cdac70ca1ddcde684e94f2eafb999fedbb364c592f4d63  SECURITY.md
 3c407ca0b3351417cda3e869dbc74649dd19bc6485a8b4c8ca4e124a40b62cc9  THIRD_PARTY.md
@@ -20,7 +20,7 @@ f5e5c9534532840fcd45bb002e69ed85c61dba2753450e26b448b7df1481e24d  VERSION
 ba6146f66a7a55678d04001c2e79ae4b227a19aca0f9874680fd9d1744cb2f9b  docs/audit/logs/fresh-install.txt
 01f06db6e27ea0454e86fa471c5bba2f1587f7d7020752626d68eab355be5a1a  docs/audit/logs/uninstall.txt
 706b50eb0c2c1abe63670272c97026947e3137fc93bd620bc59e1826e9a10f23  docs/audit/logs/upgrade.txt
-12fe82f2a2e1d36ed4ffefb22beb76249553022e315f8b455d879c932b914d32  docs/audit/privacy-scan.json
+7a32f5e53a66607bffa07b64fa0094e466962d90e9a48c512e27ac91dea9aeed  docs/audit/privacy-scan.json
 71e3e64a3b48b8acd65f73a9e786b79bd5c59bcf1a0cc0244ba4320bd1a0dc2d  docs/audit/v0.2.0/acceptance.json
 dff51cdba4d99bfa9ba01f6302216bf191a2b5c5d0b11c14e4f4a5c864456c9b  docs/audit/v0.2.0/acceptance.md
 aca3a1dc08a11fe6b52d4f3efc2cb24c4c0cb9d94ac9e9cd97d586da501786bb  docs/audit/v0.2.0/logs/install-0.1.0-r1.txt
@@ -50,11 +50,12 @@ d9b8c897aaee95e771f11db27f77d9564d7fb10cf4559d4968fad7d1c5f716cd  docs/audit/v1.
 5f436111198b26b642b15b32808f9f3f5a370956bed222927cc7705e4c0517c3  docs/audit/v1.0.2/logs/target-checks.txt
 2e418593fc3c8ac45ca3f42591ed9d0dec1e69acc75d0df6c69a8162b3ef32da  docs/audit/v1.0.2/logs/uninstall.txt
 67bbc5343edd309d03443691a08c637150d31dea26ffecdc266bd7e21547c9d1  docs/audit/v1.0.2/logs/upgrade-0.2.1-r1-to-1.0.2-r1.txt
-3c6b77722fb1356a923c0a6038b51e12da974711afd039810c6e016b52ca1e7a  docs/audit/v1.0.3/acceptance.json
-86126ddcf3bf43ba20e5e64bd5c20fafb6cdac9b070e097bccdde9d3a40725f1  docs/audit/v1.0.3/acceptance.md
+e3c3e390ddb5a96939515fd90baf8d60ae323c4f0f93c564f11824121da9a9a8  docs/audit/v1.0.3/acceptance.json
+ba2a6faff5dab4a3b715f731303dc345d7dd3f649a3e06ba4d7eb1ca870d8428  docs/audit/v1.0.3/acceptance.md
 15cf10d6523bf2539c30d35816aad8f5cc29892ff88a98012826bce889ef1bce  docs/audit/v1.0.3/logs/build.txt
 46524ad31b37dd7c586f30dcf1536dc64fefae20ff0c8adcc1004af5b3b2d5fb  docs/audit/v1.0.3/logs/fallthrough.txt
 ae13e56934d0865e79849042ff1121efc194012e115186a74fdfee453fcf3508  docs/audit/v1.0.3/logs/quick.txt
+8bdbd85b20a2145252e4b201acd715f5b87161d9aa80282d1c94879ee9955397  docs/audit/v1.0.3/logs/release-upgrade.txt
 9356f3ddc827b4ef2e86f7cc936f46dcab82df22003cd2c4d61582a6b9809821  docs/audit/v1.0.3/logs/target-checks.txt
 2fc0c8e34443d5cf19ed490e66533d4bc5aeae0b29a3d0adf968b59bc29dc228  docs/images/nodes-dark-en.png
 b3e8e8cce5219982816c7d82b1039ff832001e4aebab542350236ec04bac4448  docs/images/nodes-dark.png

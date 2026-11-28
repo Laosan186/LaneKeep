@@ -1,0 +1,177 @@
+##### published 1.0.2-r1 reinstalled over the disabled 1.0.3-r1 (apk del, then apk add; conffiles kept), fresh boot, then setup: topology, fixtures, test node through rpcd, enable, unassigned=standard, members
+# note: the rig has no On-demand namespace; lkd (10.77.2.105) is the On-demand member here and the probe output still calls it "direct". lkg 10.77.2.101 = Global, lke 10.77.2.102 = Enhanced, lkn 10.77.2.110 = no mode.
+# 1.0.2-r1 reinstalled over 1.0.3-r1 (apk del, apk add; conffiles kept), then a fresh boot
+4ae955b05b25782a
+TOPOLOGY_READY
+FIXTURES_UP
+start: luci-app-lanekeep-1.0.2-r1 unassigned=standard enabled=0
+node: { "step": "node", "result": { "validate_ok": true, "change_kind": "unchanged", "apply_ok": true, "apply_message": null, "job": { "state": "success", "message": "与当前相同，未执行应用。" }
+test: { "step": "test", "result": { "ok": true, "message": "延迟为连接建立后两次请求的较小值；首次连接含与节点握手", "receipt_type": null }, "confirm": { "ok": null, "message": nu
+enable: { "step": "enable", "result": { "ok": true, "enabled": true } }
+gate=OPEN
+unassigned: true unchanged 
+members: true unchanged 
+gate=OPEN unassigned=standard enabled=1
+global: elements = { 10.77.2.101 }
+enhanced: elements = { 10.77.2.102 }
+ondemand: elements = { 10.77.2.105 }
+standard: none
+direct: none
+dispatch: ip saddr @lanekeep_grp_global jump capture_global
+dispatch: ip saddr @lanekeep_grp_enhanced jump capture_enhanced
+dispatch: ip saddr @lanekeep_grp_ondemand jump capture_ondemand
+dispatch: ip saddr @lanekeep_grp_standard jump capture_phone
+dispatch: ip saddr @lanekeep_grp_direct jump capture_direct
+dispatch: meta l4proto { tcp, udp } jump capture_phone
+SETUP_DONE
+
+##### apk add --upgrade of the released luci-app-lanekeep-1.0.3-r1.apk over the enabled 1.0.2-r1
+##### apk add --upgrade 1.0.2-r1 -> 1.0.3-r1 (released APK), LaneKeep enabled
+54480697beba49c7145a20d802cc60728a89187332fac4dad2771fb5043322ea
+apk_rc=0
+  * udhcpc: lease of 10.77.2.15 obtained from 10.77.2.2, lease time 86400
+  * {"ok":true,"enabled":true}
+OK: 108.7 MiB in 236 packages
+pkg=luci-app-lanekeep-1.0.3-r1 enabled=1 unassigned=standard
+OPEN
+[ ]
+{ "rules_match": true, "members_match": true, "groups": { "global": true, "enhanced": true, "ondemand": true, "standard": true, "direct": true }, "unassigned_match": true }
+capture_global: meta l4proto { tcp, udp } tproxy to :12346 meta mark set 0x00007610 counter name "captured" accept
+capture_global: meta l4proto { tcp, udp } counter packets 0 bytes 0 drop
+capture_enhanced: meta l4proto { tcp, udp } tproxy to :12347 meta mark set 0x00007610 counter name "captured" accept
+capture_enhanced: meta l4proto { tcp, udp } counter packets 0 bytes 0 drop
+capture_ondemand: meta l4proto { tcp, udp } tproxy to :12348 meta mark set 0x00007610 counter name "captured" accept
+capture_ondemand: meta l4proto { tcp, udp } counter packets 0 bytes 0 drop
+capture_phone: meta l4proto { tcp, udp } tproxy to :12345 meta mark set 0x00007610 counter name "captured" accept
+3
+896cbb13a18a6b67
+:12345  :12346  :12347  :12348  :12349  
+
+##### quick suite on 1.0.3-r1: Global, Enhanced and On-demand, no test uplink, unassigned=standard; tail-drop counters before and after
+# note: the rig has no On-demand namespace; lkd (10.77.2.105) is the On-demand member here and the probe output still calls it "direct". lkg 10.77.2.101 = Global, lke 10.77.2.102 = Enhanced, lkn 10.77.2.110 = no mode.
+# note: On-demand sends what its rules do not list direct by default, so D for lkd is that default, not a fallthrough; the three tail-drop counters stayed 0.
+package: luci-app-lanekeep-1.0.3-r1 unassigned=standard gate=OPEN
+tail drops before: capture_global=0 capture_enhanced=0 capture_ondemand=0 
+W01 global {'proxied': 1, 'tunnel': 1} 198.51.100.2:60372
+W01 enhanced {'proxied': 1, 'tunnel': 1} 198.51.100.2:48222
+W01 direct {'proxied': 1, 'tunnel': 1} 198.51.100.2:41464
+W03 global {'proxied': 1, 'tunnel': 1} 198.51.100.2:40531
+W03 enhanced {'proxied': 1, 'tunnel': 1} 198.51.100.2:44344
+W03 direct {'direct': 1} 203.0.113.2:38090
+W08 global {'proxied': 1, 'tunnel': 1} 198.51.100.2:54469
+W08 enhanced {'proxied': 1, 'tunnel': 1} 198.51.100.2:51091
+W08 direct {'direct': 1} 203.0.113.2:39371
+tail drops after: capture_global=0 capture_enhanced=0 capture_ondemand=0 
+verdict W01 global P {'proxied': 1, 'tunnel': 1}
+verdict W01 enhanced P {'proxied': 1, 'tunnel': 1}
+verdict W01 direct P {'proxied': 1, 'tunnel': 1}
+verdict W03 global P {'proxied': 1, 'tunnel': 1}
+verdict W03 enhanced P {'proxied': 1, 'tunnel': 1}
+verdict W03 direct D {'direct': 1}
+verdict W08 global P {'proxied': 1, 'tunnel': 1}
+verdict W08 enhanced P {'proxied': 1, 'tunnel': 1}
+verdict W08 direct D {'direct': 1}
+verdict_summary {'direct': 'PDD', 'enhanced': 'PPP', 'global': 'PPP'}
+
+##### forced state on 1.0.3-r1: hand-started core without 12346/12347/12348, so only 12345 and 12349 listen
+# note: the rig has no On-demand namespace; lkd (10.77.2.105) is the On-demand member here and the probe output still calls it "direct". lkg 10.77.2.101 = Global, lke 10.77.2.102 = Enhanced, lkn 10.77.2.110 = no mode.
+# note: verdict D = a test server saw the test WAN address 203.0.113.2, P = only the node 198.51.100.2, - = nothing left.
+=== ft-c-rel: unassigned=standard, hand-started core without inbounds on 12346,12347,12348, probes from global,enhanced,direct,none
+package: luci-app-lanekeep-1.0.3-r1 unassigned=standard gate=OPEN
+dispatch_device last rule: 		meta l4proto { tcp, udp } jump capture_phone
+after stop: core_procs=0 listening: 
+hand config: inbound ports 12345,1053,12349 xray -test: Configuration OK.
+hand core: procs=1 listening: :12345 :12349 
+before capture_global: meta l4proto { tcp, udp } tproxy to :12346 meta mark set 0x00007610 counter name "captured" accept
+before capture_global: meta l4proto { tcp, udp } counter packets 0 bytes 0 drop
+before capture_enhanced: meta l4proto { tcp, udp } tproxy to :12347 meta mark set 0x00007610 counter name "captured" accept
+before capture_enhanced: meta l4proto { tcp, udp } counter packets 0 bytes 0 drop
+before capture_ondemand: meta l4proto { tcp, udp } tproxy to :12348 meta mark set 0x00007610 counter name "captured" accept
+before capture_ondemand: meta l4proto { tcp, udp } counter packets 0 bytes 0 drop
+before capture_phone: meta l4proto { tcp, udp } tproxy to :12345 meta mark set 0x00007610 counter name "captured" accept
+before capture_direct: ip saddr @lanekeep_grp_global counter packets 0 bytes 0 drop
+before capture_direct: ip saddr @lanekeep_grp_enhanced counter packets 0 bytes 0 drop
+before capture_direct: ip saddr @lanekeep_grp_ondemand counter packets 0 bytes 0 drop
+before capture_direct: ip saddr @lanekeep_grp_standard counter packets 0 bytes 0 drop
+before capture_direct: fib daddr type local ip daddr != 10.77.2.15 meta l4proto { tcp, udp } th dport 53 counter packets 0 bytes 0 drop
+before capture_direct: fib daddr type local meta l4proto { tcp, udp } th dport { 853, 1053, 5053, 10811-10860, 12345-12349 } counter packets 0 bytes 0 drop
+before capture_direct: meta l4proto { tcp, udp } tproxy to :12349 meta mark set 0x00007610 counter name "captured" accept
+before capture_direct: meta l4proto { tcp, udp } counter packets 0 bytes 0 drop
+uplink: fw4 accept + masquerade installed
+W01 global {} None
+W03 global {} None
+W07 global {} timeout
+W08 global {} timeout
+D01 global {} TimeoutError
+C01 global {} ConnectionRefusedError
+W01 enhanced {} None
+W03 enhanced {} None
+W07 enhanced {} timeout
+W08 enhanced {} timeout
+D01 enhanced {} TimeoutError
+C01 enhanced {} ConnectionRefusedError
+W01 direct {} None
+W03 direct {} None
+W07 direct {} timeout
+W08 direct {} timeout
+D01 direct {} TimeoutError
+C01 direct {} ConnectionRefusedError
+W01 none {'proxied': 1, 'tunnel': 1} timeout
+W03 none {'direct': 2} 203.0.113.2:56273
+W07 none {'direct': 1} 203.0.113.2:39812
+W08 none {'direct': 1} 203.0.113.2:58084
+D01 none {} ['198.18.129.137']
+C01 none {'direct': 1} {"ip": "203.0.113.2", "country": "ZZ"}
+dns to router from lkg: {"error": "TimeoutError", "name": "stun.l.google.com", "probe": "dns", "server": "10.77.2.15", "tcp": false, "type": "A"}
+dns to router from lke: {"error": "TimeoutError", "name": "stun.l.google.com", "probe": "dns", "server": "10.77.2.15", "tcp": false, "type": "A"}
+dns to router from lkd: {"error": "TimeoutError", "name": "stun.l.google.com", "probe": "dns", "server": "10.77.2.15", "tcp": false, "type": "A"}
+dns to router from lkn: {"answers": ["198.18.129.137"], "name": "stun.l.google.com", "probe": "dns", "rcode": 0, "server": "10.77.2.15", "tcp": false, "type": "A"}
+uplink: removed
+after capture_global: meta l4proto { tcp, udp } tproxy to :12346 meta mark set 0x00007610 counter name "captured" accept
+after capture_global: meta l4proto { tcp, udp } counter packets 14 bytes 800 drop
+after capture_enhanced: meta l4proto { tcp, udp } tproxy to :12347 meta mark set 0x00007610 counter name "captured" accept
+after capture_enhanced: meta l4proto { tcp, udp } counter packets 14 bytes 800 drop
+after capture_ondemand: meta l4proto { tcp, udp } tproxy to :12348 meta mark set 0x00007610 counter name "captured" accept
+after capture_ondemand: meta l4proto { tcp, udp } counter packets 14 bytes 800 drop
+after capture_phone: meta l4proto { tcp, udp } tproxy to :12345 meta mark set 0x00007610 counter name "captured" accept
+after capture_direct: ip saddr @lanekeep_grp_global counter packets 0 bytes 0 drop
+after capture_direct: ip saddr @lanekeep_grp_enhanced counter packets 0 bytes 0 drop
+after capture_direct: ip saddr @lanekeep_grp_ondemand counter packets 0 bytes 0 drop
+after capture_direct: ip saddr @lanekeep_grp_standard counter packets 0 bytes 0 drop
+after capture_direct: fib daddr type local ip daddr != 10.77.2.15 meta l4proto { tcp, udp } th dport 53 counter packets 0 bytes 0 drop
+after capture_direct: fib daddr type local meta l4proto { tcp, udp } th dport { 853, 1053, 5053, 10811-10860, 12345-12349 } counter packets 0 bytes 0 drop
+after capture_direct: meta l4proto { tcp, udp } tproxy to :12349 meta mark set 0x00007610 counter name "captured" accept
+after capture_direct: meta l4proto { tcp, udp } counter packets 0 bytes 0 drop
+verdict W01 global - {}
+verdict W03 global - {}
+verdict W07 global - {}
+verdict W08 global - {}
+verdict D01 global - {}
+verdict C01 global - {}
+verdict W01 enhanced - {}
+verdict W03 enhanced - {}
+verdict W07 enhanced - {}
+verdict W08 enhanced - {}
+verdict D01 enhanced - {}
+verdict C01 enhanced - {}
+verdict W01 direct - {}
+verdict W03 direct - {}
+verdict W07 direct - {}
+verdict W08 direct - {}
+verdict D01 direct - {}
+verdict C01 direct - {}
+verdict W01 none P {'proxied': 1, 'tunnel': 1}
+verdict W03 none D {'direct': 2}
+verdict W07 none D {'direct': 1}
+verdict W08 none D {'direct': 1}
+verdict D01 none - {}
+verdict C01 none D {'direct': 1}
+verdict_summary {'direct': '------', 'enhanced': '------', 'global': '------', 'none': 'PDDD-D'}
+hand core stopped: procs=0
+gate=OPEN after 8s
+end: unassigned=standard gate=OPEN listening: :12345 :12346 :12347 :12348 :12349 
+FALLTHROUGH_DONE
+
+##### lifecycle disable after the tests
+disable_rc=0 enabled=0 tables=table inet fw4 
+luci-app-lanekeep-1.0.3-r1

@@ -5,7 +5,8 @@
 - 修复前后在强制状态下的对照；
 - 已启用实例升级到含修复的测试构建；
 - `tests/target/rules-check.sh`、离线测试和 quick 套件；
-- v1.0.3 APK 的构建和安装文件核对。
+- v1.0.3 APK 的构建和安装文件核对；
+- 正式包的真实升级路径：已启用的 1.0.2-r1 用 1.0.3-r1 升级，之后跑一次 quick 套件（含按需）和一次强制状态对照。
 
 验收在电脑上的独立 QEMU 虚拟机进行，未连接任何实体路由器。
 
@@ -14,7 +15,8 @@ This report covers the one change in 1.0.3: the Global, Enhanced and On-demand c
 - the forced-state comparison before and after the fix;
 - upgrading an enabled instance to a test build of the fix;
 - `tests/target/rules-check.sh`, the offline tests and the quick suite;
-- building the v1.0.3 APK and checking its installed files.
+- building the v1.0.3 APK and checking its installed files;
+- the real upgrade path of the release package: an enabled 1.0.2-r1 upgraded with 1.0.3-r1, then the quick suite (On-demand included) and the forced state once.
 
 The tests ran on the isolated QEMU VM of the v1.0.2 acceptance, with **no host or internet access**.
 
@@ -44,13 +46,16 @@ The tests ran on the isolated QEMU VM of the v1.0.2 acceptance, with **no host o
 |---|---|
 | 修前复现（1.0.2-r1） | 未分组=常规。停止核心，手工起一份去掉 12346、12347、12348 入口的配置，只有 12345、12349 在听。全局 `PDDD-D`，增强、按需 `-DDD-D`，与未分组对照组 `-DDD-D` 相同：这三组全部落进常规模式，按常规规则处理，多数探测以 WAN 地址直接出去。四个客户端向路由器查询 DNS，都从常规入口拿到 FakeIP。 |
 | 已启用状态下升级到测试构建 | 测试构建 `1.0.2-r2` 取自提交 `7052c7c`，`RELEASE` 只在测试机里改为 2，以便走 `apk add --upgrade`。升级返回 0；升级后规则表已重新生成：三条链末尾有新的丢弃规则，`capture_phone` 不变；面板无警告（生成器指纹一致）；规则核对全部一致；门控 OPEN。 |
-| 修后复现（同样条件） | 全局、增强、按需均为 `------`。三条链末尾的丢弃规则各拦下 14 个包；这三组向路由器查询 DNS 都超时。未分组对照组仍为 `PDDD-D`，DNS 拿到 FakeIP，说明探测环境有效。 |
-| quick 套件 | 全局、增强都是 `PPP`，全部经节点出去。套件期间这两条链末尾的丢弃计数没有增加。 |
-| 测试机检查 `tests/target` | `rules-check.sh` 全部通过，包括：<br>• 与加固提交 `aad799b` 的输出相比，只多出直连模式和这三处丢弃；<br>• 新增的三条链逐字核对（未分组=常规、未分组=直连两种生成结果）；<br>• 以 root 运行的 `nft -c`。 |
+| 修后复现（同样条件） | 全局、增强、按需均为 `------`。三条链末尾的丢弃规则各拦下 14 个包；这三组向路由器查询 DNS 都超时。未分组对照组仍为 `PDDD-D`，DNS 拿到 FakeIP，说明探测环境有效。W08 全局下记到一条路由器自身发往国内 DoH 上游 `223.5.5.5:443` 的流，判定按 1.0.2 记录的口径排除，见日志说明行。 |
+| quick 套件（测试构建） | 全局、增强都是 `PPP`，全部经节点出去。套件期间这两条链末尾的丢弃计数没有增加。 |
+| 测试机检查 `tests/target` | `rules-check.sh` 全部通过，包括：<br>• 与加固提交 `aad799b` 的输出相比，只多出直连模式和这三处丢弃；<br>• 新增的三条链逐字核对（未分组=常规、未分组=直连两种生成结果）；<br>• 以 root 运行的 `nft -c`。<br>检查的是 `7052c7c` 的源码树。之后的提交没有改 `root/`、`tests/`、`tools/`、`packaging/`，所以没有对正式包的源码树重跑。 |
 | 离线检查 | 11 项发布不变量测试通过，包括新增的“三条链为 selected、TPROXY、drop”检查。 |
 | 构建 | 在测试机内用 apk-tools 3 构建 `luci-app-lanekeep-1.0.3-r1.apk`，308,972 字节，SHA256 `54480697beba49c7145a20d802cc60728a89187332fac4dad2771fb5043322ea`。构建输入取自提交 `938c2e9`，与测试构建 `7052c7c` 相比只多出 `VERSION` 和 `Makefile` 的版本号。 |
 | 正式包与测试构建的载荷 | 用 `tools/build/materialize.py` 分别从 `7052c7c`（1.0.2-r2）和 `938c2e9`（1.0.3-r1）生成安装树，各 106 个文件。去掉模块路径中的版本命名空间和 `foundation.js` 里的版本字符串后，两者逐字一致。 |
 | 正式包安装 | 在已停用的测试机上把 1.0.3-r1 覆盖安装到测试构建之上，`apk info -L` 列出 109 个文件：<br>• 103 个与从 `938c2e9` 生成的安装树 SHA256 相同；<br>• 3 个是 apk 数据库文件；<br>• 3 个配置文件（`/etc/config/lanekeep`、`lanekeep_runtime`、`/etc/lanekeep-proxy/nodes.json`）保留了测试机上的测试配置。<br>装上的生成器 SHA256 `896cbb13…a63df` 与 `GENERATOR_SHA` 一致。 |
+| 正式包升级路径 | 把已发布的 1.0.2-r1 装回（`apk del` 后 `apk add`，配置文件保留），重启测试机，经 rpcd 加节点、启用，未分组=常规，成员同上。然后在已启用状态下用正式包 1.0.3-r1 执行 `apk add --upgrade`：<br>• 返回 0；<br>• 规则表已重新生成，三条链末尾有丢弃规则，`capture_phone` 不变；<br>• 面板无警告，规则核对全部一致，门控 OPEN，五个入口都在听。 |
+| 正式包 quick 套件 | 全局、增强 `PPP`。按需 `PDD`：一项经节点，两项直连；按需没列入规则的流量默认直连，属于设计行为。三条链末尾的丢弃计数在套件前后都是 0。 |
+| 正式包强制状态对照 | 条件同修前复现。全局、增强、按需均为 `------`，三条链末尾各丢弃 14 个包；这三组向路由器查询 DNS 都超时。未分组对照组 `PDDD-D`，DNS 拿到 FakeIP。测完停用 LaneKeep。 |
 
 机器可读结果见 [acceptance.json](acceptance.json)，各项输出见 [logs/](logs/)。日志只做了这些处理：删去测试工具的退出码行；加了各段标题；加了以 `# note:` 标明的说明行。
 
@@ -61,10 +66,11 @@ The tests ran on the isolated QEMU VM of the v1.0.2 acceptance, with **no host o
 **升级与正式包：**
 
 - 从 1.0.2 升级时，升级前脚本在 1.0.2 的规则下停止核心，这一次停止仍可能有旧窗口；之后的启动已经是新规则。
-- 已启用状态下的升级，测的是测试构建（1.0.2-r1 → 1.0.2-r2）。正式包 1.0.3-r1 只在停用状态下覆盖安装过，与测试构建的载荷差别只有版本标签。
+- 已启用状态下的升级测了两次：测试构建（1.0.2-r1 → 1.0.2-r2）和正式包（已发布的 1.0.2-r1 → 1.0.3-r1）。
 
 **本次没有做：**
 
+- 按需模式修后的正常路径只跑了 quick 的 3 项探测，没有跑按需的完整用例；
 - 全局/增强 160 个用例的全量回归；
 - 修后“未分组=直连”的复现。结构上包出不了本组的链；`capture_direct` 的链首丢弃在 1.0.2 验收中已测；
 - 明确设为常规的成员；
