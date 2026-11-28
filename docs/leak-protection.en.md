@@ -2,7 +2,7 @@
 
 [中文](leak-protection.md) · [README](../README.en.md)
 
-This describes the v0.2.1 source mechanisms, including the custom IP rules added in v0.2.0, not a guarantee across all clients, apps or networks. First installation is disabled. Traffic protection starts only after explicit activation.
+This describes the mechanisms in the current source, including the custom IP rules added in v0.2.0 and the unreleased leak hardening made after 0.2.1 (see the Unreleased section of the [CHANGELOG](../CHANGELOG.md)); the released 0.2.1 package does not contain that hardening. It is not a guarantee across all clients, apps or networks. First installation is disabled. Traffic protection starts only after explicit activation.
 
 ## Fixed-rule matrix
 
@@ -66,7 +66,7 @@ While enabled, a separate nft table, `lanekeep_guard`, is kept and saved in `/et
 - after boot, until LaneKeep has started;
 - when the boot-time check refuses or startup fails (the enabled flag stays 1);
 - when the runtime is stopped with `stop`;
-- during a package upgrade. This holds from this version on: the one upgrade from 0.2.1 or earlier still runs the old upgrade script, which removes the rules first, so the LAN is direct until the new version is installed.
+- during a package upgrade. This holds from the first version with this hardening on: the one upgrade from 0.2.1 or earlier still runs the old upgrade script, which removes the rules first, so the LAN is direct until the new version is installed.
 
 The router's own management pages stay reachable. Only an explicit disable (or uninstall) removes the table; an interactive enable that fails returns to the disabled state.
 

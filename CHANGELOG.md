@@ -2,6 +2,14 @@
 
 ## Unreleased
 
+Added
+
+- HY2 share links can carry port hopping and a certificate pin. Hop ports are accepted in the address (`host:443,20000-50000`) or as `mport`; they render as Xray's `finalmask` `udphop` (new local socket and random port every 30 s, as in the official client). `pinSHA256` renders as `pinnedPeerCertSha256`; with a pin Xray trusts only that certificate. `insecure=1` is now accepted only together with a valid pin. Both fields come from the imported link, can be entered when adding an HY2 node by hand, and can be changed or cleared in the edit form of an existing HY2 node. Nodes that use them need node store format 7; LaneKeep 0.2.1 and older cannot read such a store. Deleting or clearing those nodes returns the store to format 6 when it is saved, so do that before downgrading.
+- The HY2 add and edit forms can also set the hop interval (5–3600 seconds, default 30) and the upload and download bandwidth in Mbps. Upload bandwidth turns on Brutal congestion control when the server also reports its receive rate (the smaller value is used); otherwise BBR stays, unlike the official client, which then uses Brutal with its own value. Download bandwidth is sent to the server as this client's receive rate. Share links do not carry these values, so for an imported node they are entered after import. They also need node store format 7.
+- The connection monitor counts sockets to any hop port of a node as node traffic. A chain is rejected when its HY2 entry hops over the exit's port on the same server.
+
+`capabilities.json` is unchanged, so existing trial confirmations stay valid. Existing HY2 nodes keep the same generated configuration and identity.
+
 Changed
 
 - Global and Enhanced block UDP to private addresses (`geoip:private`, CGNAT included) ahead of the private direct rules. Xray keeps one transparent UDP session per source socket, so a socket whose first packet went to a private address used to send its later packets, including STUN, from the direct exit.

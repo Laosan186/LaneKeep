@@ -16,6 +16,8 @@ function copy(v){return json(sprintf('%J',v));}
 function has(a,v){return index(a,v)>=0;}
 function chain(n){return n?.protocol=='chain';}
 function map_nodes(store){let out={};for(let n in store?.nodes||[])out[n.id]=n;return out;}
+// A HY2 front with port hopping occupies its whole hop list on that server.
+function hop_covers(n,port){for(let part in split(n?.hop_ports||'',',')){if(!part)continue;let p=split(part,'-');if(port>=int(p[0])&&port<=int(p[length(p)-1]))return true;}return false;}
 function bind(api){
  function fail(code,param,message){api.fail(code,param,message);}
  function need(ok,code,param,message){if(!ok)fail(code,param,message);}
@@ -45,7 +47,7 @@ function bind(api){
   // Endpoint validation rejects literal FakeIP/private/self endpoints; domain
   // resolution and loop prevention must be proven for each published pair.
   api.endpoint(front.server,front.port);api.endpoint(rear.server,rear.port);
-  need(lc(front.server)!=lc(rear.server)||front.port!=rear.port,'param_invalid','rear','前后置端点不能相同');
+  need(lc(front.server)!=lc(rear.server)||front.port!=rear.port&&!hop_covers(front,rear.port),'param_invalid','rear','前后置端点不能相同');
   if(published){need(pair_ready(front,rear),'verification_pending','chain','此两跳组合或端点形式尚未完成固定版本验证');api.udp_check(n,store);}
   return {front,rear};
  }

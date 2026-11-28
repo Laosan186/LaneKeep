@@ -431,8 +431,32 @@ var entries={
   "This node is set to skip certificate verification, which LaneKeep doesn’t support. Saving will fail rather than silently ignore it."
  ],
  "F-faa266219d": [
-  "只接受验证证书的连接，带 insecure=1 的链接会被拒绝。",
-  "Only connections that verify certificates are accepted; links with insecure=1 are rejected."
+  "只接受验证证书的连接。带 insecure=1 的链接只有同时提供证书指纹（pinSHA256）才会接受，并且只认这张证书。",
+  "Only connections that verify certificates are accepted. Links with insecure=1 are accepted only together with a certificate pin (pinSHA256), and then only that certificate is trusted."
+ ],
+ "H-1": [
+  "端口跳跃（如 20000-50000，可留空）",
+  "Port hopping (e.g. 20000-50000, optional)"
+ ],
+ "H-2": [
+  "证书指纹 SHA-256（64 位十六进制，可留空）",
+  "Certificate pin, SHA-256 (64 hex digits, optional)"
+ ],
+ "H-3": [
+  "跳跃间隔（秒，默认 30，可留空）",
+  "Hop interval (seconds, default 30, optional)"
+ ],
+ "H-4": [
+  "下行带宽 Mbps（如 200，可留空）",
+  "Download bandwidth, Mbps (e.g. 200, optional)"
+ ],
+ "H-5": [
+  "上行带宽 Mbps（如 60，可留空）",
+  "Upload bandwidth, Mbps (e.g. 60, optional)"
+ ],
+ "H-6": [
+  "跳跃间隔只在填了端口跳跃时生效。上行带宽要服务器也报告了接收速率才会启用 Brutal 拥塞控制（取两者较小值），否则仍用 BBR；下行带宽会告诉服务器本机能收多快。请按实际带宽填写，填得过大反而会变慢；留空则使用 BBR。",
+  "The hop interval applies only with port hopping. Upload bandwidth turns on Brutal congestion control only when the server also reports its receive rate (the smaller of the two is used); otherwise BBR stays. Download bandwidth tells the server how fast this router can receive. Enter the bandwidth you actually have, since values that are too high slow the connection down. Leave empty to use BBR."
  ],
  "F-6f4c8c00df": [
   "编辑节点",

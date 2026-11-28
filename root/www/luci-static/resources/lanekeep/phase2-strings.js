@@ -371,8 +371,8 @@ var exported = {
   "This node is set to skip certificate verification, which LaneKeep doesn’t support. Saving will fail rather than silently ignore it."
  ],
  "此固定版本仅接受验证 TLS 证书；带 insecure=1 的链接将明确拒绝。": [
-  "只接受验证证书的连接，带 insecure=1 的链接会被拒绝。",
-  "Only connections that verify certificates are accepted; links with insecure=1 are rejected."
+  "只接受验证证书的连接。带 insecure=1 的链接只有同时提供证书指纹（pinSHA256）才会接受，并且只认这张证书。",
+  "Only connections that verify certificates are accepted. Links with insecure=1 are accepted only together with a certificate pin (pinSHA256), and then only that certificate is trusted."
  ],
  "凭据不会从服务器回填。编辑时秘密字段留空表示不改；短凭据全部掩码。所有保存均先校验，再由你确认应用。": [
   "已保存的密钥不会显示，编辑时留空表示不改。切换组合会清空本次填写的密钥。",
