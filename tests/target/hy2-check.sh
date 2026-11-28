@@ -17,7 +17,8 @@ pass() { echo "PASS $*"; }
 fail() { echo "FAIL $*"; failed=1; }
 
 members=$(ucode "$HERE/lan-members.uc") || { echo 'FAIL lan_context'; exit 1; }
-set -- $members; [ "$#" = 3 ] || { echo 'FAIL lan_members'; exit 1; }
+# lan-members.uc prints five addresses (rules-check.sh uses all five); the first three are enough here.
+set -- $members; [ "$#" -ge 3 ] || { echo 'FAIL lan_members'; exit 1; }
 M1=$1 M2=$2 M3=$3
 
 # Stores are built from share links by the new parser. The plain store is what the same links give
