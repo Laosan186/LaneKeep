@@ -33,6 +33,54 @@ fib_drops_after_alias=0
 core_fds_after=19 core_same_pid=yes
 INTERACTION_DONE
 
+##### Direct suite raw output. Each drop-counter read prints two values on two lines: the port-53 rule (fib_drops_*=), then the internal DNS/proxy port rule (the bare number on the next line: 0 before, 58 after the suite, 90 after the WAN-alias probes). The WAN-alias probes use 8.8.4.4 added to the VM WAN port and removed afterwards; ledger_after_alias_probes is the upstream record
+fib_drops_before=0
+0 core_fds_before=35
+directx: 28 results, SUITE_DONE directx
+X01 direct {'direct': 2} 203.0.113.2:34227
+X01 none {'direct': 1} 203.0.113.2:56786
+X02 direct {'direct': 1} 203.0.113.2:42620
+X02 none {'direct': 1} 203.0.113.2:59157
+X03 direct {} ['74.125.250.129']
+X03 none {} ['74.125.250.129']
+X04 direct {} ['39.156.66.10']
+X04 none {} ['39.156.66.10']
+X05 direct {'direct': 1} ['39.156.66.10']
+X05 none {'direct': 1} ['39.156.66.10']
+X06 direct {'direct': 1} {"ip": "203.0.113.2", "country": "ZZ"}
+X06 none {'direct': 1} {"ip": "203.0.113.2", "country": "ZZ"}
+X07 direct {} ConnectionResetError
+X07 none {} ConnectionResetError
+X08 direct {} error:TimeoutError
+X08 none {} error:TimeoutError
+X09 direct {} error:TimeoutError
+X09 none {} error:TimeoutError
+X10 direct {} timeout
+X10 none {} timeout
+X11 direct {} timeout
+X11 none {} timeout
+X12 direct {} error:TimeoutError
+X12 none {} error:TimeoutError
+X13 direct {} error:TimeoutError
+X13 none {} error:TimeoutError
+X14 direct {} timeout
+X14 none {} timeout
+SUITE_DONE directx
+fib_drops_after_suite=0
+58
+lkd turns:8.8.4.4:12346?sni=stun.l.google.com => error:TimeoutError 
+lkd turns:8.8.4.4:12347?sni=stun.l.google.com => error:TimeoutError 
+lkd stun:8.8.4.4:12346 => timeout 
+lkd stun:8.8.4.4:12349 => timeout 
+lkn turns:8.8.4.4:12346?sni=stun.l.google.com => error:TimeoutError 
+lkn turns:8.8.4.4:12347?sni=stun.l.google.com => error:TimeoutError 
+lkn stun:8.8.4.4:12346 => timeout 
+lkn stun:8.8.4.4:12349 => timeout 
+ledger_after_alias_probes: }}
+fib_drops_after_alias=0
+90
+core_fds_after=19 core_same_pid=yes
+
 ##### Direct suite verdicts vs r92
 r92-directx cases 28 verdict changes []
 r92f-directx cases 28 verdict changes []
@@ -47,6 +95,10 @@ fail-core groups ['direct', 'enhanced', 'global', 'none'] verdicts C01/d=- C01/e
 s1-core-stopped {'direct': '------', 'enhanced': '------', 'global': '------', 'none': '------'}
 s2-lanekeep-stopped {'direct': '------', 'enhanced': '------', 'global': '------', 'none': '------'}
 s3-disabled {'direct': '-D--DD', 'enhanced': '-D--DD', 'global': '-D--DD', 'none': '-D--DD'}
+
+# note: r92-fail-node and r92-fail-core have no Enhanced client, so only 18 of the 24 node-failure cases have a baseline; r92f-fail-core covers all 24 core-stop cases
+
+# note: in S1 below, the W01 record of the device without a mode (direct: 1) is the router itself querying its domestic resolver 223.5.5.5:443 for an NTP pool name (the client probe did not resolve). The verdict script does not count router connections to 223.5.5.5:443 except in D09/D10, the same as for the baselines
 
 ##### stop cases S1-S3
 uplink: fw4 accept + masquerade installed

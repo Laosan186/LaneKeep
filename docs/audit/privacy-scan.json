@@ -29,7 +29,7 @@
     "Loopback, wildcard and protocol-reserved networks",
     "RFC documentation examples",
     "Public service geodata subset with pinned upstream and digest",
-    "Test VM addresses in the acceptance logs: the isolated QEMU network 10.77.2.0/24, RFC 5737 documentation addresses for the test WAN and node, and the public addresses the offline fixture serves for test names"
+    "Test VM addresses in the acceptance logs: the isolated QEMU network 10.77.2.0/24, RFC 5737 documentation addresses for the test WAN and node, the public addresses the offline fixture serves for test names, and 8.8.4.4, added to the test VM WAN port only during the WAN-address probes"
   ],
   "scope": "All repository source, documentation, hidden GitHub templates and build scripts; the secret scan also covers the 1.0.2-r1 package content (the install tree produced by the same materialize step as the APK; 106 files). Generated build/cache directories, local artifacts and private test credentials are not repository content.",
   "limitations": "Automated scans are combined with template/default review and screenshot inspection; they are not a mathematical proof of the absence of all possible sensitive data."

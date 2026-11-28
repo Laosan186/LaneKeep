@@ -11,11 +11,20 @@
     "name": "luci-app-lanekeep-1.0.2-r1.apk",
     "sha256": "e8135ca6e125ebc487263019e9ae1aa43f7191fd48177787757908f16ff0a529",
     "bytes": 308935,
-    "payload_files": 109,
+    "installed_package_files": {
+      "listed_by_apk_info_L": 109,
+      "materialized_tree_files": 106,
+      "apk_database_files": 3,
+      "same_sha256_as_materialized_tree": 105,
+      "differing": "/etc/config/lanekeep, only by the unassigned section the first install writes",
+      "installed_generator_sha256_equals_lock": true,
+      "evidence": "repeated clean install (logs/fresh-install.txt)"
+    },
     "build_commit": "46b5d87",
     "package_inputs_unchanged_to_release_commit": true
   },
   "start_state": "Copy of the leak-hardening test disk: the v0.2.1 acceptance disk with the published 0.2.1-r1 installed and enabled, plus an offline test CA and test node. Clients: .101 Global, .102 Enhanced, .105 explicit Direct (static lease), .110 without a mode.",
+  "changes": "Configuration changes (nodes, members, modes, devices without a mode, rules) went through the real ubus/rpcd methods. Forced states used other means: the fall-through cases a hand-started core with an edited configuration, the stop cases lanekeep-xray stop and the init scripts, the boot cases the network configuration, the sysupgrade simulation removing the state directory.",
   "verdicts": {
     "D": "a test server saw the test WAN address (direct exit)",
     "P": "traffic left only through the simulated node",
@@ -36,8 +45,7 @@
       "unassigned": "standard",
       "template_sha256_prefix": "31e8d3cc7de5f7bc",
       "policy_check_all_match": true,
-      "gate": "OPEN",
-      "non_config_files_equal_package": 106
+      "gate": "OPEN"
     },
     {
       "step": "leak_regression_upgraded",
@@ -89,11 +97,15 @@
       },
       "packets_sent": 12542,
       "direct_exit": 0,
-      "via_node": 3714,
+      "via_node": {
+        "stun": 3714,
+        "dns": 23
+      },
       "fallen_through_dropped_in_capture_direct_over_5_core_restarts": {
         "global": 382,
         "enhanced": 382
-      }
+      },
+      "probe_rate": "set to 25 rounds per second per client; measured 3,138 (Global) and 3,133 (Enhanced) rounds in about 160 s, about 19.6 per second"
     },
     {
       "step": "sysupgrade_reinstall_simulation",
@@ -106,7 +118,8 @@
       "network_dhcp_firewall_dnsmasq_rules_routes_unchanged": true,
       "nft_unchanged_apart_from_counters": true,
       "unassigned": "direct",
-      "enabled": false
+      "enabled": false,
+      "nft_evidence": "the first run recorded only that the ruleset changed (the VM has no diff); a repeated clean install of the same APK compared it with counter values removed: identical; the 2 raw changed lines are the fw4 br-lan accept counter"
     },
     {
       "step": "enable_via_rpc",
@@ -142,11 +155,16 @@
       "baseline": "direct-mode development results (r92)",
       "verdict_changes": 0,
       "router_dns_answered": {
-        "udp": true,
-        "tcp": true
+        "udp": "X03",
+        "tcp": "X04"
       },
       "guard_counters_during_suite": 0,
-      "internal_port_drops": 90,
+      "internal_port_drops": {
+        "rule": "fib daddr type local, internal DNS/proxy ports",
+        "after_suite": 58,
+        "after_wan_alias_probes": 90,
+        "port_53_rule": 0
+      },
       "wan_address_probes_reaching_upstream": 0,
       "hardening_rules_only_global_enhanced": true,
       "direct_rules_last_four": true
@@ -161,13 +179,17 @@
       ],
       "node_failure": "global/enhanced blocked; direct/none direct (Direct mode uses no node)",
       "core_stop": "all blocked",
-      "verdict_changes_vs_r92": 0
+      "baseline_comparison": {
+        "node_failure": "18 cases (global, direct, none) unchanged vs r92-fail-node; enhanced has no r92 node-failure case (result: all blocked)",
+        "core_stop": "24 cases unchanged vs r92f-fail-core (four client types)"
+      }
     },
     {
       "step": "stop_cases",
       "s1_core_stopped": "all four blocked",
       "s2_runtime_stopped_guard_only": "all four blocked",
-      "s3_disabled_positive_control": "3 of 6 probes D per group"
+      "s3_disabled_positive_control": "3 of 6 probes D per group",
+      "note": "in S1 the device without a mode shows one direct connection in the W01 record: the router itself querying its domestic resolver 223.5.5.5:443 for an NTP pool name, not the client probe (which failed to resolve); the verdict script does not count router connections to 223.5.5.5:443 except in D09/D10, as for the baselines"
     },
     {
       "step": "boot",

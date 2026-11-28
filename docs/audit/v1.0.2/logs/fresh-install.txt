@@ -39,3 +39,36 @@ members={ "global": [ "10.77.2.101" ], "enhanced": [ "10.77.2.102" ], "ondemand"
 	chain capture_direct {
 		ip saddr @lanekeep_grp_global counter packets 0 bytes 0 drop
 7612_in_table=0 router_dns_outbound=1
+
+# note: the first run could not show the nft change (the VM has no diff). The clean install was repeated with the same APK after the uninstall check; apk_del_rc=1 there only means the package was already removed
+
+##### repeated clean install: nft ruleset before/after with counter values removed, installed package files
+apk_sha256=e8135ca6e125ebc487263019e9ae1aa43f7191fd48177787757908f16ff0a529 size=308935
+apk_del_rc=1
+left before install:  rc.d: K9lanekeep 
+nft tables: table inet fw4  ip_rule_30210=0
+apk_add_rc=0 OK: 108.7 MiB in 236 packages
+CHANGED by install: nft.txt
+unchanged by install: rules.txt
+unchanged by install: routes.txt
+unchanged by install: network
+unchanged by install: dhcp
+unchanged by install: firewall
+unchanged by install: dnsmasq-server.txt
+package: luci-app-lanekeep-1.0.2-r1 unassigned=direct enabled=0 state=yes
+rc.d: K9lanekeep S18lanekeep-guard S96lanekeep 
+running: 0 core, tables: table inet fw4 
+status: ok=true enabled=false unassigned=direct gate=CLOSED
+conffile 083cfa3e4fa770e8 /etc/config/lanekeep
+conffile 27616300eab7a81f /etc/config/lanekeep_runtime
+conffile dfa61d95b8082601 /etc/lanekeep-proxy/nodes.json
+FRESH_CLEAN_DONE
+nft raw: 135 lines before, 135 after, 2 changed lines
+  -		oifname "br-lan" counter packets 319 bytes 21460 accept comment "!fw4: accept lan IPv4/IPv6 traffic"
+  +		oifname "br-lan" counter packets 381 bytes 26296 accept comment "!fw4: accept lan IPv4/IPv6 traffic"
+nft with counter values removed: identical
+package files (apk info -L): 109
+installed file digests written: 109
+apk audit luci-app-lanekeep: [WARNING: luci-app-lanekeep: relative path skipped. ]
+generator: 4ae955b05b25782a5e469f7613fbf1e096ce3d1606aa5efd2f6d204ad644869d usr/libexec/lanekeep-xray/lanekeep-gen.uc
+FRESH_RECHECK_DONE

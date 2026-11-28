@@ -19,3 +19,22 @@ apk-tools 3.0.9-r0, compiled for x86_64.
     "tools/build": "91e65a257e7fe3cadbbd96e3a1769cf648fe2506"
   }
 }
+
+##### installed package files (apk info -L, sha256sum on the VM after the repeated clean install) vs the tree tools/build/materialize.py makes from 46b5d87
+materialized tree from commit 46b5d87 (tools/build/materialize.py): 106 files
+files listed for the installed package (apk info -L): 109
+same SHA256: 105
+different: ['etc/config/lanekeep']
+only in the installed list: ['lib/apk/packages/luci-app-lanekeep.conffiles', 'lib/apk/packages/luci-app-lanekeep.conffiles_static', 'lib/apk/packages/luci-app-lanekeep.list']
+only in the materialized tree: []
+installed generator usr/libexec/lanekeep-xray/lanekeep-gen.uc: 4ae955b05b25782a5e469f7613fbf1e096ce3d1606aa5efd2f6d204ad644869d
+/etc/config/lanekeep, shipped vs after the first install (first install writes the unassigned section):
+  --- shipped
+  +++ installed
+  @@ -0,0 +1 @@
+  +
+  @@ -26,0 +28,4 @@
+  +
+  +config unassigned 'unassigned'
+  +	option group 'direct'
+  +
