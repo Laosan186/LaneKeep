@@ -66,9 +66,9 @@ While enabled, a separate nft table, `lanekeep_guard`, is kept and saved in `/et
 - after boot, until LaneKeep has started;
 - when the boot-time check refuses or startup fails (the enabled flag stays 1);
 - when the runtime is stopped with `stop`;
-- during a package upgrade. This holds from the first version with this hardening on: the one upgrade from 0.2.1 or earlier still runs the old upgrade script, which removes the rules first, so the LAN is direct until the new version is installed.
+- during a package upgrade. This follows from the source: the new pre-upgrade script only stops the services and keeps the table. The table was measured in place after an upgrade; the upgrade itself was not probed. It applies from the first version with this hardening on: the one upgrade from 0.2.1 or earlier still runs the old upgrade script, which removes the rules first, so the LAN is direct until the new version is installed.
 
-The router's own management pages stay reachable. Only an explicit disable (or uninstall) removes the table; an interactive enable that fails returns to the disabled state.
+By design the router's own management pages stay reachable, since the table only drops forwarded traffic and uncaptured DNS (not separately measured). Only an explicit disable (or uninstall) removes the table; an interactive enable that fails returns to the disabled state.
 
 Protected data uses mark `0x7621`; DNS probes use a separate mark. The nft `healthy_data` set carries an 8-second lease. Each bounded DNS round is followed by a 2-second sleep. Probe and lock time beyond 3 seconds fails the round. Two consecutive successes open/renew the gate; failure clears the lease. A stopped watchdog cannot keep an old lease alive indefinitely.
 
