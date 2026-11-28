@@ -145,6 +145,12 @@ class ReleaseInvariants(unittest.TestCase):
         direct=[l.strip() for l in dict(chains)['capture_direct'].splitlines() if l.strip() and not l.strip().startswith('#')]
         self.assertEqual(direct[:4],['ip saddr @lanekeep_grp_%s counter drop'%g for g in ('global','enhanced','ondemand','standard')])
         self.assertEqual(direct[-2:],['meta l4proto { tcp, udp } tproxy to :12349 meta mark set 0x7610 counter name captured accept','meta l4proto { tcp, udp } counter drop'])
+        # Global, Enhanced and On-demand members reach their own chain first. What their TPROXY cannot
+        # take (no socket: core start, stop or failure) is dropped there, so it never reaches the
+        # unassigned chain and the Standard or Direct inbound.
+        for name,port in (('capture_global',12346),('capture_enhanced',12347),('capture_ondemand',12348)):
+            body=[l.strip() for l in dict(chains)[name].splitlines() if l.strip() and not l.strip().startswith('#')]
+            self.assertEqual(body,['meta l4proto { tcp, udp } counter name selected ct mark set 0x7611','meta l4proto { tcp, udp } tproxy to :%d meta mark set 0x7610 counter name captured accept'%port,'meta l4proto { tcp, udp } counter drop'],name)
         dispatch=re.search(r'^    chain dispatch_device \{\n(.*?)^    \}$',nft,re.M|re.S).group(1)
         self.assertEqual(re.findall(r'@lanekeep_grp_(\w+) jump',dispatch),['global','enhanced','ondemand','standard','direct'])
         # A shipped unassigned section could replace an unmodified conffile on upgrade; only a

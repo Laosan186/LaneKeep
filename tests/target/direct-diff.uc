@@ -1,12 +1,13 @@
 // SPDX-License-Identifier: GPL-3.0-only
 // Compares previous-release output with this release for one scenario without the direct group
 // in use. Usage: ucode direct-diff.uc OLD_OUTPUT NEW_OUTPUT
-// Only these differences are allowed; everything else, including every global, enhanced,
+// Only these differences are allowed; everything else, including every other global, enhanced,
 // on-demand and standard rule, must stay identical:
 //   - config.json gains the direct-transparent inbound, its four rules and the direct-router-dns
 //     outbound, and the internal port block range grows from 12345-12348 to 12345-12349;
 //   - phone-pilot.nft gains a two-line comment, the capture_direct chain, the standard/direct sets
-//     and their two dispatch lines;
+//     and their two dispatch lines, and capture_global, capture_enhanced and capture_ondemand each
+//     end in a comment and a TCP/UDP drop after their TPROXY rule (added after 1.0.2);
 //   - members.nft gains the two flush lines for the new sets;
 //   - normalized-rules.json and summary.json gain the unassigned choice and the two groups.
 import * as fs from 'fs';
@@ -64,6 +65,14 @@ if(sa!=null&&sb!=null){
 // nft: remove the documented additions, then require the old text exactly.
 let old_nft=read(OLD,'phone-pilot.nft'),new_nft=read(NEW,'phone-pilot.nft');
 if(old_nft!=null&&new_nft!=null){
+    // The tail drop is the same text in three chains: remove it only right after each chain's own
+    // TPROXY rule and before the chain ends.
+    let tail="\n        # No socket on this inbound (core start, stop or failure): drop, never another mode's chain.\n        meta l4proto { tcp, udp } counter drop";
+    for(let port in ['12346','12347','12348']){
+        let accept='        meta l4proto { tcp, udp } tproxy to :'+port+' meta mark set 0x7610 counter name captured accept';
+        if(index(new_nft,accept+tail+'\n    }\n')<0)push(problems,'phone-pilot.nft: no tail drop after the TPROXY to '+port);
+        else new_nft=replace(new_nft,accept+tail+'\n    }\n',accept+'\n    }\n');
+    }
     let out=[],skipped={},block=null;
     for(let line in split(new_nft,'\n')){
         if(block!=null){if(line=='    }'){skipped[block]=(skipped[block]||0)+1;block=null;}continue;}

@@ -135,6 +135,25 @@ if gen "$REPO" direct_on "$T/out/direct_on"; then
   ! grep -q '0x7612' "$nft" || ok=0
   grep -qF "\"inboundTag\":[\"direct-transparent\"],\"ip\":[\"$lan/32\"],\"network\":\"tcp,udp\",\"outboundTag\":\"direct-router-dns\",\"port\":\"53\"" "$T/out/direct_on/config.json" || ok=0
   [ "$ok" = 1 ] && pass 'direct group: members, unknown devices to capture_direct, core config unchanged' || fail 'direct group nft or config'
+  # Global, Enhanced and On-demand: what their TPROXY cannot take (no socket: core start, stop or
+  # failure) is dropped at the end of their own chain, so it never reaches the unassigned chain,
+  # whether that is Standard (s0) or Direct (direct_on).
+  ok=1
+  grep -qx '        meta l4proto { tcp, udp } jump capture_phone' "$T/out/new-s0/phone-pilot.nft" || ok=0
+  for s in new-s0 direct_on; do
+    for g in global:12346 enhanced:12347 ondemand:12348; do
+      name=${g%%:*} port=${g#*:}
+      sed -n "/^    chain capture_$name {\$/,/^    }\$/p" "$T/out/$s/phone-pilot.nft" > "$T/capture_$name.txt"
+      { printf '%s\n' "    chain capture_$name {" '        meta l4proto { tcp, udp } th dport 853 counter name obs_853'
+        [ "$name" = ondemand ] || printf '%s\n' '        udp dport 443 counter name obs_udp443'
+        printf '%s\n' '        meta l4proto { tcp, udp } counter name selected ct mark set 0x7611' \
+          "        meta l4proto { tcp, udp } tproxy to :$port meta mark set 0x7610 counter name captured accept" \
+          "        # No socket on this inbound (core start, stop or failure): drop, never another mode's chain." \
+          '        meta l4proto { tcp, udp } counter drop' \
+          '    }'; } | cmp -s - "$T/capture_$name.txt" || ok=0
+    done
+  done
+  [ "$ok" = 1 ] && pass 'global, enhanced and on-demand chains drop what their inbound cannot take (unassigned standard and direct)' || fail 'global/enhanced/on-demand chain tail'
   sh "$HERE/layout-check.sh" "$REPO" "$T/out/direct_on" "$T/nodes.json" >"$T/layout-direct.json" 2>&1 && pass 'rules page sequence numbers verified (direct_on)' || { fail 'sequence numbers direct_on'; head -c 600 "$T/layout-direct.json"; echo; }
 else fail "generator direct_on: $error"; fi
 if [ "$(id -u)" = 0 ] && command -v nft >/dev/null 2>&1; then

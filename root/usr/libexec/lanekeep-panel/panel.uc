@@ -29,7 +29,7 @@ let ASSIGN = ['global', 'enhanced', 'ondemand', 'standard', 'direct'];
 let OPTIONAL_LABELS = {standard:'常规模式', direct:'直连'};
 let TAGS = {standard:'standard-transparent', global:'global-transparent', enhanced:'enhanced-transparent', ondemand:'ondemand-transparent'};
 let LABELS = {standard:'常规', global:'全局', enhanced:'增强', ondemand:'按需', direct:'直连'};
-let GENERATOR_SHA = '4ae955b05b25782a5e469f7613fbf1e096ce3d1606aa5efd2f6d204ad644869d';
+let GENERATOR_SHA = '896cbb13a18a6b6776fc060700a93eba8eb05a2f7acaf4f64c6d2885104a63df';
 let failure = null;
 function enabled(){return uci.cursor().get('lanekeep_runtime','main','enabled')=='1';}
 let may_have_started = false;

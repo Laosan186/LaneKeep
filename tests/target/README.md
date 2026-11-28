@@ -15,7 +15,7 @@ sh tests/target/hy2-check.sh . [PREVIOUS_CHECKOUT]   # HY2 hop/pin generator out
 sh tests/target/hy2-runtime.sh .                     # HY2 hopping, pin and gate on loopback (see below)
 ```
 
-With `PREVIOUS_CHECKOUT`, `rules-check.sh` also confirms with `direct-diff.uc` that, apart from the documented Direct-mode additions, output is identical to the previous generator. It also checks Direct mode itself, its rejections and, when run as root, `nft -c`. `latency-check.sh` redirects every request from a temporary local SOCKS inbound to `latency-stub.uc` on `127.0.0.1:18080`; nothing leaves the machine. It briefly uses ports 18080 and 23456.
+With `PREVIOUS_CHECKOUT`, `rules-check.sh` also confirms with `direct-diff.uc` that, apart from the documented Direct-mode additions and the drop at the end of the Global, Enhanced and On-demand capture chains, output is identical to the previous generator. It also checks Direct mode itself, that drop, its rejections and, when run as root, `nft -c`. `latency-check.sh` redirects every request from a temporary local SOCKS inbound to `latency-stub.uc` on `127.0.0.1:18080`; nothing leaves the machine. It briefly uses ports 18080 and 23456.
 
 With `PREVIOUS_CHECKOUT`, `hy2-check.sh` also confirms that stores without the new HY2 fields give byte-identical generator output and node identities, and that the previous generator rejects a format 7 store.
 

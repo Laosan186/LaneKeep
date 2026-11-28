@@ -1,5 +1,11 @@
 # Changelog
 
+## Unreleased
+
+Fixed
+
+- Global, Enhanced and On-demand devices are now dropped, never handled by Standard or Direct mode, whenever their own transparent inbound has no socket: while the core starts or stops, after it fails, or whenever else it cannot take the packet. Each of their three capture chains drops the TCP/UDP its TPROXY rule could not deliver, so the packet no longer returns to the dispatch chain and reaches the chain for devices without a mode. Until now, with “Devices without a mode” on Standard, such packets went through the Standard inbound in that window and followed Standard's rules, its domestic direct rules included; with Direct, the Direct chain already dropped them. The Standard and Direct chains and the dispatch chain are unchanged. A package upgrade loads the new rules (it stops LaneKeep and starts it again when enabled). `tests/target/direct-diff.uc` accepts the three added drops, and `rules-check.sh` checks them.
+
 ## 1.0.2 — 2026-11-28
 
 Added
