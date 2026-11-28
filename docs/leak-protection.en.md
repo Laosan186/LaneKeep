@@ -2,7 +2,7 @@
 
 [中文](leak-protection.md) · [README](../README.en.md)
 
-This describes the mechanisms in the current source, including the custom IP rules added in v0.2.0 and the unreleased leak hardening and Direct mode made after 0.2.1 (see the Unreleased section of the [CHANGELOG](../CHANGELOG.md)); the released 0.2.1 package does not contain these changes. It is not a guarantee across all clients, apps or networks. First installation is disabled. Traffic protection starts only after explicit activation.
+This describes the mechanisms in the v1.0.2 source, including the custom IP rules added in v0.2.0 and the leak hardening and Direct mode added in 1.0.2 (see the [CHANGELOG](../CHANGELOG.md)); the 0.2.1 and older packages do not contain these changes. It is not a guarantee across all clients, apps or networks. First installation is disabled. Traffic protection starts only after explicit activation.
 
 ## Fixed-rule matrix
 
@@ -61,7 +61,7 @@ Devices not placed in a mode (every device without a fixed IP, unknown new devic
 
 Transparent TCP/UDP and routing jointly determine the exit. Proxied WebRTC destinations use the proxy exit; direct destinations see the direct public address. Unknown DoH, explicit direct exceptions and app behavior prevent an absolute guarantee.
 
-Xray's transparent UDP keeps one session per source socket: the first packet a socket sends picks the exit, and later packets to other destinations reuse it. A socket that first matches a direct rule therefore sends everything after it, including packets to any STUN server, from the direct exit. In 0.2.1 and earlier the private-address direct rules of Global and Enhanced, and the domestic direct rules of Enhanced, could trigger this. After 0.2.1:
+Xray's transparent UDP keeps one session per source socket: the first packet a socket sends picks the exit, and later packets to other destinations reuse it. A socket that first matches a direct rule therefore sends everything after it, including packets to any STUN server, from the direct exit. In 0.2.1 and earlier the private-address direct rules of Global and Enhanced, and the domestic direct rules of Enhanced, could trigger this. From 1.0.2 on:
 
 - **Global and Enhanced**: UDP to private addresses (including `100.64.0.0/10`) is blocked, ahead of the private direct rules. Devices on the same LAN segment talk to each other without passing the router and are unaffected. UDP routed to another private network, and non-DNS UDP to the router's LAN address (an NTP server on the router, for example), do not work in these two modes. TCP is unchanged.
 - **Enhanced**: all UDP after the user rules leaves through this mode's proxy node, whether or not the destination is classified as domestic. Domestic voice and video calls, games and other UDP services use the proxy exit, with more latency and possible failures; put devices that need direct domestic UDP in Standard or On-demand. TCP still goes direct for domestic destinations.
@@ -80,7 +80,7 @@ While enabled, a separate nft table, `lanekeep_guard`, is kept and saved in `/et
 - after boot, until LaneKeep has started;
 - when the boot-time check refuses or startup fails (the enabled flag stays 1);
 - when the runtime is stopped with `stop`;
-- during a package upgrade. This follows from the source: the new pre-upgrade script only stops the services and keeps the table. The table was measured in place after an upgrade; the upgrade itself was not probed. It applies from the first version with this hardening on: the one upgrade from 0.2.1 or earlier still runs the old upgrade script, which removes the rules first, so the LAN is direct until the new version is installed.
+- during a package upgrade. This follows from the source: the new pre-upgrade script only stops the services and keeps the table. The table was measured in place after an upgrade; the upgrade itself was not probed. It applies from 1.0.2 on: the one upgrade from 0.2.1 or earlier to 1.0.2 still runs the old upgrade script, which removes the rules first, so the LAN is direct until the new version is installed.
 
 By design the router's own management pages stay reachable, since the table only drops forwarded traffic and uncaptured DNS (not separately measured). Only an explicit disable (or uninstall) removes the table; an interactive enable that fails returns to the disabled state.
 

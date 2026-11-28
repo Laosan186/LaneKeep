@@ -4,9 +4,9 @@
 
 A per-device routing panel for OpenWrt, with node management, controlled DNS paths and a proxy kill switch.
 
-**v0.2.1 is disabled on first installation. Installing it, adding nodes and saving settings do not activate interception.** Select a default node, then separately confirm **Enable LaneKeep** on the Nodes page.
+**v1.0.2 is disabled on first installation. Installing it, adding nodes and saving settings do not activate interception.** Select a default node, then separately confirm **Enable LaneKeep** on the Nodes page.
 
-0.2.1 fixes the kill switch always showing “Unknown” on the Nodes page and the English Status page title; 0.2.0 added IP rules, reworked Rules/Details/Devices/History pages and node latency measurement v3; see the [CHANGELOG](CHANGELOG.md). Upgrade from 0.2.0 or 0.1.0 with `apk add --upgrade` (acceptance covers only disabled instances: 0.2.1 was upgraded from 0.2.0, 0.2.0 from 0.1.0; see the [acceptance limits](docs/audit/v0.2.1/acceptance.md#验证边界)); before downgrading to 0.1.0, delete all IP rules.
+1.0.2 adds Direct mode and “Devices without a mode” (Direct on a first install), hardens Global and Enhanced against UDP leaks and keeps the LAN blocked during boot, a failed start and stop, and supports HY2 port hopping and certificate pins; 0.2.1 fixed the kill-switch state on the Nodes page and the English Status page title; see the [CHANGELOG](CHANGELOG.md). Upgrade from 0.2.1 with `apk add --upgrade`; devices without a mode stay on Standard. During that one upgrade from 0.2.1 the old pre-upgrade script still leaves the LAN direct (see [leak protection](docs/leak-protection.en.md)). The 1.0.2 acceptance covers upgrading an enabled instance from 0.2.1-r1; see the [acceptance limits](docs/audit/v1.0.2/acceptance.md#验证边界). Before downgrading to 0.2.1, remove the `standard` and `direct` group sections and the `unassigned` section, and delete or clear nodes that use HY2 hopping or certificate pins; before downgrading to 0.1.0, also delete all IP rules.
 
 ![Nodes with demo data](docs/images/nodes-light-en.png)
 
@@ -18,7 +18,7 @@ A per-device routing panel for OpenWrt, with node management, controlled DNS pat
 | Global | Private names and addresses direct; other traffic via proxy, subject to custom exceptions | Proxy |
 | Enhanced | Foreign and selected service categories via proxy; domestic categories direct | Proxy |
 | On-demand | Selected video and service categories via proxy; add other domains as needed | Direct |
-| Direct (unreleased) | Everything goes out directly, never through a proxy node; no rules and no leak protection | Direct |
+| Direct | Everything goes out directly, never through a proxy node; no rules and no leak protection | Direct |
 
 Devices not placed in a mode (every device without a fixed IP, unknown new devices and devices set to “Follow default”) follow “Devices without a mode” on the Devices page, Direct or Standard. A first install defaults to Direct, so strangers on your Wi-Fi cannot use your proxy; upgrades from 0.2.x keep Standard, as before. See [Direct mode and devices without a mode](docs/leak-protection.en.md#direct-mode-and-devices-without-a-mode).
 
@@ -43,7 +43,7 @@ When enabled, fixed rules handle TCP/UDP 53 and block 853, known DoH categories,
 
 A DNS health check through the default node controls protected proxy data traffic, including other nodes selected by individual modes. Failure closes the gate without falling back to direct. Detection has a bounded window; it is not instantaneous. Direct traffic still depends on the core and DNS and is not guaranteed to work during a fault.
 
-Administrators must disable IPv6 on the selected LAN beforehand and make the setting survive a reboot. This package does not change IPv6 configuration. Activation refuses an incompatible LAN; once enabled, a failed boot-time check leaves the LAN blocked rather than direct (unreleased hardening after 0.2.1; the 0.2.1 package still forwards the LAN directly in that case, see the Unreleased section of the [CHANGELOG](CHANGELOG.md)). WebRTC exposure depends on actual routing; even Global can have explicit direct exceptions. A known-DoH list cannot cover arbitrary app-specific encrypted DNS.
+Administrators must disable IPv6 on the selected LAN beforehand and make the setting survive a reboot. This package does not change IPv6 configuration. Activation refuses an incompatible LAN; once enabled, a failed boot-time check leaves the LAN blocked rather than direct (from 1.0.2; the 0.2.1 and older packages still forward the LAN directly in that case). WebRTC exposure depends on actual routing; even Global can have explicit direct exceptions. A known-DoH list cannot cover arbitrary app-specific encrypted DNS.
 
 Xray access, error and DNS logs are disabled. Monitoring retains numbers, aggregate categories and operation summaries, not browsing sites or per-connection destinations. Node and subscription credentials still have to be stored with restricted permissions. See the [full protection matrix](docs/leak-protection.en.md).
 
@@ -59,12 +59,12 @@ Dependencies: `luci-base`, `rpcd`, `rpcd-mod-ucode`, `uhttpd-mod-ubus`, `xray-co
 
 ## Install, upgrade and uninstall
 
-Download the APK and its SHA256 file from this repository's **Releases**. Check the hash before copying it to your own test router. v0.2.1 is an unsigned standalone package; use `--allow-untrusted` only after verifying its source.
+Download the APK and its SHA256 file from this repository's **Releases**. Check the hash before copying it to your own test router. v1.0.2 is an unsigned standalone package; use `--allow-untrusted` only after verifying its source.
 
 ```sh
-sha256sum -c luci-app-lanekeep-0.2.1-r1.apk.sha256
+sha256sum -c luci-app-lanekeep-1.0.2-r1.apk.sha256
 apk update
-apk add --allow-untrusted ./luci-app-lanekeep-0.2.1-r1.apk
+apk add --allow-untrusted ./luci-app-lanekeep-1.0.2-r1.apk
 ```
 
 Check available storage first: this test added about 56 MiB of dependencies, and upgrades need temporary headroom. Dependencies come from the router's configured 25.12 repositories. Do not mix OpenWrt releases or kernel repositories. Open **Services → LaneKeep**. First installation prepares package files, menus and a disabled startup entry; it creates no interception tables or policy routes, changes no DNS settings and enables no kill switch.
@@ -75,7 +75,7 @@ Upgrade with `apk add --upgrade --allow-untrusted ./NEW-PACKAGE.apk`, after back
 apk del luci-app-lanekeep
 ```
 
-Before removal, LaneKeep stops its services, removes its owned nft tables (including the guard table kept while enabled and its saved copy; the guard table is unreleased hardening after 0.2.1 and is not in the 0.2.1 package) and policy routes, and restores the DNS fields saved before activation. If another program edited DHCP meanwhile, only still-owned fields are restored. IPv6 disabled manually by the administrator stays disabled. APK may remove dependencies that are no longer needed; LaneKeep removal scripts do not explicitly delete other applications. APK may retain modified configuration and nodes; inspect and remove sensitive data before transferring a device.
+Before removal, LaneKeep stops its services, removes its owned nft tables (including the guard table kept while enabled and its saved copy; the guard table exists from 1.0.2 on) and policy routes, and restores the DNS fields saved before activation. If another program edited DHCP meanwhile, only still-owned fields are restored. IPv6 disabled manually by the administrator stays disabled. APK may remove dependencies that are no longer needed; LaneKeep removal scripts do not explicitly delete other applications. APK may retain modified configuration and nodes; inspect and remove sensitive data before transferring a device.
 
 ## Getting started
 
