@@ -20,11 +20,16 @@ let node_store;
 let node_map = {};
 let current_data,active_closure;
 let groups = [ 'global', 'enhanced', 'ondemand', 'standard' ];
-let member_groups = [ 'global', 'enhanced', 'ondemand' ];
+// Explicit member sets. Standard and direct may also receive devices without a set,
+// chosen by the unassigned setting; only the first three can own dedicated entries.
+let member_groups = [ 'global', 'enhanced', 'ondemand', 'standard', 'direct' ];
+let dedicated_groups = [ 'global', 'enhanced', 'ondemand' ];
+let optional_groups = { standard: '常规模式', direct: '直连' };
+let unassigned_chains = { standard: 'capture_phone', direct: 'capture_direct' };
 let tags = { global: 'global-transparent', enhanced: 'enhanced-transparent', ondemand: 'ondemand-transparent', standard: 'standard-transparent' };
 let actions = { proxy: 'proxy-default', direct: 'direct', block: 'block' };
-// Fixed accepted nft structure; only membership sets are generated.
-let nft_template = "# LaneKeep gateway policy; source IP selection includes future LAN clients.\n# Apply as one nft transaction only after nft -c. No MAC-based selection.\ntable inet lanekeep_phone {}\nflush table inet lanekeep_phone\ntable inet lanekeep_phone {\n__LANEKEEP_MEMBER_SETS__\n    counter selected {}\n    counter captured {}\n    counter blocked_forward {}\n    counter blocked_input {}\n    chain capture_phone {\n        meta l4proto { tcp, udp } counter name selected ct mark set 0x7611\n        meta l4proto { tcp, udp } tproxy to :12345 meta mark set 0x7610 counter name captured accept\n    }\n    chain capture_global {\n        meta l4proto { tcp, udp } counter name selected ct mark set 0x7611\n        meta l4proto { tcp, udp } tproxy to :12346 meta mark set 0x7610 counter name captured accept\n    }\n    chain capture_enhanced {\n        meta l4proto { tcp, udp } counter name selected ct mark set 0x7611\n        meta l4proto { tcp, udp } tproxy to :12347 meta mark set 0x7610 counter name captured accept\n    }\n    chain capture_ondemand {\n        meta l4proto { tcp, udp } counter name selected ct mark set 0x7611\n        meta l4proto { tcp, udp } tproxy to :12348 meta mark set 0x7610 counter name captured accept\n    }\n    chain dispatch_device {\n        ip saddr @lanekeep_grp_global jump capture_global\n        ip saddr @lanekeep_grp_enhanced jump capture_enhanced\n        ip saddr @lanekeep_grp_ondemand jump capture_ondemand\n        meta l4proto { tcp, udp } jump capture_phone\n    }\n    chain select_phone {\n        type filter hook prerouting priority -151; policy accept;\n        iifname != \"__LAN_DEVICE__\" return\n        meta nfproto != ipv4 return\n        ip saddr != __LAN_SUBNET__ return\n        udp sport 68 udp dport 67 return\n        ip daddr { __LAN_BROADCAST__, 255.255.255.255, 224.0.0.0/4 } meta l4proto udp counter drop comment \"lanekeep_no_proxy_nonunicast_udp_v2\"\n        # DNS is captured before management, DHCP, or any upstream exception.\n        meta l4proto { tcp, udp } th dport 53 jump dispatch_device\n        ip daddr __LAN_ADDRESS__ tcp dport { 22, 80, 443 } return\n        meta l4proto { tcp, udp } jump dispatch_device\n    }\n    chain prevent_forward {\n        type filter hook forward priority -1; policy accept;\n        iifname != \"__LAN_DEVICE__\" return\n        meta nfproto != ipv4 return\n        ip saddr != __LAN_SUBNET__ return\n        # No established/related shortcut: old connections cannot bypass capture.\n        counter name blocked_forward drop\n    }\n    chain prevent_input_fallback {\n        type filter hook input priority -1; policy accept;\n        iifname != \"__LAN_DEVICE__\" return\n        meta nfproto != ipv4 return\n        ip saddr != __LAN_SUBNET__ return\n        udp sport 68 udp dport 67 return\n        ip daddr __LAN_ADDRESS__ tcp dport { 22, 80, 443 } return\n        meta l4proto { tcp, udp } meta mark != 0x7610 counter name blocked_input drop\n    }\n}\n";
+// Fixed accepted nft structure; only membership sets and the unassigned jump are generated.
+let nft_template = "# LaneKeep gateway policy; source IP selection includes future LAN clients.\n# Apply as one nft transaction only after nft -c. No MAC-based selection.\n# Direct group: internal ports on every router address are dropped, except DNS to the LAN address;\n# all other traffic, router DNS included, uses the core's direct inbound.\ntable inet lanekeep_phone {}\nflush table inet lanekeep_phone\ntable inet lanekeep_phone {\n__LANEKEEP_MEMBER_SETS__\n    counter selected {}\n    counter captured {}\n    counter blocked_forward {}\n    counter blocked_input {}\n    chain capture_phone {\n        meta l4proto { tcp, udp } counter name selected ct mark set 0x7611\n        meta l4proto { tcp, udp } tproxy to :12345 meta mark set 0x7610 counter name captured accept\n    }\n    chain capture_global {\n        meta l4proto { tcp, udp } counter name selected ct mark set 0x7611\n        meta l4proto { tcp, udp } tproxy to :12346 meta mark set 0x7610 counter name captured accept\n    }\n    chain capture_enhanced {\n        meta l4proto { tcp, udp } counter name selected ct mark set 0x7611\n        meta l4proto { tcp, udp } tproxy to :12347 meta mark set 0x7610 counter name captured accept\n    }\n    chain capture_ondemand {\n        meta l4proto { tcp, udp } counter name selected ct mark set 0x7611\n        meta l4proto { tcp, udp } tproxy to :12348 meta mark set 0x7610 counter name captured accept\n    }\n    chain capture_direct {\n        fib daddr type local ip daddr != __LAN_ADDRESS__ meta l4proto { tcp, udp } th dport 53 counter drop\n        fib daddr type local meta l4proto { tcp, udp } th dport { 853, 1053, 5053, 10811-10860, 12345-12349 } counter drop\n        meta l4proto { tcp, udp } counter name selected ct mark set 0x7611\n        meta l4proto { tcp, udp } tproxy to :12349 meta mark set 0x7610 counter name captured accept\n    }\n    chain dispatch_device {\n        ip saddr @lanekeep_grp_global jump capture_global\n        ip saddr @lanekeep_grp_enhanced jump capture_enhanced\n        ip saddr @lanekeep_grp_ondemand jump capture_ondemand\n        ip saddr @lanekeep_grp_standard jump capture_phone\n        ip saddr @lanekeep_grp_direct jump capture_direct\n        meta l4proto { tcp, udp } jump __LANEKEEP_UNASSIGNED_CHAIN__\n    }\n    chain select_phone {\n        type filter hook prerouting priority -151; policy accept;\n        iifname != \"__LAN_DEVICE__\" return\n        meta nfproto != ipv4 return\n        ip saddr != __LAN_SUBNET__ return\n        udp sport 68 udp dport 67 return\n        ip daddr { __LAN_BROADCAST__, 255.255.255.255, 224.0.0.0/4 } meta l4proto udp counter drop comment \"lanekeep_no_proxy_nonunicast_udp_v2\"\n        # DNS is captured before management, DHCP, or any upstream exception.\n        meta l4proto { tcp, udp } th dport 53 jump dispatch_device\n        ip daddr __LAN_ADDRESS__ tcp dport { 22, 80, 443 } return\n        meta l4proto { tcp, udp } jump dispatch_device\n    }\n    chain prevent_forward {\n        type filter hook forward priority -1; policy accept;\n        iifname != \"__LAN_DEVICE__\" return\n        meta nfproto != ipv4 return\n        ip saddr != __LAN_SUBNET__ return\n        # No established/related shortcut: old connections cannot bypass capture.\n        counter name blocked_forward drop\n    }\n    chain prevent_input_fallback {\n        type filter hook input priority -1; policy accept;\n        iifname != \"__LAN_DEVICE__\" return\n        meta nfproto != ipv4 return\n        ip saddr != __LAN_SUBNET__ return\n        udp sport 68 udp dport 67 return\n        ip daddr __LAN_ADDRESS__ tcp dport { 22, 80, 443 } return\n        meta l4proto { tcp, udp } meta mark != 0x7610 counter name blocked_input drop\n    }\n}\n";
 let phase = 'initialization';
 
 function fail(code) {
@@ -77,7 +82,12 @@ function render_nft(data) {
         push(lines, '    }');
         push(definitions, join('\n', lines));
     }
-    return telemetry.nft(dedicated.nft(replace(nft_template, '__LANEKEEP_MEMBER_SETS__', join('\n', definitions)),data.rules));
+    let chain = unassigned_chains[data.unassigned];
+    if (chain == null) fail('invalid_unassigned');
+    let text = replace(nft_template, '__LANEKEEP_MEMBER_SETS__', join('\n', definitions));
+    if (index(text, '__LANEKEEP_UNASSIGNED_CHAIN__') < 0) fail('unassigned_anchor');
+    text = replace(text, '__LANEKEEP_UNASSIGNED_CHAIN__', chain);
+    return telemetry.nft(dedicated.nft(text,data.rules));
 }
 
 function render_members(data) {
@@ -162,7 +172,7 @@ function load_config(directory, need_dhcp, available_nodes) {
             if (value != 'category-ads-all' || action != 'block' || node != '') fail('adblock_rule_must_use_fixed_ads_category_and_block');
         }
         else if (kind == 'dedicated') {
-            if (!contains(member_groups,group)) fail('dedicated_standard_forbidden');
+            if (!contains(dedicated_groups,group)) fail('dedicated_standard_forbidden');
             if (!dedicated.valid_port(value)) fail('dedicated_port_range');
             if (ports[value]) fail('dedicated_port_duplicate');
             ports[value]=true;
@@ -196,8 +206,11 @@ function load_config(directory, need_dhcp, available_nodes) {
         push(data.rules, { id: section['.name'], group: group, type: kind, value: value, action: action, node: node, enabled: enabled, note: note });
     });
     for (let group in member_groups) {
+        // Configurations from 0.2.x have no standard/direct sections: both start empty.
+        if (data.groups[group] == null && optional_groups[group] != null) data.groups[group] = { label: optional_groups[group], member: [] };
         if (data.groups[group] == null) fail('missing_group');
     }
+    if (!settings.unassigned_ok(data.unassigned)) fail('invalid_unassigned');
     let validated=settings.validate({fallbacks:data.fallbacks,real_dns:data.real_dns,group_nodes:data.group_nodes},{nodes:values(available_nodes || node_map)});
     data.group_nodes=validated.group_nodes;data.fallbacks=validated.fallbacks;data.real_dns=validated.real_dns;
     cursor.unload('lanekeep');
@@ -329,12 +342,14 @@ function summarize(current, previous) {
     }
     // Rules include disabled entries, notes and order; these must not enter the members branch.
     let settings_diff=settings.diff(previous,current);
-    let apply_kind = !equal(current.rules, previous.rules) || length(settings_diff.group_node_changes) || length(settings_diff.fallback_changes) || settings_diff.real_dns_change!=null ? 'rules' :
+    // The unassigned choice changes the nft dispatch chain, so it takes the full rules path.
+    let apply_kind = !equal(current.rules, previous.rules) || length(settings_diff.group_node_changes) || length(settings_diff.fallback_changes) || settings_diff.real_dns_change!=null || settings_diff.unassigned_change!=null ? 'rules' :
         length(member_changes) ? 'members' : length(label_changes) ? 'metadata' : 'unchanged';
     return { ok: true, generated_only: true, restart_performed: false, added: added, removed: removed, changed: changed,
         order_changed: !equal(old_order, new_order), rule_count: length(current.rules),
         member_changes: member_changes, label_changes: label_changes, apply_kind: apply_kind,
         group_node_changes:settings_diff.group_node_changes,fallback_changes:settings_diff.fallback_changes,real_dns_change:settings_diff.real_dns_change,
+        unassigned_change:settings_diff.unassigned_change,unassigned:current.unassigned,
         stage: output_dir, config: output_dir + '/config.json', nft: output_dir + '/phone-pilot.nft', members: output_dir + '/members.nft' };
 }
 

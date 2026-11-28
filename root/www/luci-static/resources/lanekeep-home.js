@@ -20,7 +20,7 @@ function read(window,snapshot,day){
 }
 var mark=rpc.declare({object:'lanekeep_telemetry',method:'mark',expect:{}});
 var metricList=[['probe_ms',lk.text("代理线路响应"),lk.text("毫秒")],['tcp_retrans',lk.text("网络重传"),lk.text("次/秒")],['gate',lk.text("保护开关"),''],['wan_up_state',lk.text("上游网络"),''],['cpu',lk.text("路由器 CPU"),'%'],['mem_used',lk.text("内存"),'MB'],['conntrack',lk.text("连接数"),lk.text("条")],['core_fd',lk.text("代理程序句柄（FD）"),'']];
-var names={standard:lk.text("常规组"),global:lk.text("全局 组"),enhanced:lk.text("增强组"),ondemand:lk.text("按需组")};
+var names={standard:lk.text("常规组"),global:lk.text("全局 组"),enhanced:lk.text("增强组"),ondemand:lk.text("按需组"),direct:lk.mode('direct')};
 var priority=[],aliases={};
 var css='';
 function number(v){return typeof v==='number'&&isFinite(v)&&v>=0;}

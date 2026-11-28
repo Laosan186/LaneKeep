@@ -1,6 +1,26 @@
 #!/bin/sh
 # SPDX-License-Identifier: GPL-3.0-only
 set -eu
+# Only a proven first install sends devices without a group to the direct group. Every earlier
+# install or upgrade ran lifecycle, which creates /etc/lanekeep-state, but sysupgrade keeps only the
+# conffiles. So a first install also needs all three conffiles to be byte-for-byte the shipped
+# defaults; any other sign of earlier use keeps the saved choice or, without one, the standard group.
+shipped_defaults() {
+    while read -r expected file; do
+        [ -f "$file" ] && [ ! -L "$file" ] || return 1
+        actual=$(sha256sum "$file") || return 1
+        [ "${actual%% *}" = "$expected" ] || return 1
+    done <<'EOF'
+50d23e3577c347699f9b24f032494b0716ed2c7013a155cc2a75d57fb94a08e6 /etc/config/lanekeep
+27616300eab7a81fbc08b3e070c2087c195a5ea86acc4700319f2341a376793d /etc/config/lanekeep_runtime
+dfa61d95b8082601d54fab538876096f397e1a703e959ffa2df34bb0870def5a /etc/lanekeep-proxy/nodes.json
+EOF
+}
+if [ ! -e /etc/lanekeep-state ] && ! uci -q get lanekeep.unassigned >/dev/null && shipped_defaults; then
+    uci set lanekeep.unassigned=unassigned
+    uci set lanekeep.unassigned.group=direct
+    uci commit lanekeep
+fi
 /usr/libexec/lanekeep-panel/lifecycle prepare
 for child in lanekeep-xray lanekeep-dns lanekeep-telemetry; do /etc/init.d/"$child" disable; done
 /etc/init.d/lanekeep enable

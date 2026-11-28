@@ -8,11 +8,18 @@ function valid_ip(x){return lan.member(x);}
 function num(x){return (type(x)=='int'||type(x)=='double')&&x>=0&&x<1e12;}
 function run(s){let p=fs.popen(s+' 2>/dev/null','r');if(!p)return null;let x=p.read('all'),rc=p.close();return rc==0?x:null;}
 function object(path,max){let s=fs.lstat(path);if(s?.type!='file'||s.uid!=0||(s.mode&0077)!=0||s.size>max)return null;try{return json(fs.readfile(path));}catch(e){return null;}}
-function members(raw,expected){
+let GROUPS=['global','enhanced','ondemand','standard','direct'],UNASSIGNED_CHAINS={standard:'capture_phone',direct:'capture_direct'};
+// Target of the last dispatch_device rule: where devices outside every member set go.
+function fallback_chain(list){
+ let rows=filter(list,x=>x.rule?.table=='lanekeep_phone'&&x.rule?.chain=='dispatch_device');if(!length(rows))return null;
+ let expr=rows[length(rows)-1].rule.expr;if(type(expr)!='array'||!length(expr))return null;return expr[length(expr)-1]?.jump?.target;
+}
+function members(raw,expected,unassigned){
  let parsed;try{parsed=json(raw);}catch(e){return {ok:null,groups:{}};}
  if(type(parsed?.nftables)!='array')return {ok:null,groups:{}};
  let checked={},actual_groups={},all=true;
- for(let g in ['global','enhanced','ondemand']){
+ let fallback=fallback_chain(parsed.nftables),fallback_ok=fallback!=null&&fallback==UNASSIGNED_CHAINS[unassigned??'standard'];
+ for(let g in GROUPS){
   let found=filter(parsed.nftables,x=>x.set?.table=='lanekeep_phone'&&x.set?.name=='lanekeep_grp_'+g);
   if(length(found)!=1){checked[g]=false;all=false;continue;}
   let set=found[0].set,actual=[],valid=set.type=='ipv4_addr';
@@ -20,7 +27,7 @@ function members(raw,expected){
   let want=expected[g]||[];
   checked[g]=valid&&sprintf('%J',sort(actual))==sprintf('%J',sort([...want]));actual_groups[g]=valid?actual:null;all=all&&checked[g];
  }
- return {ok:all,groups:checked,actual:actual_groups};
+ return {ok:all&&fallback_ok,groups:checked,actual:actual_groups,unassigned_ok:fallback_ok};
 }
 function neighbours(raw){
  let out={};if(raw==null)return null;
@@ -64,6 +71,7 @@ function save(s){
 function fallback(f){return f?.action=='direct'?'直连':f?.action=='node'?'走指定节点':f?.action=='proxy'?'走代理':'尚未核实';}
 function rule_text(group,config,verified){
  if(!verified)return '现役规则尚未核实';
+ if(group=='direct')return '全部直连，不经代理节点；不提供DNS和WebRTC防泄漏';
  let text=({standard:'明确国外走代理，国内直连',global:'大多走代理，保留局域网及已设定的直连例外',enhanced:'明确国外及苹果、微软等预设服务走代理，国内直连',ondemand:'已设定的国外视频服务走代理'})[group]||'分组未知';
  let selected=config.group_nodes?.[group];if(selected)text=replace(text,/走代理/g,'走本组节点');
  text+='；其余'+(selected&&config.fallbacks?.[group]?.action=='proxy'?'走本组节点':fallback(config.fallbacks?.[group]));let n=length(filter(config.rules||[],r=>r.group==group&&r.enabled=='1'));
@@ -77,13 +85,13 @@ function supervisor(){
 function privacy(){
  try{let s=fs.lstat('/etc/lanekeep-proxy/config.json');if(s?.type!='file'||s.size>2097152)return null;let c=json(fs.readfile('/etc/lanekeep-proxy/config.json')),l=c?.log;return l?.access=='none'&&l?.error=='none'&&l?.loglevel=='none'&&l?.dnsLog==false;}catch(e){return null;}
 }
-function device_rule_ok(device,checked,verified){
+function device_rule_ok(device,checked,verified,unassigned){
  if(verified!=true)return false;
- if(device.group=='standard')return checked.ok==true;
  if(checked.groups?.[device.group]!=true)return false;
  // A changed earlier group must not silently steal this device's address.
- for(let g in ['global','enhanced','ondemand'])if(index(checked.actual?.[g]||[],device.ip)>=0)return g==device.group;
- return false;
+ for(let g in GROUPS)if(index(checked.actual?.[g]||[],device.ip)>=0)return g==device.group;
+ // In no set: nft falls through to the unassigned chain, so the whole table must match.
+ return checked.ok==true&&device.group==(unassigned??'standard');
 }
 function adblocking(config,verified){
  let groups={};for(let g in ['standard','global','enhanced','ondemand']){
@@ -94,10 +102,10 @@ function adblocking(config,verified){
  return {engine:'Xray',category:'category-ads-all',groups:groups,configuration_verified:verified==true,visits_recorded:false};
 }
 function read(hosts,config,verified){
- let at=mono(),boot=trim(fs.readfile('/proc/sys/kernel/random/boot_id')||''),m=members(run('nft -j list table inet lanekeep_phone'),config.members),n=neighbours(run('ip -4 neigh show dev '+lan.context().device));
+ let at=mono(),boot=trim(fs.readfile('/proc/sys/kernel/random/boot_id')||''),m=members(run('nft -j list table inet lanekeep_phone'),config.members,config.unassigned),n=neighbours(run('ip -4 neigh show dev '+lan.context().device));
  let s=restore(object(STATE,262144),boot,at),observed=observe(s,n,hosts,at),stored=save(s),rules=verified==true&&m.ok==true;
- let devices=[];for(let h in hosts){let d=observed[h.ip]||{online:null,unstable:false,drops_1h:0,observed_seconds:0,history_complete:false,observation:'暂未确认'};push(devices,{ip:h.ip,name:h.name,group:h.group,rule_text:rule_text(h.group,config,verified),rule_ok:device_rule_ok(h,m,verified),...d});}
- return {wall:time(),mono:at,devices,rules_checked:rules,rules_message:rules?'分组和现役规则与设定一致；未核验逐设备实际流量走向':'分组或现役规则未能确认一致',policy_check:{rules_match:verified==true,members_match:m.ok,groups:m.groups},device_history_memory_only:true,device_history_ok:stored,device_history_basis:'仅页面读取时被动观察；未应答不等于实际断网，睡眠设备可能没有新响应',supervisor:supervisor(),privacy_ok:privacy(),adblocking:adblocking(config,verified)};
+ let devices=[];for(let h in hosts){let d=observed[h.ip]||{online:null,unstable:false,drops_1h:0,observed_seconds:0,history_complete:false,observation:'暂未确认'};push(devices,{ip:h.ip,name:h.name,group:h.group,rule_text:rule_text(h.group,config,verified),rule_ok:device_rule_ok(h,m,verified,config.unassigned),...d});}
+ return {wall:time(),mono:at,devices,rules_checked:rules,rules_message:rules?'分组和现役规则与设定一致；未核验逐设备实际流量走向':'分组或现役规则未能确认一致',policy_check:{rules_match:verified==true,members_match:m.ok,groups:m.groups,unassigned_match:m.unassigned_ok},device_history_memory_only:true,device_history_ok:stored,device_history_basis:'仅页面读取时被动观察；未应答不等于实际断网，睡眠设备可能没有新响应',supervisor:supervisor(),privacy_ok:privacy(),adblocking:adblocking(config,verified)};
 }
 function max(a,b){return a>b?a:b;}
 export {read,members,neighbours,blank,restore,observe,rule_text,device_rule_ok,supervisor,privacy,adblocking};

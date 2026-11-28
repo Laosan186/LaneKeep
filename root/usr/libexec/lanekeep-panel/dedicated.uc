@@ -13,14 +13,14 @@ function routes(r,store) {
     let result=[
         {type:'field',inboundTag:tags,ip:['geoip:private','0.0.0.0/8','100.64.0.0/10','198.18.0.0/15','224.0.0.0/4','240.0.0.0/4','::/128','::1/128','64:ff9b::/96','64:ff9b:1::/48','2001:2::/48','fc00::/7','fe80::/10','ff00::/8'],outboundTag:'block'},
         {type:'field',inboundTag:tags,domain:['geosite:private','domain:lan','domain:local','full:localhost'],outboundTag:'block'},
-        {type:'field',inboundTag:tags,port:'53,853,1053,5053,10811-10860,12345-12348',outboundTag:'block'},
+        {type:'field',inboundTag:tags,port:'53,853,1053,5053,10811-10860,12345-12349',outboundTag:'block'},
         {type:'field',inboundTag:tags,network:'tcp',outboundTag:out},
         {type:'field',inboundTag:tags,outboundTag:'block'}
     ];
     let expanded=[];for(let rule in result)for(let row in chain_rules(rule,store))push(expanded,row);return expanded;
 }
 function internal_rule(r) {
-    return r.outboundTag=='block' && r.port=='1053,12345-12348,5053' &&
+    return r.outboundTag=='block' && r.port=='1053,12345-12349,5053' &&
         join(',',r.ip || [])=='127.0.0.0/8,__LAN_ADDRESS__/32' &&
         join(',',r.inboundTag || [])=='standard-transparent,global-transparent,enhanced-transparent,ondemand-transparent';
 }

@@ -12,4 +12,4 @@ sh tests/target/rules-check.sh . [PREVIOUS_CHECKOUT] # generator, xray -test, se
 sh tests/target/latency-check.sh .                   # node latency v3 against a local HTTP stub
 ```
 
-With `PREVIOUS_CHECKOUT` (for example the `v0.1.0` tree), `rules-check.sh` also confirms that output without IP rules is byte-identical to the previous generator and that the previous generator rejects the `ip` type. `latency-check.sh` redirects every request from a temporary local SOCKS inbound to `latency-stub.uc` on `127.0.0.1:18080`; nothing leaves the machine. It briefly uses ports 18080 and 23456.
+With `PREVIOUS_CHECKOUT` (the `v0.2.1` tree), `rules-check.sh` also confirms with `direct-diff.uc` that, apart from the documented direct-group additions, output is identical to the previous generator. It also checks the direct group itself, its rejections and, when run as root, `nft -c`. `latency-check.sh` redirects every request from a temporary local SOCKS inbound to `latency-stub.uc` on `127.0.0.1:18080`; nothing leaves the machine. It briefly uses ports 18080 and 23456.
