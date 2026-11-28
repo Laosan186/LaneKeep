@@ -16,7 +16,7 @@
       "materialized_tree_files": 106,
       "apk_database_files": 3,
       "same_sha256_as_materialized_tree": 105,
-      "differing": "/etc/config/lanekeep, only by the unassigned section the first install writes",
+      "differing": "/etc/config/lanekeep, only by the unassigned section the first install writes and blank lines from the uci write-back",
       "installed_generator_sha256_equals_lock": true,
       "evidence": "repeated clean install (logs/fresh-install.txt)"
     },
@@ -232,7 +232,7 @@
     "with Devices without a mode on Standard, Global/Enhanced/On-demand members can be handled by Standard mode while the core starts or stops (as in earlier versions)",
     "existing connections stay on the previous inbound after a device changes mode, until they end (as in earlier versions)"
   ],
-  "logs": "docs/audit/v1.0.2/logs: rig outputs with the test tool's exit-code lines and repeated offline-cache warnings removed",
+  "logs": "docs/audit/v1.0.2/logs: rig outputs with the test tool's exit-code lines and repeated offline-cache warnings removed; each part has a ##### title, and added explanations are marked # note:",
   "not_covered": [
     "actual order and length of the inbound open/close window in a real core restart",
     "a later upgrade from 1.0.2 keeping the guard table, and connectivity during any upgrade",

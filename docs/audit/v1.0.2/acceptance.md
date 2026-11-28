@@ -10,7 +10,7 @@ This report covers building the v1.0.2 APK, upgrading an enabled 0.2.1-r1 instan
 
 | 步骤 | 验证结果 |
 |---|---|
-| 构建 | 在测试机内用 apk-tools 3 构建 `luci-app-lanekeep-1.0.2-r1.apk`，308,935 字节，SHA256 `e8135ca6e125ebc487263019e9ae1aa43f7191fd48177787757908f16ff0a529`。构建输入 `root/`、`packaging/`、`tools/build` 取自提交 `46b5d87`，与发布提交一致。全新安装后 `apk info -L` 列出 109 个文件：其中 106 个对应 `tools/build/materialize.py` 从 `46b5d87` 生成的安装树，105 个 SHA256 相同，`/etc/config/lanekeep` 只多出首次安装写入的 `unassigned` 段；另 3 个是 apk 自己的数据库文件。装上的生成器 SHA256 等于面板锁定值。 |
+| 构建 | 在测试机内用 apk-tools 3 构建 `luci-app-lanekeep-1.0.2-r1.apk`，308,935 字节，SHA256 `e8135ca6e125ebc487263019e9ae1aa43f7191fd48177787757908f16ff0a529`。构建输入 `root/`、`packaging/`、`tools/build` 取自提交 `46b5d87`，与发布提交一致。全新安装后 `apk info -L` 列出 109 个文件：其中 106 个对应 `tools/build/materialize.py` 从 `46b5d87` 生成的安装树，105 个 SHA256 相同，`/etc/config/lanekeep` 只多出首次安装写入的 `unassigned` 段和 uci 写回时加的空行；另 3 个是 apk 自己的数据库文件。装上的生成器 SHA256 等于面板锁定值。 |
 | 从已启用的 0.2.1-r1 升级 | `apk add --upgrade` 9 秒完成；三个用户配置文件 SHA256 不变；升级后阻断表 `lanekeep_guard` 已装上并保存为开机副本，`S18lanekeep-guard` 已启用；未分组设备保持常规；模板指纹 `31e8d3cc…69ca7`；规则核对全部一致；门控 OPEN。升级实例上没有逐个比对装上的文件（包内文件的比对在全新安装上做，见“构建”）。 |
 | 升级实例的防泄漏回归（未分组=常规） | 全局、增强两组 160 个用例与加固基线 r3 逐项对照：0 项变化，0 项退步。仍为 D 的用例与基线相同（增强模式国内 TCP、用户自加的直连规则、公网地址上的 `geosite:private` 域名等已知项）。 |
 | 发布前审查发现的核心启停窗口 | 见下一节。修前在候选构建上复现两种泄漏；修后同样条件下全部为 -。 |
@@ -28,7 +28,7 @@ This report covers building the v1.0.2 APK, upgrading an enabled 0.2.1-r1 instan
 | 卸载 | 网络、DHCP、防火墙、dnsmasq、策略路由和路由表与安装前一致，nft 规则集只有计数值不同；阻断表和开机脚本已移除；没有残留进程。 |
 | 离线检查 | 11 项发布不变量测试通过，包括新增的直连链丢弃规则检查。 |
 
-机器可读结果见 [acceptance.json](acceptance.json)，各项输出见 [logs/](logs/)（只删去了测试工具的退出码行和重复的离线缓存警告）。去个人化与 gitleaks 结果见 [../privacy-scan.json](../privacy-scan.json)。
+机器可读结果见 [acceptance.json](acceptance.json)，各项输出见 [logs/](logs/)（只删去了测试工具的退出码行和重复的离线缓存警告；另加了各段标题和以 `# note:` 标明的说明行）。去个人化与 gitleaks 结果见 [../privacy-scan.json](../privacy-scan.json)。
 
 ## 发布前审查发现的核心启停窗口
 
