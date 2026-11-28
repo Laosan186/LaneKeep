@@ -22,10 +22,14 @@ let CODE = '/usr/libexec/lanekeep-panel';
 let ENGINE = '/usr/libexec/lanekeep-xray';
 let PROXY = '/etc/lanekeep-proxy';
 let GROUPS = ['standard', 'global', 'enhanced', 'ondemand'];
+// Groups that can own dedicated entries and must have a UCI section since 0.1.
 let MEMBERS = ['global', 'enhanced', 'ondemand'];
+// Every explicit member set. Standard/direct sections are optional in 0.2.x configurations.
+let ASSIGN = ['global', 'enhanced', 'ondemand', 'standard', 'direct'];
+let OPTIONAL_LABELS = {standard:'常规模式', direct:'直连'};
 let TAGS = {standard:'standard-transparent', global:'global-transparent', enhanced:'enhanced-transparent', ondemand:'ondemand-transparent'};
-let LABELS = {standard:'常规', global:'全局', enhanced:'增强', ondemand:'按需'};
-let GENERATOR_SHA = 'fe8c9c0c57f0ae75ca4a36b9f434ca3f984789a7f13e9818144343deb14d4476';
+let LABELS = {standard:'常规', global:'全局', enhanced:'增强', ondemand:'按需', direct:'直连'};
+let GENERATOR_SHA = 'b1417339097a7612adb06dad3437d6fdcd95153b5eeaad542f8454f8ddddb32d';
 let failure = null;
 function enabled(){return uci.cursor().get('lanekeep_runtime','main','enabled')=='1';}
 let may_have_started = false;
@@ -73,12 +77,12 @@ function read_config(dir) {
     if (!regular(dir + '/lanekeep') || fs.stat(dir + '/lanekeep').size > 524288) reject('config','用户配置不可读取或过大');
     let cursor = uci.cursor(dir, '/tmp/lanekeep-panel-empty-' + uuid());
     if (!cursor.load('lanekeep')) reject('config','用户配置无法解析');
-    let data = settings.defaults();data.members={global:[],enhanced:[],ondemand:[]};data.labels={};data.rules=[];let seen={},setting_sections={};
+    let data = settings.defaults();data.members={global:[],enhanced:[],ondemand:[],standard:[],direct:[]};data.labels={standard:OPTIONAL_LABELS.standard,direct:OPTIONAL_LABELS.direct};data.rules=[];let seen={},setting_sections={};
     cursor.foreach('lanekeep',null,function(s) {
         if(settings.section(data,s,setting_sections))return;
         if (s['.type']=='group') {
-            let g=s['.name']; if (!has(MEMBERS,g) || seen[g]) reject('config','分组格式不受支持'); seen[g]=true;
-            data.members[g]=s.member || []; data.labels[g]=s.label || LABELS[g];
+            let g=s['.name']; if (!has(ASSIGN,g) || seen[g]) reject('config','分组格式不受支持'); seen[g]=true;
+            data.members[g]=s.member || []; data.labels[g]=s.label || OPTIONAL_LABELS[g] || LABELS[g];
             return;
         }
         if (s['.type']!='rule') reject('config','用户配置中有不支持的区段');
@@ -96,11 +100,20 @@ function bindings() {
         seen[s.ip]=true; push(result,{name:clean_name(s.name),ip:s.ip});
     }); cursor.unload('dhcp'); return result;
 }
+// A page loaded before the upgrade does not know the standard and direct groups. Missing keys keep the
+// saved members, except addresses the draft now places in another group.
+function keep_optional_members(value, saved) {
+    if(type(value)!='object') return value;
+    let out={},placed={};
+    for(let k in value){out[k]=value[k];if(type(value[k])=='array')for(let a in value[k])placed[a]=true;}
+    for(let g in ['standard','direct'])if(!exists(value,g))out[g]=filter(saved?.[g] || [],a=>!placed[a]);
+    return out;
+}
 function validate_members(value, hosts) {
-    safe_keys(value,MEMBERS,'members'); let assigned={},seen={},out={};
+    safe_keys(value,ASSIGN,'members'); let assigned={},seen={},out={};
     for (let host in hosts) assigned[host.ip]=true;
-    for (let g in MEMBERS) {
-        let list=value[g]; if (type(list)!='array' || length(list)>253) reject('members.'+g,'成员必须是固定IP列表');
+    for (let g in ASSIGN) {
+        let list=value[g] ?? (has(MEMBERS,g) ? null : []); if (type(list)!='array' || length(list)>253) reject('members.'+g,'成员必须是固定IP列表');
         out[g]=[];
         for (let address in list) {
             if (!ip_ok(address)) reject('members.'+g,'成员 IP 必须位于所选 LAN 子网内');
@@ -118,7 +131,7 @@ function validate_rules(list, current, store) {
     for (let i=0;i<length(list);i++) {
         let r=list[i], f='rules.'+i;
         safe_keys(r,['id','group','type','value','action','enabled','note','node'],f);
-        if (!text(r.id,64) || !match(r.id,/^[A-Za-z][A-Za-z0-9_]{0,63}$/) || has(MEMBERS,r.id) || has(['real_dns','fallback_standard','fallback_global','fallback_enhanced','fallback_ondemand','group_proxy_standard','group_proxy_global','group_proxy_enhanced','group_proxy_ondemand'],r.id) || ids[r.id]) reject(f+'.id','规则编号无效或重复');
+        if (!text(r.id,64) || !match(r.id,/^[A-Za-z][A-Za-z0-9_]{0,63}$/) || has(ASSIGN,r.id) || has(['real_dns','unassigned','fallback_standard','fallback_global','fallback_enhanced','fallback_ondemand','group_proxy_standard','group_proxy_global','group_proxy_enhanced','group_proxy_ondemand'],r.id) || ids[r.id]) reject(f+'.id','规则编号无效或重复');
         ids[r.id]=true;
         if(r.action=='node' && (!nodes.valid_node_id(r.node) || !length(filter((store || current_nodes()).nodes,n=>n.id==r.node)))) reject(f+'.node','指定节点不存在');
         if(r.action=='node'){let node_store=store||current_nodes();nodes.assert_reference(filter(node_store.nodes,n=>n.id==r.node)[0],node_store);}
@@ -162,7 +175,7 @@ function validate_rules(list, current, store) {
 function quote_uci(value) { return "'" + replace(value,/'/g,"'\\''") + "'"; }
 function encode(data) {
     let lines=settings.encode(data,quote_uci);
-    for(let g in MEMBERS) {
+    for(let g in ASSIGN) {
         push(lines,'config group '+quote_uci(g));
         push(lines,'\toption label '+quote_uci(data.labels[g]));
         for(let address in data.members[g]) push(lines,'\tlist member '+quote_uci(address));
@@ -189,7 +202,7 @@ function validate_settings(value,store) {
 function exit_label(f) {
     return f.action=='direct'?'直连':f.action=='proxy'?'本组代理节点':'指定节点 '+f.node;
 }
-function same_settings(a,b) {return equal(a.group_nodes,b.group_nodes) && equal(a.fallbacks,b.fallbacks) && equal(a.real_dns,b.real_dns);}
+function same_settings(a,b) {return equal(a.group_nodes,b.group_nodes) && equal(a.fallbacks,b.fallbacks) && equal(a.real_dns,b.real_dns) && (a.unassigned ?? 'standard')==(b.unassigned ?? 'standard');}
 function last_test(id) {
     let value=regular(ROOT+'/node-tests.json')?obj(ROOT+'/node-tests.json')?.[id]:null;
     let n=filter(current_nodes().nodes,x=>x.id==id)[0];
@@ -202,13 +215,13 @@ function historical_rules(rules) {
     return result;
 }
 function same_members(a,b) {
-    for(let group in MEMBERS) {
+    for(let group in ASSIGN) {
         if(type(a[group])!='array' || type(b[group])!='array' || !equal(sort(clone(a[group])),sort(clone(b[group])))) return false;
     }
     return true;
 }
 function config_kind(summary, generated, previous) {
-    if(!equal(obj(generated),obj(previous))) return 'rules';
+    if(!equal(obj(generated),obj(previous)) || summary?.unassigned_change!=null) return 'rules';
     if(length(summary.member_changes || [])) return 'members';
     return summary.apply_kind=='unchanged' ? 'unchanged' : 'metadata';
 }
@@ -219,10 +232,12 @@ function attach_notes(summary, before, after) {
     summary.changed=map(summary.changed,(r)=>({before:old[r.before.id],after:now[r.after.id]}));
     return summary;
 }
-function group_for(ip,members) { for(let g in MEMBERS) if(has(members[g],ip)) return g; return 'standard'; }
+function group_for(ip,members,unassigned) { for(let g in ASSIGN) if(has(members[g] || [],ip)) return g; return unassigned ?? 'standard'; }
+// Static-lease devices that have no explicit set and therefore follow the unassigned choice.
+function unassigned_hosts(hosts,members) { return filter(hosts,h=>!length(filter(ASSIGN,g=>has(members[g] || [],h.ip)))); }
 function public_summary(s) {
     return {added:s?.added || [],removed:s?.removed || [],changed:s?.changed || [],order_changed:s?.order_changed==true,
-        group_node_changes:s?.group_node_changes || [],fallback_changes:s?.fallback_changes || [],real_dns_change:s?.real_dns_change,
+        group_node_changes:s?.group_node_changes || [],fallback_changes:s?.fallback_changes || [],real_dns_change:s?.real_dns_change,unassigned_change:s?.unassigned_change,unassigned:s?.unassigned,
         member_changes:s?.member_changes || [],rule_count:s?.rule_count || 0,node_changes:s?.node_changes || [],affected_chains:s?.affected_chains || [],udp_invalidated:s?.udp_invalidated || [],active_chain_count:s?.active_chain_count,active_referenced_records:s?.active_referenced_records,default_node_change:s?.default_node_change};
 }
 function summary_text(s) {
@@ -230,6 +245,7 @@ function summary_text(s) {
     for(let c in s?.group_node_changes || [])push(lines,LABELS[c.group]+'组代理节点：'+(c.before || '全局默认')+' → '+(c.after || '全局默认'));
     for(let change in s?.fallback_changes || [])push(lines,LABELS[change.group]+'组兜底：'+exit_label(change.before)+' → '+exit_label(change.after));
     if(s?.real_dns_change)push(lines,'不使用假 IP 的域名：'+length(s.real_dns_change.before)+' → '+length(s.real_dns_change.after)+'项');
+    if(s?.unassigned_change)push(lines,'未分组设备：'+LABELS[s.unassigned_change.before]+'组 → '+LABELS[s.unassigned_change.after]+'组');
     for(let pair in [['added','新增规则'],['removed','删除规则'],['changed','修改规则'],['member_changes','分组变化']])
         if(length(s?.[pair[0]] || []))push(lines,pair[1]+length(s[pair[0]]));
     if(s?.order_changed)push(lines,'规则顺序改变');
@@ -289,21 +305,25 @@ function gc() {
     }
 }
 function prepare(draft, origin) {
-    safe_keys(draft,['revision','scope','members','rules','nodes_revision','fallbacks','real_dns','group_nodes'],'draft');
+    safe_keys(draft,['revision','scope','members','rules','nodes_revision','fallbacks','real_dns','group_nodes','unassigned'],'draft');
     if(!has(['rules','members'],draft.scope)) reject('scope','请分别提交规则或设备分组');
     if(type(draft.revision)!='string' || !match(draft.revision,/^[a-f0-9]{64}$/)) reject('revision','配置版本无效，请刷新');
     if(draft.scope=='rules' && draft.members!=null || draft.scope=='members' && draft.rules!=null) reject('scope','规则和成员不能混合提交');
-    if(draft.scope=='members' && (draft.fallbacks!=null || draft.real_dns!=null || draft.group_nodes!=null))reject('scope','设备换组不能夹带组代理节点、兜底出口或DNS改动');
+    if(draft.scope=='members' && (draft.fallbacks!=null || draft.real_dns!=null || draft.group_nodes!=null || draft.unassigned!=null))reject('scope','设备换组不能夹带组代理节点、兜底出口、DNS或未分组设备改动');
+    if(draft.unassigned!=null && !settings.unassigned_ok(draft.unassigned))reject('unassigned','未分组设备只能进入直连组或常规组');
     let cap_revision=caps.revision();
     let before=fingerprint('/etc/config/lanekeep'), dhcp=fingerprint('/etc/config/dhcp'), node_revision=nodes_revision();
     if(draft.group_nodes!=null && draft.nodes_revision!=node_revision || draft.nodes_revision!=null && draft.nodes_revision!=node_revision)reject('revision','节点已改变，请刷新');
     if(draft.revision!=before) reject('revision','配置已被修改，请刷新后重新编辑');
     if(fingerprint(ENGINE+'/lanekeep-gen.uc')!=GENERATOR_SHA) reject('generator','现役生成器版本不同，请先核对广播/组播保护');
     let data=read_config('/etc/config'), hosts=bindings(), previous_rules=data.rules;
-    for(let g in MEMBERS) if(!text(data.labels[g],80)) reject('config','分组名称异常');
-    if(draft.scope=='members') data.members=validate_members(draft.members,hosts);
+    for(let g in ASSIGN) if(!text(data.labels[g],80)) reject('config','分组名称异常');
+    let previous_unassigned=data.unassigned;
+    if(draft.scope=='members') data.members=validate_members(keep_optional_members(draft.members,data.members),hosts);
     else {
-        data.rules=validate_rules(draft.rules,data.rules);
+        // A settings-only draft (for example the unassigned choice) keeps the saved rules.
+        data.rules=validate_rules(draft.rules ?? previous_rules,data.rules);
+        data.unassigned=draft.unassigned ?? data.unassigned;
         let next=validate_settings({fallbacks:draft.fallbacks ?? data.fallbacks,real_dns:draft.real_dns ?? data.real_dns,group_nodes:draft.group_nodes ?? data.group_nodes},current_nodes());
         data.group_nodes=next.group_nodes;data.fallbacks=next.fallbacks;data.real_dns=next.real_dns;
         for(let i=0;i<length(data.rules);i++) {
@@ -337,6 +357,8 @@ function prepare(draft, origin) {
     let impact={restart_required:enabled()&&kind=='rules',message:kind=='rules' ? '应用规则会重启核心；失败会自动回退，可能再重启一次。预计约10秒短暂中断；这是估计，非本次实测。最多等待60秒门控OPEN。' : '仅成员或元数据应用，不重启核心、不清连接、不重建共享FakeDNS。已有连接可能沿旧组，新连接按新组。'};
     impact.entry_warnings=dedicated.warnings(previous_rules,data.rules);
     impact.settings_warnings=settings.warnings(summary);
+    if(previous_unassigned!=data.unassigned){let moving=unassigned_hosts(hosts,data.members);
+        if(length(moving))push(impact.settings_warnings,'以下已固定 IP 但没有明确分组的设备会随之进入'+LABELS[data.unassigned]+'组：'+join('、',map(moving,h=>h.name+'（'+h.ip+'）'))+'。如需保持原模式，请先在设备页把它们从“跟随默认”改成具体模式并应用。');}
     let meta={id:id,base_uci:before,base_dhcp:dhcp,base_nodes:node_revision,kind:kind,scope:draft.scope,summary:public_summary(summary),impact:impact,origin:origin || 'edit',created_at:time()};
     if(caps.revision()!=cap_revision)reject_import('revision_changed','capabilities','校验期间能力表变化');
     meta.node_caps_revision=cap_revision;
@@ -347,7 +369,7 @@ function builtins(config) {
     let store=current_nodes();
     let result={standard:[],global:[],enhanced:[],ondemand:[]};
     let positions={}, layout={builtin:result,positions:positions,verified:false};
-    if(fingerprint(PROXY+'/template.json')!='d1d8df48c9836161c6e1d2bb142b7b6f9eeed9adeb8c45b31c4d619e4db99d8e') return layout;
+    if(fingerprint(PROXY+'/template.json')!='31e8d3cc7de5f7bc4d49f3de7a32faa52bfd4e367b1b0ac3b7a57f8a69f69ca7') return layout;
     let template=obj(PROXY+'/template.json'),active=obj(PROXY+'/config.json');
     try{active=settings.standard_dns_base(active);}catch(e){return layout;}
     let live=active?.routing?.rules,offset=0;
@@ -364,7 +386,7 @@ function builtins(config) {
         'geosite:netflix':'Netflix域名分类','geosite:disney':'Disney域名分类',
         'geoip:private':'私有IP分类','geoip:cn':'中国IP分类',
         'ext:lanekeep-services.dat:google':'Google IP分类','ext:lanekeep-services.dat:netflix':'Netflix IP分类'};
-    let actions={'direct':'直连','proxy-default':'代理','block':'阻断','lan-dns-out':'共享DNS处理'};
+    let actions={'direct':'直连','proxy-default':'代理','block':'阻断','lan-dns-out':'共享DNS处理','direct-router-dns':'路由器DNS（dnsmasq）'};
     for(let i=0;i<length(template.routing.rules);i++) {
         let r=template.routing.rules[i];
         let entries=dedicated.active(config.rules);
@@ -478,9 +500,9 @@ function status(args) {
     if(args.job_id!=null && args.job_id!='' && !valid_id(args.job_id)) reject('job_id','任务编号无效');
     let revision=fingerprint('/etc/config/lanekeep'), dhcp_revision=fingerprint('/etc/config/dhcp');
     let config=read_config('/etc/config'), hosts=bindings();
-    let counts={standard:0,global:0,enhanced:0,ondemand:0}, assigned={}, warnings=[];
-    for(let h in hosts) { h.group=group_for(h.ip,config.members); counts[h.group]++; assigned[h.ip]=true; }
-    for(let g in MEMBERS) for(let address in config.members[g]) if(!assigned[address]) push(warnings,LABELS[g]+'组成员 '+address+' 已失去DHCP静态绑定，提交前请修复');
+    let counts={standard:0,global:0,enhanced:0,ondemand:0,direct:0}, assigned={}, warnings=[];
+    for(let h in hosts) { h.group=group_for(h.ip,config.members,config.unassigned); h.explicit=length(filter(ASSIGN,g=>has(config.members[g],h.ip)))>0; counts[h.group]++; assigned[h.ip]=true; }
+    for(let g in ASSIGN) for(let address in config.members[g]) if(!assigned[address]) push(warnings,LABELS[g]+'组成员 '+address+' 已失去DHCP静态绑定，提交前请修复');
     let dynamic=[];
     for(let line in split(fs.readfile('/tmp/dhcp.leases') || '', '\n')) {
         let m=match(line,/^([0-9]+) [^ ]+ ([^ ]+) ([^ ]+) /);
@@ -508,12 +530,12 @@ function status(args) {
     for(let r in config.rules) r.positions=layout.verified ? layout.positions[r.id] : [];
     let out={ok:true,revision:revision,core:core,gate:gate,
         current_version:'lanekeep-'+substr(revision,0,12),last_apply:public_log(history[length(history)-1]),counts:counts,
-        count_basis:'DHCP静态分配数量，非在线设备数量；其它动态或未知LAN设备默认常规组',warnings:warnings,
-        config:{revision:revision,members:config.members,rules:config.rules,group_nodes:config.group_nodes,fallbacks:config.fallbacks,real_dns:config.real_dns},devices:{static:hosts,dynamic:dynamic,dhcp_path:['admin','network','dhcp']},builtin:layout.verified ? layout.builtin : {standard:[],global:[],enhanced:[],ondemand:[]},
+        count_basis:'DHCP静态分配数量，非在线设备数量；其它动态或未知LAN设备默认'+LABELS[config.unassigned]+'组',warnings:warnings,
+        config:{revision:revision,members:config.members,rules:config.rules,group_nodes:config.group_nodes,fallbacks:config.fallbacks,real_dns:config.real_dns,unassigned:config.unassigned},devices:{static:hosts,dynamic:dynamic,dhcp_path:['admin','network','dhcp']},builtin:layout.verified ? layout.builtin : {standard:[],global:[],enhanced:[],ondemand:[]},
         rule_types:['domain','full','keyword','ip','dedicated','geosite']};
     if(fingerprint('/etc/config/lanekeep')!=revision || fingerprint('/etc/config/dhcp')!=dhcp_revision) reject('revision','读取期间配置发生变化，请刷新');
     let ns=current_nodes(),dn=filter(ns.nodes,n=>n.id==ns.default_node)[0];out.default_node=dn?{id:dn.id,name:dn.name,last_test:last_test(dn.id)}:null;out.lan={address:lan.context().address,subnet:lan.context().subnet};out.lifecycle={enabled:enabled()};out.nodes_revision=nodes_revision();
-    try { out.home=home.read([...hosts,...map(dynamic,h=>({...h,group:group_for(h.ip,config.members)}))],config,layout.verified);out.policy_check=out.home.policy_check; } catch(e) { out.home={rules_checked:false,rules_message:'状态核对暂不可读',devices:[],privacy_ok:null,supervisor:{available:false,retry_seconds:60}}; }
+    try { out.home=home.read([...hosts,...map(dynamic,h=>({...h,group:group_for(h.ip,config.members,config.unassigned)}))],config,layout.verified);out.policy_check=out.home.policy_check; } catch(e) { out.home={rules_checked:false,rules_message:'状态核对暂不可读',devices:[],privacy_ok:null,supervisor:{available:false,retry_seconds:60}}; }
     if(args.job_id) out.job=job_state(args.job_id);
     return out;
 }
@@ -632,14 +654,15 @@ function prepare_restore(target,version,target_nodes) {
     target.rules=validate_rules(historical_rules(target.rules),current.rules,target_nodes);
     let target_settings=validate_settings({fallbacks:target.fallbacks,real_dns:target.real_dns,group_nodes:target.group_nodes},target_nodes);
     target.group_nodes=target_settings.group_nodes;target.fallbacks=target_settings.fallbacks;target.real_dns=target_settings.real_dns;
-    for(let g in MEMBERS) if(!text(current.labels[g],80)) reject('config','分组名称异常');
+    target.unassigned=target.unassigned ?? 'standard';if(!settings.unassigned_ok(target.unassigned))reject('version_id','历史配置的未分组设备设置无效');
+    for(let g in ASSIGN) if(!text(current.labels[g],80)) reject('config','分组名称异常');
     ensure_root();gc();ensure_no_active();
     let id=uuid(),dir=ROOT+'/'+id;
     if(fs.lstat(dir)!=null || !fs.mkdir(dir,448)) reject('storage','不能新建恢复草稿');
     write(dir+'/state.json',{state:'invalid',created_at:time(),message:'恢复草稿尚未通过校验'});
     let member_data=clone(current);member_data.members=target.members;
     let member=restore_phase(dir,'members',member_data,'/etc/config',PROXY+'/config.json',before);
-    let rule_data=clone(member_data);rule_data.group_nodes=target.group_nodes;rule_data.rules=target.rules;rule_data.fallbacks=target.fallbacks;rule_data.real_dns=target.real_dns;
+    let rule_data=clone(member_data);rule_data.group_nodes=target.group_nodes;rule_data.rules=target.rules;rule_data.fallbacks=target.fallbacks;rule_data.real_dns=target.real_dns;rule_data.unassigned=target.unassigned;
     let rule=restore_phase(dir,'rules',rule_data,dir+'/members',dir+'/members/generated/config.json',member.kind=='unchanged'?before:member.input_sha,target_nodes);
     let summary=attach_notes(rule.summary,current.rules,target.rules);
     let old_nodes=current_nodes();summary.node_changes=[];for(let n in target_nodes.nodes){let old=filter(old_nodes.nodes,x=>x.id==n.id)[0];if(!old || !equal(old,n))push(summary.node_changes,{id:n.id,name:n.name,action:old?'恢复':'新增',protocol:n.protocol,server:n.server,port:n.port});}for(let n in old_nodes.nodes)if(!length(filter(target_nodes.nodes,x=>x.id==n.id)))push(summary.node_changes,{id:n.id,name:n.name,action:'移除',protocol:n.protocol,server:n.server,port:n.port});

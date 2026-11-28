@@ -68,8 +68,10 @@ methods.nodes=function(){
  }
  return next(0,'');
 };
+// Rule groups. The direct group has no rules: everything it captures leaves directly.
 var groups = [ 'standard', 'global', 'enhanced', 'ondemand' ];
-var labels = { standard: lk.text("常规"), global: lk.mode('global'), enhanced: lk.text("增强"), ondemand: lk.text("按需") };
+var memberGroups = [ 'global', 'enhanced', 'ondemand', 'standard', 'direct' ];
+var labels = { standard: lk.text("常规"), global: lk.mode('global'), enhanced: lk.text("增强"), ondemand: lk.text("按需"), direct: lk.mode('direct') };
 var actions = { proxy: lk.text("代理（默认节点）"), direct: lk.text("直连"), block: lk.text("阻断"), node: lk.text("指定节点") };
 var types = { domain: lk.text("域名及子域"), full: lk.text("完整域名"), keyword: lk.text("关键词"), ip: lk.language==='en'?'IP / network':'IP / 网段', dedicated:lk.text("专用入口"), geosite:lk.text("广告域名库") };
 var pendingKey = 'lanekeep.pending.draft';
@@ -162,18 +164,19 @@ function summaryNodes(summary) {
   function fallbackName(f){return f.action==='direct'?lk.text("直连"):f.action==='proxy'?lk.text("本组代理节点"):lk.text("指定节点 ")+text(f.node);}
   (summary.group_node_changes || []).forEach(function(c){lines.push((labels[c.group] || c.group)+lk.text("组代理节点：")+(c.before || lk.text("全局默认"))+' → '+(c.after || lk.text("全局默认")));});
   (summary.fallback_changes || []).forEach(function(c){lines.push((labels[c.group] || c.group)+lk.text("组兜底出口：")+fallbackName(c.before)+' → '+fallbackName(c.after));});
+  if(summary.unassigned_change){var uc=summary.unassigned_change;lines.push((lk.language==='en'?'Devices without a mode: ':'未分组设备：')+(labels[uc.before] || uc.before)+' → '+(labels[uc.after] || uc.after));}
   if(summary.real_dns_change){var dc=summary.real_dns_change;lines.push(lk.text("不使用假 IP 的域名："));lines.push(lk.text("原列表：")+(dc.before.join('、') || lk.text("空")));lines.push(lk.text("新列表：")+(dc.after.join('、') || lk.text("空")));}
- var before = {}, after = {}, touched = {};
+ var before = {}, after = {}, touched = {}, implicit = summary.unassigned === 'direct' ? 'direct' : 'standard';
  (summary.member_changes || []).forEach(function(change) {
   if (change.ip) {
-   lines.push(text(change.ip, '') + '：' + (labels[change.before || change.from] || lk.text("常规")) + ' → ' + (labels[change.after || change.to] || lk.text("常规")));
+   lines.push(text(change.ip, '') + '：' + (labels[change.before || change.from] || labels[implicit]) + ' → ' + (labels[change.after || change.to] || labels[implicit]));
    return;
   }
   (change.before || []).forEach(function(ip) { before[ip] = change.group; touched[ip] = true; });
   (change.after || []).forEach(function(ip) { after[ip] = change.group; touched[ip] = true; });
  });
  Object.keys(touched).sort().forEach(function(ip) {
-  if ((before[ip] || 'standard') !== (after[ip] || 'standard')) lines.push(ip + '：' + (labels[before[ip]] || lk.text("常规")) + ' → ' + (labels[after[ip]] || lk.text("常规")));
+  if ((before[ip] || implicit) !== (after[ip] || implicit)) lines.push(ip + '：' + labels[before[ip] || implicit] + ' → ' + labels[after[ip] || implicit]);
  });
  (summary.added || []).forEach(function(rule) { lines.push(lk.text("新增：") + ruleText(rule)); });
  (summary.removed || []).forEach(function(rule) { lines.push(lk.text("删除：") + ruleText(rule)); });
@@ -297,7 +300,7 @@ function loadFailure() { return notice(lk.text("无法读取分流管理状态�
 function bindField(fields, key, element, label) { fields[key] = element; element._fieldLabel = label; return element; }
 
 return baseclass.extend({
- groups:groups, labels:labels, actions:actions, types:types, rpc:methods, confirmVerification:confirmVerification, trialConsent:trialConsent,
+ groups:groups, memberGroups:memberGroups, labels:labels, actions:actions, types:types, rpc:methods, confirmVerification:confirmVerification, trialConsent:trialConsent,
  regText:regText, downloadReg:downloadReg, entryWarning:entryWarning,
  text:text, utc:utc, node:node, message:message, notice:notice, duration:duration, testDuration:testDuration, select:optionSelect, button:button,
  errors:errorList, showFailure:showFailure, summary:summaryNodes, resultLabel:resultLabel,

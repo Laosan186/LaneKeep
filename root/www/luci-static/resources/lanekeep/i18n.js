@@ -8,7 +8,7 @@ var keys=Object.keys(zh).sort(function(a,b){return b.length-a.length;});
 // Literal longest-match replacement: one pass, no rewriting of IDs, objects or form values.
 function text(value){var s=String(value==null?'':value),dict=language==='en'?en:zh;if(document.body.dataset.page==='admin-services-lanekeep-nodes'&&phase2[s])return phase2[s][language==='en'?1:0];if(Object.prototype.hasOwnProperty.call(dict,s))return dict[s];var result='',i=0;while(i<s.length){var key=keys.find(function(k){return s.startsWith(k,i);});if(key){result+=dict[key];i+=key.length;}else result+=s[i++];}return result;}
 // Only explicit fixed fields enter text(); user-owned strings stay raw at render sites.
-function mode(id,full){var names={standard:['常规','Standard'],global:['全局','Global'],enhanced:['增强','Enhanced'],ondemand:['按需代理','On-demand']},a=names[id];return a?a[language==='en'?1:0]+(full?(language==='en'?' mode':'模式'):''):String(id||'');}
+function mode(id,full){var names={standard:['常规','Standard'],global:['全局','Global'],enhanced:['增强','Enhanced'],ondemand:['按需代理','On-demand'],direct:['直连','Direct']},a=names[id];return a?a[language==='en'?1:0]+(full?(language==='en'?' mode':'模式'):''):String(id||'');}
 function reference(ref,nodes){
  if(typeof ref==='string'){
   var fixed=ref.match(/^(常规|全局|增强|按需)\s*\/\s*(组代理节点|兜底出口)$/);

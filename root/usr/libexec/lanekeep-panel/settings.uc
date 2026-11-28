@@ -3,9 +3,12 @@ import { assert_reference, route_tag, chain_rules } from './nodes.uc';
 let GROUPS=['standard','global','enhanced','ondemand'];
 let TAGS={standard:'standard-transparent',global:'global-transparent',enhanced:'enhanced-transparent',ondemand:'ondemand-transparent'};
 let LABELS={standard:'常规',global:'全局',enhanced:'增强',ondemand:'按需'};
+// Devices without an explicit member set. A missing section keeps the 0.2 behaviour (standard).
+let UNASSIGNED=['standard','direct'];
 function defaults() {
-    return {group_nodes:{standard:'',global:'',enhanced:'',ondemand:''},fallbacks:{standard:{action:'direct',node:''},global:{action:'proxy',node:''},enhanced:{action:'proxy',node:''},ondemand:{action:'direct',node:''}},real_dns:[]};
+    return {group_nodes:{standard:'',global:'',enhanced:'',ondemand:''},fallbacks:{standard:{action:'direct',node:''},global:{action:'proxy',node:''},enhanced:{action:'proxy',node:''},ondemand:{action:'direct',node:''}},real_dns:[],unassigned:'standard'};
 }
+function unassigned_ok(v) { return type(v)=='string' && index(UNASSIGNED,v)>=0; }
 function presets() {return [];}
 function only(v,allowed) {
     if(type(v)!='object')die('settings_object_required');
@@ -25,6 +28,10 @@ function section(data,s,seen) {
     if(s['.type']=='real_dns') {
         only(s,['domain']);if(s['.name']!='real_dns' || seen.dns)die('invalid_real_dns_section');
         seen.dns=true;data.real_dns=s.domain || [];return true;
+    }
+    if(s['.type']=='unassigned') {
+        only(s,['group']);if(s['.name']!='unassigned' || seen.unassigned || !unassigned_ok(s.group))die('invalid_unassigned_section');
+        seen.unassigned=true;data.unassigned=s.group;return true;
     }
     return false;
 }
@@ -62,7 +69,9 @@ function encode(data,quote) {
         let f=data.fallbacks[g];push(lines,'config fallback '+quote('fallback_'+g),'\toption group '+quote(g),'\toption action '+quote(f.action));
         if(f.action=='node')push(lines,'\toption node '+quote(f.node));push(lines,'');
     }
-    push(lines,"config real_dns 'real_dns'");for(let d in data.real_dns)push(lines,'\tlist domain '+quote(d));push(lines,'');return lines;
+    push(lines,"config real_dns 'real_dns'");for(let d in data.real_dns)push(lines,'\tlist domain '+quote(d));push(lines,'');
+    let u=data.unassigned ?? 'standard';if(!unassigned_ok(u))die('invalid_unassigned');
+    push(lines,"config unassigned 'unassigned'",'\toption group '+quote(u),'');return lines;
 }
 function fallback_group(r) {
     if(type(r)!='object' || length(keys(r))!=4 || r.type!='field' || r.network!='tcp,udp' || type(r.inboundTag)!='array' || length(r.inboundTag)!=1 || r.outboundTag==null)return null;
@@ -109,7 +118,9 @@ function dns(template,data) {
 function diff(before,after) {
     let fallbacks=[];for(let g in GROUPS)if(before.fallbacks[g].action!=after.fallbacks[g].action || before.fallbacks[g].node!=after.fallbacks[g].node)push(fallbacks,{group:g,before:before.fallbacks[g],after:after.fallbacks[g]});
     let group_nodes=[];for(let g in GROUPS){let a=before.group_nodes?.[g] || '',b=after.group_nodes?.[g] || '';if(a!=b)push(group_nodes,{group:g,before:a,after:b});}
-    return {group_node_changes:group_nodes,fallback_changes:fallbacks,real_dns_change:sprintf('%J',before.real_dns)==sprintf('%J',after.real_dns)?null:{before:before.real_dns,after:after.real_dns}};
+    let ua=before.unassigned ?? 'standard',ub=after.unassigned ?? 'standard';
+    return {group_node_changes:group_nodes,fallback_changes:fallbacks,real_dns_change:sprintf('%J',before.real_dns)==sprintf('%J',after.real_dns)?null:{before:before.real_dns,after:after.real_dns},
+        unassigned_change:ua==ub?null:{before:ua,after:ub}};
 }
 function warnings(summary) {
     let out=[];
@@ -121,6 +132,9 @@ function warnings(summary) {
         if(change.group=='global' && change.after.action!='proxy')push(out,'全局兜底改变后，Wi-Fi通话的真实IP也会使用该出口；请确认运营商所需出口。');
     }
     if(summary.real_dns_change)push(out,'不使用假 IP 的域名对所有组生效，通过代理真实DoH解析；实际流量仍按所属组规则匹配。重启会清除共享FakeDNS，Wi-Fi通话可能需要几分钟重新注册。');
+    let u=summary.unassigned_change;
+    if(u?.after=='direct')push(out,'未分组设备改为直连组：没有明确分组的设备（含所有未固定 IP 的设备）全部直连，不经过任何代理节点，真实 IP 和 DNS 查询对外可见，国外网站可能打不开。已明确放入其他组的设备不受影响；但设备换了 IP（例如手机启用随机 MAC 后拿到新的动态 IP）时，新 IP 会进入直连组。');
+    else if(u?.after=='standard')push(out,'未分组设备改回常规组：没有明确分组的设备重新按常规模式分流，已知国外分类会使用代理节点。');
     return out;
 }
 
@@ -211,4 +225,4 @@ function standard_dns_base(config){
  return standard_dns_restore(config);
 }
 
-export { defaults, presets, section, validate, encode, fallback_group, proxy_tag, route, routes, dns, diff, warnings, standard_dns_enable, standard_dns_active, standard_dns_base };
+export { defaults, presets, section, validate, encode, fallback_group, proxy_tag, route, routes, dns, diff, warnings, standard_dns_enable, standard_dns_active, standard_dns_base, unassigned_ok };

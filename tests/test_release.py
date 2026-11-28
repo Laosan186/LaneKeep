@@ -103,4 +103,56 @@ class ReleaseInvariants(unittest.TestCase):
         # fresh:false is what the Nodes page renders as "Unknown".
         self.assertIn('known=g.fresh!==false',(ROOT/'root/www/luci-static/resources/lanekeep/nodes-ui.js').read_text(encoding='utf-8'))
 
+    def test_direct_group_is_isolated_and_upgrades_keep_standard(self):
+        template=json.loads((ROOT/'root/etc/lanekeep-proxy/template.json').read_text(encoding='utf-8'))
+        inbound=[i for i in template['inbounds'] if i['tag']=='direct-transparent']
+        self.assertEqual(len(inbound),1)
+        self.assertEqual((inbound[0]['port'],inbound[0]['sniffing'],inbound[0]['streamSettings']['sockopt']),(12349,{'enabled':False},{'tproxy':'tproxy'}))
+        # Direct rules come last, so every earlier rule must be tagged for other inbounds;
+        # only the user slots are untagged, and the generator replaces them with tagged rows.
+        for r in template['routing']['rules']:
+            self.assertTrue('__lanekeep_user_slot' in r or r.get('inboundTag'),r)
+        rules=[r for r in template['routing']['rules'] if 'direct-transparent' in r.get('inboundTag',[])]
+        # Only its own rules: router DNS to dnsmasq, block router services and FakeIP, then everything else direct.
+        self.assertTrue(all(r['inboundTag']==['direct-transparent'] for r in rules))
+        self.assertEqual([r['outboundTag'] for r in rules],['direct-router-dns','block','block','direct'])
+        self.assertEqual({k:v for k,v in rules[0].items() if k not in ('type','inboundTag','outboundTag')},{'ip':['__LAN_ADDRESS__/32'],'port':'53','network':'tcp,udp'})
+        self.assertEqual({k:v for k,v in rules[-1].items() if k not in ('type','inboundTag','outboundTag')},{'network':'tcp,udp'})
+        self.assertIn('198.18.0.0/15',rules[2]['ip'])
+        self.assertEqual([o['tag'] for o in template['outbounds'] if o['protocol']=='freedom'],['direct'])
+        # Router DNS goes through the core (TPROXY picks the socket, so the core's own UDP reply
+        # sockets on LAN:53 cannot take it) and is forwarded unchanged to dnsmasq on loopback.
+        # userLevel 53 is the short idle level dns-idle.uc adds for the other groups' UDP DNS.
+        router_dns=[o for o in template['outbounds'] if o['tag']=='direct-router-dns']
+        self.assertEqual(router_dns,[{'protocol':'dns','settings':{'rewriteAddress':'127.0.0.1','rewritePort':53,'rules':[{'action':'direct'}],'userLevel':53},'tag':'direct-router-dns'}])
+        self.assertNotIn('policy',template)
+        self.assertIn("next.policy.levels['53']={connIdle:15};",(ROOT/'root/usr/libexec/lanekeep-panel/dns-idle.uc').read_text(encoding='utf-8'))
+        gen=(ROOT/'root/usr/libexec/lanekeep-xray/lanekeep-gen.uc').read_text(encoding='utf-8')
+        self.assertNotIn('7612',gen)
+        # When the core is down a group's TPROXY finds no socket and the packet falls through
+        # dispatch_device into later chains, ending in the unassigned one. Every capture chain must
+        # therefore accept only through TPROXY, so no group can reach a router service without the core.
+        nft=json.loads(re.search(r'^let nft_template = (".*");$',gen,re.M).group(1))
+        chains=re.findall(r'^    chain (capture_\w+) \{\n(.*?)^    \}$',nft,re.M|re.S)
+        self.assertEqual(sorted(c for c,_ in chains),['capture_direct','capture_enhanced','capture_global','capture_ondemand','capture_phone'])
+        for name,body in chains:
+            for line in body.splitlines():
+                if 'accept' in line or '0x7610' in line: self.assertIn(' tproxy to :1234',line,name)
+                for verb in ('return','jump','goto'): self.assertNotIn(verb,line,name)
+        # A shipped unassigned section could replace an unmodified conffile on upgrade; only a
+        # first install, before lifecycle has created its state directory, writes direct.
+        self.assertNotIn('unassigned',(ROOT/'root/etc/config/lanekeep').read_text(encoding='utf-8'))
+        install=(ROOT/'root/usr/libexec/lanekeep-panel/package-install').read_text(encoding='utf-8')
+        guard=install.index("if [ ! -e /etc/lanekeep-state ] && ! uci -q get lanekeep.unassigned >/dev/null && shipped_defaults; then")
+        self.assertLess(guard,install.index('lifecycle prepare'))
+        # sysupgrade keeps the conffiles but not the state directory: a first install also needs
+        # every conffile to be the shipped default, so the pinned hashes must match the package.
+        makefile=(ROOT/'Makefile').read_text(encoding='utf-8')
+        conffiles=makefile.split('define Package/luci-app-lanekeep/conffiles\n',1)[1].split('endef',1)[0].split()
+        pinned=dict(reversed(line.split()) for line in install.split("<<'EOF'\n",1)[1].split('\nEOF\n',1)[0].splitlines())
+        self.assertEqual(sorted(pinned),sorted(conffiles))
+        for path,digest in pinned.items():
+            self.assertEqual(hashlib.sha256((ROOT/'root'/path.lstrip('/')).read_bytes()).hexdigest(),digest,path)
+        self.assertIn("unassigned:'standard'",(ROOT/'root/usr/libexec/lanekeep-panel/settings.uc').read_text(encoding='utf-8'))
+
 if __name__=='__main__':unittest.main()

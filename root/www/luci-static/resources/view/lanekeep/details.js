@@ -37,7 +37,7 @@ return foundation.view(view,{
    stat(lk.text("当前版本"),panel.text(data.current_version),null,null),
    stat(t('上次应用','Last apply'),panel.resultLabel(last.result),panel.utc(last.time_utc || last.time),null)
   ]);
-  var counts=E('div',{'class':'lk-stat-grid lk-stat-grid-4'},panel.groups.map(function(g){var n=(data.counts || {})[g];return stat(lk.mode(g,true),panel.text(typeof n === 'object' && n ? n.static : n, lk.text("未知")),t('台设备','devices'),null);}));
+  var counts=E('div',{'class':'lk-stat-grid lk-stat-grid-5'},panel.groups.concat(['direct']).map(function(g){var n=(data.counts || {})[g];return stat(lk.mode(g,true),panel.text(typeof n === 'object' && n ? n.static : n, lk.text("未知")),t('台设备','devices'),null);}));
   return E('div', {'class':'lk-page lk-details-page'}, kids([
    E('div',{'class':'lk-page-head'},[E('h2', {}, lk.text("详细数据")),E('p',{},t('查看配置摘要、默认节点出口和路由器运行曲线，排查卡顿时用。','Configuration summary, default exit and router metrics for troubleshooting.'))]),
    panel.pendingNotice(),

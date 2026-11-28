@@ -30,7 +30,7 @@ script_dir=$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)
 # This anchor is the independently read, accepted configuration, copied byte for byte.
 baseline_hash=$(sha256sum "$baseline")
 baseline_hash=${baseline_hash%% *}
-[ "$baseline_hash" = 'd1d8df48c9836161c6e1d2bb142b7b6f9eeed9adeb8c45b31c4d619e4db99d8e' ] || { echo '{"ok":false,"error":"fixed_baseline_hash_mismatch"}' >&2; exit 1; }
+[ "$baseline_hash" = '31e8d3cc7de5f7bc4d49f3de7a32faa52bfd4e367b1b0ac3b7a57f8a69f69ca7' ] || { echo '{"ok":false,"error":"fixed_baseline_hash_mismatch"}' >&2; exit 1; }
 if [ -z "$output_dir" ]; then
     [ ! -L /tmp/lanekeep-stage ] || { echo '{"ok":false,"error":"unsafe_stage"}' >&2; exit 2; }
     mkdir -p /tmp/lanekeep-stage

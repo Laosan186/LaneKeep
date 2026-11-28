@@ -933,6 +933,7 @@
 .lanekeep-root[data-page^="admin-services-lanekeep-"] .lk-rules-footer-bar .cbi-button{margin:0;flex:none}
 .lanekeep-root .lk-stat-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}
 .lanekeep-root .lk-stat-grid-4{grid-template-columns:repeat(4,minmax(0,1fr))}
+.lanekeep-root .lk-stat-grid-5{grid-template-columns:repeat(5,minmax(0,1fr))}
 .lanekeep-root .lk-stat{display:flex;flex-direction:column;gap:4px;min-width:0;padding:14px 16px;border:1px solid var(--border-color);border-radius:12px;background:var(--surface-muted)}
 .lanekeep-root .lk-stat-label{font-size:12px;color:var(--muted-text)}
 .lanekeep-root .lk-stat-value{font-size:17px;font-weight:650;line-height:1.4;color:var(--text-strong);overflow-wrap:anywhere}
@@ -978,5 +979,5 @@
 .lanekeep-root .lk-rule-card-body{padding:14px 16px}
 .lanekeep-root .lk-tip-body{padding-inline-start:16px}
 .lanekeep-root .lk-rules-footer-bar{flex-direction:column;align-items:stretch;padding:12px 14px}
-.lanekeep-root .lk-stat-grid-4{grid-template-columns:repeat(2,minmax(0,1fr))}
+.lanekeep-root .lk-stat-grid-4,.lanekeep-root .lk-stat-grid-5{grid-template-columns:repeat(2,minmax(0,1fr))}
 .lanekeep-root .lk-page-head h2{font-size:22px}}

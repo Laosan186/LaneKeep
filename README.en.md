@@ -1,6 +1,6 @@
 # LaneKeep
 
-[中文](README.md) · [Leak protection](docs/leak-protection.en.md) · [Advanced notes](docs/notes.en.md)
+[中文](README.md) · [Leak protection](docs/leak-protection.en.md) · [Advanced notes](docs/notes.en.md) · [Per-app proxy](docs/per-app-proxy.en.md)
 
 A per-device routing panel for OpenWrt, with node management, controlled DNS paths and a proxy kill switch.
 
@@ -14,17 +14,20 @@ A per-device routing panel for OpenWrt, with node management, controlled DNS pat
 
 | Mode | Factory presets | Unmatched traffic |
 |---|---|---|
-| Standard, used by unassigned devices | Known foreign categories via proxy; domestic categories direct | Direct |
+| Standard | Known foreign categories via proxy; domestic categories direct | Direct |
 | Global | Private names and addresses direct; other traffic via proxy, subject to custom exceptions | Proxy |
 | Enhanced | Foreign and selected service categories via proxy; domestic categories direct | Proxy |
 | On-demand | Selected video and service categories via proxy; add other domains as needed | Direct |
+| Direct (unreleased) | Everything goes out directly, never through a proxy node; no rules and no leak protection | Direct |
 
-Factory defaults contain no nodes, assigned devices, custom rules or FakeIP exceptions. Classification depends on the installed databases; it does not identify every site's location. Custom rules run at the insertion points shown on the Rules page, after fixed protection and some private-address rules.
+Devices not placed in a mode (every device without a fixed IP, unknown new devices and devices set to “Follow default”) follow “Devices without a mode” on the Devices page, Direct or Standard. A first install defaults to Direct, so strangers on your Wi-Fi cannot use your proxy; upgrades from 0.2.x keep Standard, as before. See [Direct mode and devices without a mode](docs/leak-protection.en.md#direct-mode-and-devices-without-a-mode).
+
+Factory defaults contain no nodes, assigned devices, custom rules or FakeIP exceptions. Direct mode has no rules. Classification depends on the installed databases; it does not identify every site's location. Custom rules run at the insertion points shown on the Rules page, after fixed protection and some private-address rules.
 
 - A proxy node per mode, inheriting the default when unset. Shared DNS and the kill switch still follow the default node.
 - Domain, exact-domain, keyword, public IPv4 address / network and the fixed ad-domain category; direct, proxy, specific-node or block actions. Ad blocking starts disabled and can be added per mode. IP rules match only direct-IP connections whose domain cannot be identified and cannot use two-hop chains; see [leak protection](docs/leak-protection.en.md#custom-ip-rules).
 - Two-hop chains: a regular entry node and a SOCKS5 / HTTP exit. Chains cannot nest or become the default. UDP requires a supported combination and explicit confirmation.
-- LAN SOCKS5 ports **10811–10860** for Global, Enhanced and On-demand, restricted to devices in the selected mode. Standard has no dedicated ports. Dedicated entries use their own rules, not the mode's entire domain policy.
+- LAN SOCKS5 ports **10811–10860** for Global, Enhanced and On-demand, restricted to devices in the selected mode. Standard has no dedicated ports. Dedicated entries use their own rules, not the mode's entire domain policy. For per-process or per-app proxying, see [Per-app proxy](docs/per-app-proxy.en.md).
 - Download Windows Chrome / Edge proxy policies. Downloading changes nothing; importing replaces the corresponding browser policy. Keep the original policy before importing.
 - Share links, Base64 lists, subscriptions and explicit diff selection. Subscription fetching defaults to the default node; direct fetching requires confirmation. Cached nodes are not automatically applied.
 - Models for VLESS, VMess, Trojan, Shadowsocks, Hysteria2, SOCKS5 and HTTP. Transport support, experimental status and default eligibility depend on the capability table; see [notes](docs/notes.en.md#protocols-and-nodes).
@@ -36,7 +39,7 @@ Factory defaults contain no nodes, assigned devices, custom rules or FakeIP exce
 
 ## Protection boundaries
 
-When enabled, fixed rules handle TCP/UDP 53 and block 853, known DoH categories, protected internal ports and unresolved FakeIP destinations in all four modes. **UDP 443 coverage differs:** Standard, Global and Enhanced block it broadly; On-demand covers selected categories and custom proxied domains and IPs.
+When enabled, fixed rules handle TCP/UDP 53 and block 853, known DoH categories, protected internal ports and unresolved FakeIP destinations in Standard, Global, Enhanced and On-demand. **UDP 443 coverage differs:** Standard, Global and Enhanced block it broadly; On-demand covers selected categories and custom proxied domains and IPs. **Direct mode provides no leak protection**: its real IP, DNS and WebRTC are visible; it only blocks the router's internal ports and unresolved FakeIP destinations.
 
 A DNS health check through the default node controls protected proxy data traffic, including other nodes selected by individual modes. Failure closes the gate without falling back to direct. Detection has a bounded window; it is not instantaneous. Direct traffic still depends on the core and DNS and is not guaranteed to work during a fault.
 

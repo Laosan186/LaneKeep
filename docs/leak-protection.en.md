@@ -2,7 +2,7 @@
 
 [中文](leak-protection.md) · [README](../README.en.md)
 
-This describes the mechanisms in the current source, including the custom IP rules added in v0.2.0 and the unreleased leak hardening made after 0.2.1 (see the Unreleased section of the [CHANGELOG](../CHANGELOG.md)); the released 0.2.1 package does not contain that hardening. It is not a guarantee across all clients, apps or networks. First installation is disabled. Traffic protection starts only after explicit activation.
+This describes the mechanisms in the current source, including the custom IP rules added in v0.2.0 and the unreleased leak hardening and Direct mode made after 0.2.1 (see the Unreleased section of the [CHANGELOG](../CHANGELOG.md)); the released 0.2.1 package does not contain these changes. It is not a guarantee across all clients, apps or networks. First installation is disabled. Traffic protection starts only after explicit activation.
 
 ## Fixed-rule matrix
 
@@ -21,6 +21,8 @@ This describes the mechanisms in the current source, including the custom IP rul
 The matrix follows `root/etc/lanekeep-proxy/template.json` and the generator. FakeIP guards include `198.18.0.0/15` and `2001:2::/48`, but interception is IPv4-only. An IPv6 range in JSON does not establish IPv6 protection. Valid FakeDNS mappings restored to domain names continue through domain routing.
 
 Fixed protection precedes user rules. Some private-name/address exceptions also precede custom insertion points. On-demand IP categories do not imply a blanket UDP 443 block.
+
+Direct mode is not in this matrix: it provides no leak protection; see [Direct mode and devices without a mode](#direct-mode-and-devices-without-a-mode).
 
 ## Custom IP rules
 
@@ -42,6 +44,18 @@ Protected real DNS uses Cloudflare DoH through the default node: primary `1.1.1.
 Standard's domestic domain category retains system resolution. Activation snapshots the affected dnsmasq fields and redirects its upstream to the package's loopback DNS service on 5053, using Ali DoH. This helper is a separate Xray instance with an IPv4 encrypted upstream; no third-party DNS management service is needed. Other Standard public domains use protected resolution wrappers while their data exit still follows routing. Protected DNS does not imply that all data is proxied.
 
 Factory FakeIP exceptions are empty. `domain:` and `full:` exceptions select real resolution without independently changing the device's data exit. Resolver country alone is not a reliable leak criterion.
+
+## Direct mode and devices without a mode
+
+Direct mode is for devices that do not need the proxy, and for keeping strangers on your Wi-Fi off your proxy. It **provides no leak protection**: the device's real public IP, DNS queries and WebRTC addresses are visible, and foreign sites may not open.
+
+- Internal DNS / proxy ports (53, 853, 1053, 5053, 10811–10860, 12345–12349) on any router-local address, the WAN address included, are dropped by nft before the core, so a direct device cannot reach another mode's transparent inbound through one of the router's own addresses. Port 53 on the router's LAN address is the exception: router DNS goes to the core like every other direct packet.
+- All TCP/UDP traffic enters the core's direct inbound `12349` (no sniffing, no FakeDNS) and meets only four rules: hand DNS sent to the router's LAN address on port 53 unchanged to dnsmasq on `127.0.0.1:53`, without FakeDNS (while LaneKeep is enabled, dnsmasq uses the loopback DNS service above, 5053 with Alibaba DoH, as its upstream); block internal DNS / proxy ports on the router's loopback and LAN addresses (53, 853, 1053, 5053, 10811–10860, 12345–12349); block unresolved FakeIP destinations (`198.18.0.0/15`, `2001:2::/48`, such as fake addresses a device cached in another mode); send everything else out through the `direct` outbound. Queries a device sends to other DNS servers leave directly like any other traffic.
+- Router DNS passes through the core because the core's transparent UDP reply sockets for other modes' DNS are bound to the router's LAN address port 53; a query delivered past the core could reach one of those sockets instead of dnsmasq and go unanswered. Its UDP sessions use the same short idle time (level 53, about 15–30 s) as the other modes' UDP DNS.
+- Port 853, the DoH category and UDP 443 are not blocked, no node is used and the health gate does not apply. When the core stops, the direct inbound is gone and direct devices lose access, router DNS included; LAN forwarding is still dropped, so nothing bypasses the core.
+- As in every mode, the router's management ports 22, 80 and 443 skip the transparent proxy, so direct devices can open the router login page; the admin password protects it. Dedicated entries are not available to Direct mode.
+
+Devices not placed in a mode (every device without a fixed IP, unknown new devices and devices never assigned) follow “Devices without a mode” on the Devices page: Direct or Standard. **A first install defaults to Direct; upgrades from 0.2.x keep Standard**, as before. An install counts as first only when there is no earlier LaneKeep state and the three kept configuration files (`/etc/config/lanekeep`, `/etc/config/lanekeep_runtime`, `/etc/lanekeep-proxy/nodes.json`) are still the shipped defaults; reinstalling after a sysupgrade or after removal keeps the saved choice or Standard. A package built into a firmware image also starts on Standard. Changing it restarts the core. Each fixed-IP device on the Devices page is set to “Follow default” or a specific mode: “Follow default” devices also follow this choice, while a device set to a specific mode stays there when the choice changes. After an upgrade, former Standard devices are set to “Follow default”, as before.
 
 ## WebRTC, UDP and IPv6
 

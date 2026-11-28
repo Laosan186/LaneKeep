@@ -15,8 +15,8 @@ pass() { echo "PASS $*"; }
 fail() { echo "FAIL $*"; failed=1; }
 
 members=$(ucode "$HERE/lan-members.uc") || { echo 'FAIL lan_context'; exit 1; }
-set -- $members; [ "$#" = 3 ] || { echo 'FAIL lan_members'; exit 1; }
-M1=$1 M2=$2 M3=$3
+set -- $members; [ "$#" = 5 ] || { echo 'FAIL lan_members'; exit 1; }
+M1=$1 M2=$2 M3=$3 M4=$4 M5=$5
 
 node() { # id name server
   printf '{"id":"%s","name":"%s","protocol":"vless","server":"%s","port":443,"sni":"www.example.com","uuid":"00000000-0000-4000-8000-%012d","flow":"xtls-rprx-vision","fingerprint":"chrome","public_key":"%s","short_id":"abcd"}' \
@@ -68,7 +68,7 @@ s1_rules() {
 }
 scenario() { # name, then UCI text on stdin
   mkdir -p "$T/cfg/$1"; cat >"$T/cfg/$1/lanekeep"
-  for ip in "$M1" "$M2" "$M3"; do printf "config host\n\toption name 'test-%s'\n\toption ip '%s'\n\n" "${ip##*.}" "$ip"; done >"$T/cfg/$1/dhcp"
+  for ip in "$M1" "$M2" "$M3" "$M4" "$M5"; do printf "config host\n\toption name 'test-%s'\n\toption ip '%s'\n\n" "${ip##*.}" "$ip"; done >"$T/cfg/$1/dhcp"
 }
 { base; s0_rules; } | scenario s0
 { base; s1_rules; } | scenario s1
@@ -80,6 +80,15 @@ done
 { base; s0_rules; rule r_x standard ip 1.2.3.4 node chain_x; } | scenario chain_node
 { base; printf "config group_proxy 'group_proxy_standard'\n\toption group 'standard'\n\toption node 'chain_x'\n\n"; s0_rules; rule r_x standard ip 1.2.3.4 proxy; } | scenario chain_group
 { base; printf "config group_proxy 'group_proxy_standard'\n\toption group 'standard'\n\toption node 'chain_x'\n\n"; s0_rules; rule r_x standard domain example.net node chain_x; } | scenario chain_control
+# Direct group: explicit standard and direct members, unknown devices sent to direct.
+direct_groups() {
+  printf "config group 'standard'\n\toption label 'Standard'\n\tlist member '%s'\n\n" "$M4"
+  printf "config group 'direct'\n\toption label 'Direct'\n\tlist member '%s'\n\n" "$M5"
+}
+{ base; direct_groups; printf "config unassigned 'unassigned'\n\toption group 'direct'\n\n"; s0_rules; } | scenario direct_on
+{ base; printf "config unassigned 'unassigned'\n\toption group 'global'\n\n"; s0_rules; } | scenario bad_unassigned
+{ base; s0_rules; rule r_x direct domain example.net proxy; } | scenario bad_direct_rule
+{ base; printf "config group 'direct'\n\toption label 'Direct'\n\tlist member '%s'\n\n" "$M1"; s0_rules; } | scenario bad_direct_cross
 
 gen() { # tree scenario output nodes -> sets $error
   sh "$1/root/usr/libexec/lanekeep-xray/lanekeep-gen" --config-dir "$T/cfg/$2" --template "$1/root/etc/lanekeep-proxy/template.json" \
@@ -90,24 +99,51 @@ mkdir -p "$T/out"
 if gen "$REPO" s0 "$T/out/new-s0"; then pass 'generator without IP rules (xray -test included)'; else fail "generator s0: $error"; fi
 if gen "$REPO" s1 "$T/out/new-s1"; then pass 'generator with IP rules (xray -test included)'; else fail "generator s1: $error"; fi
 if [ -n "$OLD" ]; then
-  if gen "$OLD" s0 "$T/out/old-s0"; then
-    same=1
-    for f in config.json phone-pilot.nft members.nft normalized-rules.json invariant-template.json invariant-output.json; do
-      cmp -s "$T/out/old-s0/$f" "$T/out/new-s0/$f" || { same=0; echo "  differs: $f"; }
-    done
-    sed "s#$T/out/old-s0#STAGE#g" "$T/out/old-s0/summary.json" >"$T/a"; sed "s#$T/out/new-s0#STAGE#g" "$T/out/new-s0/summary.json" >"$T/b"
-    cmp -s "$T/a" "$T/b" || { same=0; echo '  differs: summary.json'; }
-    [ "$same" = 1 ] && pass 'previous and new generator output identical without IP rules' || fail 'output changed without IP rules'
-  else fail "previous generator s0: $error"; fi
-  if gen "$OLD" s1 "$T/out/old-s1"; then fail 'previous generator accepted ip type'; else
-    [ "$error" = invalid_rule_type ] && pass 'previous generator rejects ip type (invalid_rule_type)' || fail "previous generator s1: $error"; fi
+  # The previous release has no direct group: only the documented additions may differ.
+  for s in s0 s1; do
+    if gen "$OLD" "$s" "$T/out/old-$s"; then
+      ucode "$HERE/direct-diff.uc" "$T/out/old-$s" "$T/out/new-$s" >"$T/diff-$s.json" && pass "previous and new output differ only by the direct group ($s)" || { fail "output changed beyond the direct group ($s)"; cat "$T/diff-$s.json"; }
+    else fail "previous generator $s: $error"; fi
+  done
+fi
+if gen "$REPO" direct_on "$T/out/direct_on"; then
+  nft="$T/out/direct_on/phone-pilot.nft" ok=1
+  [ "$(grep -cx '        meta l4proto { tcp, udp } jump capture_direct' "$nft")" = 1 ] || ok=0
+  [ "$(grep -c 'jump capture_phone$' "$nft")" = 1 ] && grep -qx '        ip saddr @lanekeep_grp_standard jump capture_phone' "$nft" || ok=0
+  grep -qx "        elements = { $M4 }" "$nft" && grep -qx "        elements = { $M5 }" "$nft" || ok=0
+  grep -qx "add element inet lanekeep_phone lanekeep_grp_direct { $M5 }" "$T/out/direct_on/members.nft" || ok=0
+  cmp -s "$T/out/new-s0/config.json" "$T/out/direct_on/config.json" || ok=0
+  # capture_direct: internal ports on any router address dropped (router DNS on the LAN address
+  # excepted), then the core; no other DNS path to dnsmasq, and the direct rule targets the same address.
+  sed -n '/^    chain capture_direct {$/,/^    }$/p' "$nft" > "$T/capture_direct.txt"
+  lan=$(sed -n 's/^        fib daddr type local ip daddr != \([0-9.]*\) meta l4proto { tcp, udp } th dport 53 counter drop$/\1/p' "$T/capture_direct.txt")
+  [ -n "$lan" ] || ok=0
+  printf '%s\n' '    chain capture_direct {' \
+    "        fib daddr type local ip daddr != $lan meta l4proto { tcp, udp } th dport 53 counter drop" \
+    '        fib daddr type local meta l4proto { tcp, udp } th dport { 853, 1053, 5053, 10811-10860, 12345-12349 } counter drop' \
+    '        meta l4proto { tcp, udp } counter name selected ct mark set 0x7611' \
+    '        meta l4proto { tcp, udp } tproxy to :12349 meta mark set 0x7610 counter name captured accept' \
+    '    }' | cmp -s - "$T/capture_direct.txt" || ok=0
+  ! grep -q '0x7612' "$nft" || ok=0
+  grep -qF "\"inboundTag\":[\"direct-transparent\"],\"ip\":[\"$lan/32\"],\"network\":\"tcp,udp\",\"outboundTag\":\"direct-router-dns\",\"port\":\"53\"" "$T/out/direct_on/config.json" || ok=0
+  [ "$ok" = 1 ] && pass 'direct group: members, unknown devices to capture_direct, core config unchanged' || fail 'direct group nft or config'
+  sh "$HERE/layout-check.sh" "$REPO" "$T/out/direct_on" "$T/nodes.json" >"$T/layout-direct.json" 2>&1 && pass 'rules page sequence numbers verified (direct_on)' || { fail 'sequence numbers direct_on'; head -c 600 "$T/layout-direct.json"; echo; }
+else fail "generator direct_on: $error"; fi
+if [ "$(id -u)" = 0 ] && command -v nft >/dev/null 2>&1; then
+  for s in new-s0 direct_on; do nft -c -f "$T/out/$s/phone-pilot.nft" >/dev/null 2>&1 && pass "nft -c accepts $s" || fail "nft -c rejects $s"; done
 fi
 [ -d "$T/out/new-s1" ] && ucode "$HERE/ip-rows-check.uc" "$T/out/new-s0" "$T/out/new-s1" >"$T/rows.json" && pass 'IP rows separate, guarded and additive' || { fail 'IP row structure'; cat "$T/rows.json" 2>/dev/null; }
+for s in s0 s1 direct_on; do
+  [ -d "$T/out/new-$s" ] || [ -d "$T/out/$s" ] || continue
+  d=$T/out/new-$s; [ -d "$d" ] || d=$T/out/$s
+  ucode "$HERE/direct-rules.uc" "$d" >"$T/direct-rules-$s.json" && pass "direct rules last and isolated ($s)" || { fail "direct rules ($s)"; cat "$T/direct-rules-$s.json"; }
+done
 for s in s0 s1; do
   sh "$HERE/layout-check.sh" "$REPO" "$T/out/new-$s" "$T/nodes.json" >"$T/layout-$s.json" 2>&1 && pass "rules page sequence numbers verified ($s)" || { fail "sequence numbers $s"; head -c 600 "$T/layout-$s.json"; echo; }
 done
 for s in bad_10_0_0_5:invalid_ip_rule bad_1_2_3_4_24:invalid_ip_rule bad_198_18_0_1:invalid_ip_rule bad_1_2_3:invalid_ip_rule \
-         bad_$(echo "$M1" | tr '.' '_'):invalid_ip_rule bad_conflict:conflicting_rule chain_node:ip_rule_chain_forbidden chain_group:ip_rule_chain_forbidden; do
+         bad_$(echo "$M1" | tr '.' '_'):invalid_ip_rule bad_conflict:conflicting_rule chain_node:ip_rule_chain_forbidden chain_group:ip_rule_chain_forbidden \
+         bad_unassigned:generator_internal_error_at_read_current_uci bad_direct_rule:invalid_rule_group bad_direct_cross:member_duplicate_or_cross_group; do
   name=${s%%:*} want=${s#*:} store=$T/nodes.json
   case "$name" in chain_*) store=$T/nodes-chain.json ;; esac
   if gen "$REPO" "$name" "$T/out/$name" "$store"; then fail "$name accepted"; else [ "$error" = "$want" ] && pass "$name rejected ($want)" || fail "$name: got '$error', want $want"; fi

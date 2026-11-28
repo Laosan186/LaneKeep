@@ -63,9 +63,12 @@ function stable_identity(dir, expected) {
     if (expected == '-') { printf('%J\n',identity); return true; }
     return equal(identity,load(expected));
 }
+let MEMBER_GROUPS = ['global', 'enhanced', 'ondemand', 'standard', 'direct'];
+let UNASSIGNED_CHAINS = { standard: 'capture_phone', direct: 'capture_direct' };
+function unassigned(data) { return data?.unassigned ?? 'standard'; }
 function group_members(data) {
     let result = {};
-    for (let group in ['global', 'enhanced', 'ondemand']) {
+    for (let group in MEMBER_GROUPS) {
         if (type(data?.groups?.[group]?.member) != 'array') return null;
         result[group] = sort(data.groups[group].member);
     }
@@ -78,6 +81,8 @@ function kind(old, current, old_config, new_config) {
     // When supplied by apply, classify the rendered runtime config. Notes and
     // disabled-rule edits must not restart the core. Legacy callers stay strict.
     let rules_changed = old_config != null && new_config != null ? !equal(old_config, new_config) : !equal(old.rules, current.rules);
+    // The unassigned choice only changes the nft dispatch jump; it still needs the rules path.
+    if (unassigned(old) != unassigned(current)) rules_changed = true;
     if (rules_changed && members_changed) return 'mixed';
     if (rules_changed) return 'rules';
     if (members_changed) return 'members';
@@ -120,7 +125,7 @@ function live_members(data, nft) {
     for (let entry in nft.nftables || []) {
         let set = entry.set;
         if (set?.family != 'inet' || set?.table != 'lanekeep_phone') continue;
-        for (let group in ['global', 'enhanced', 'ondemand']) {
+        for (let group in MEMBER_GROUPS) {
             if (set.name != 'lanekeep_grp_' + group) continue;
             if (seen[group] || set.type != 'ipv4_addr') return false;
             let members = [];
@@ -133,7 +138,9 @@ function live_members(data, nft) {
             seen[group] = true;
         }
     }
-    if (seen.global != true || seen.enhanced != true || seen.ondemand != true) return false;
+    for (let group in MEMBER_GROUPS) if (seen[group] != true) return false;
+    let fallback = UNASSIGNED_CHAINS[unassigned(data)];
+    if (fallback == null) return false;
     // Rule metadata (for example handle) is intentionally ignored; every expr is exact.
     let dispatch = [];
     for (let entry in nft.nftables || []) {
@@ -142,17 +149,17 @@ function live_members(data, nft) {
             push(dispatch, rule.expr);
     }
     let expected_dispatch = [];
-    for (let group in ['global', 'enhanced', 'ondemand']) {
+    for (let group in MEMBER_GROUPS) {
         push(expected_dispatch, [
             { match: { op: '==', left: { payload: { protocol: 'ip', field: 'saddr' } }, right: '@lanekeep_grp_' + group } },
-            { jump: { target: 'capture_' + group } }
+            { jump: { target: group == 'standard' ? 'capture_phone' : 'capture_' + group } }
         ]);
     }
     push(expected_dispatch, [
         { match: { op: '==', left: { meta: { key: 'l4proto' } }, right: { set: ['tcp', 'udp'] } } },
-        { jump: { target: 'capture_phone' } }
+        { jump: { target: fallback } }
     ]);
-    return length(dispatch) == 4 && equal(dispatch, expected_dispatch) && dedicated_acl(data,nft);
+    return length(dispatch) == 6 && equal(dispatch, expected_dispatch) && dedicated_acl(data,nft);
 }
 function prune(root) {
     if (root != '/etc/lanekeep-proxy/versions' || fs.lstat(root)?.type != 'directory') return false;
