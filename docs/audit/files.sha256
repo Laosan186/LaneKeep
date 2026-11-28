@@ -20,7 +20,7 @@ f5e5c9534532840fcd45bb002e69ed85c61dba2753450e26b448b7df1481e24d  VERSION
 ba6146f66a7a55678d04001c2e79ae4b227a19aca0f9874680fd9d1744cb2f9b  docs/audit/logs/fresh-install.txt
 01f06db6e27ea0454e86fa471c5bba2f1587f7d7020752626d68eab355be5a1a  docs/audit/logs/uninstall.txt
 706b50eb0c2c1abe63670272c97026947e3137fc93bd620bc59e1826e9a10f23  docs/audit/logs/upgrade.txt
-6d2be3897b6d3d867c34655c56606ea0eb1affbb05bae0027233d7c2bfa00293  docs/audit/privacy-scan.json
+12fe82f2a2e1d36ed4ffefb22beb76249553022e315f8b455d879c932b914d32  docs/audit/privacy-scan.json
 71e3e64a3b48b8acd65f73a9e786b79bd5c59bcf1a0cc0244ba4320bd1a0dc2d  docs/audit/v0.2.0/acceptance.json
 dff51cdba4d99bfa9ba01f6302216bf191a2b5c5d0b11c14e4f4a5c864456c9b  docs/audit/v0.2.0/acceptance.md
 aca3a1dc08a11fe6b52d4f3efc2cb24c4c0cb9d94ac9e9cd97d586da501786bb  docs/audit/v0.2.0/logs/install-0.1.0-r1.txt
@@ -50,6 +50,12 @@ d9b8c897aaee95e771f11db27f77d9564d7fb10cf4559d4968fad7d1c5f716cd  docs/audit/v1.
 5f436111198b26b642b15b32808f9f3f5a370956bed222927cc7705e4c0517c3  docs/audit/v1.0.2/logs/target-checks.txt
 2e418593fc3c8ac45ca3f42591ed9d0dec1e69acc75d0df6c69a8162b3ef32da  docs/audit/v1.0.2/logs/uninstall.txt
 67bbc5343edd309d03443691a08c637150d31dea26ffecdc266bd7e21547c9d1  docs/audit/v1.0.2/logs/upgrade-0.2.1-r1-to-1.0.2-r1.txt
+3c6b77722fb1356a923c0a6038b51e12da974711afd039810c6e016b52ca1e7a  docs/audit/v1.0.3/acceptance.json
+86126ddcf3bf43ba20e5e64bd5c20fafb6cdac9b070e097bccdde9d3a40725f1  docs/audit/v1.0.3/acceptance.md
+15cf10d6523bf2539c30d35816aad8f5cc29892ff88a98012826bce889ef1bce  docs/audit/v1.0.3/logs/build.txt
+46524ad31b37dd7c586f30dcf1536dc64fefae20ff0c8adcc1004af5b3b2d5fb  docs/audit/v1.0.3/logs/fallthrough.txt
+ae13e56934d0865e79849042ff1121efc194012e115186a74fdfee453fcf3508  docs/audit/v1.0.3/logs/quick.txt
+9356f3ddc827b4ef2e86f7cc936f46dcab82df22003cd2c4d61582a6b9809821  docs/audit/v1.0.3/logs/target-checks.txt
 2fc0c8e34443d5cf19ed490e66533d4bc5aeae0b29a3d0adf968b59bc29dc228  docs/images/nodes-dark-en.png
 b3e8e8cce5219982816c7d82b1039ff832001e4aebab542350236ec04bac4448  docs/images/nodes-dark.png
 296d62182c23a589e20799f8b922bee6a4930bf7cb73d3e2bcd858b13b0a60c3  docs/images/nodes-light-en.png

@@ -1,0 +1,66 @@
+{
+  "date": "2026-11-28",
+  "platform": {
+    "openwrt": "25.12.6",
+    "architecture": "x86_64",
+    "kernel": "6.12.112",
+    "xray": "26.10.21",
+    "isolation": "QEMU user networking with restrict=on (no host or internet access); SSH forward to localhost only; clients, upstream and node are network namespaces inside the VM; same VM as the v1.0.2 acceptance"
+  },
+  "change": "capture_global, capture_enhanced and capture_ondemand drop the TCP/UDP their TPROXY rule could not deliver (no socket on the mode's inbound), so these members never reach the unassigned chain (Standard or Direct)",
+  "artifact": {
+    "name": "luci-app-lanekeep-1.0.3-r1.apk",
+    "sha256": "54480697beba49c7145a20d802cc60728a89187332fac4dad2771fb5043322ea",
+    "bytes": 308972,
+    "build_commit": "938c2e9",
+    "package_inputs_differ_from_tested_7052c7c_only_in": ["VERSION", "Makefile"],
+    "installed_package_files": {
+      "listed_by_apk_info_L": 109,
+      "materialized_tree_files": 106,
+      "same_sha256_as_materialized_tree": 103,
+      "apk_database_files": 3,
+      "differing": ["etc/config/lanekeep", "etc/config/lanekeep_runtime", "etc/lanekeep-proxy/nodes.json"],
+      "differing_reason": "conffiles kept from the test configuration on the VM",
+      "installed_generator_sha256_equals_lock": true,
+      "evidence": "logs/build.txt"
+    },
+    "tested_vs_release_payload": {
+      "tested": "1.0.2-r2 test build of 7052c7c (RELEASE set to 2 inside the VM only)",
+      "identical_after_normalizing_version_labels": true,
+      "normalized": "module namespace v1_0_2_r2 / v1_0_3_r1 and the version string in foundation.js",
+      "evidence": "logs/build.txt"
+    }
+  },
+  "client_map": {
+    "10.77.2.101": "Global",
+    "10.77.2.102": "Enhanced",
+    "10.77.2.105": "On-demand (namespace lkd, called \"direct\" in the probe output)",
+    "10.77.2.110": "no mode"
+  },
+  "verdicts": {
+    "legend": "D = a test server saw the test WAN address, P = only the node, - = nothing left",
+    "forced_state": "unassigned=standard; hand-started core without 12346, 12347 and 12348, so only 12345 and 12349 listen",
+    "before_1.0.2-r1": {"global": "PDDD-D", "enhanced": "-DDD-D", "ondemand": "-DDD-D", "no_mode_control": "-DDD-D", "router_dns": "FakeIP answers from the Standard inbound for all four"},
+    "after_test_build": {"global": "------", "enhanced": "------", "ondemand": "------", "no_mode_control": "PDDD-D", "router_dns": "timeout for Global, Enhanced, On-demand; FakeIP for no mode", "tail_drop_packets": {"capture_global": 14, "capture_enhanced": 14, "capture_ondemand": 14}},
+    "quick_suite": {"global": "PPP", "enhanced": "PPP", "tail_drop_counters_unchanged": true},
+    "evidence": ["logs/fallthrough.txt", "logs/quick.txt"]
+  },
+  "lifecycle": {
+    "enabled_upgrade_to_test_build": "apk rc 0; rules regenerated with the three tail drops; capture_phone unchanged; no panel warning; policy check all true; gate OPEN",
+    "release_package_install": "over the test build with LaneKeep disabled",
+    "evidence": ["logs/fallthrough.txt", "logs/build.txt"]
+  },
+  "target_checks": {"rules_check": "ALL PASS against aad799b, including the exact text of the three chains for unassigned Standard and Direct and nft -c as root", "evidence": "logs/target-checks.txt"},
+  "offline_tests": {"passed": 11, "failed": 0},
+  "known_issues": [
+    "The core stop at the start of an upgrade from 1.0.2 runs under the 1.0.2 rules and can still hand these devices to Standard once"
+  ],
+  "not_covered": [
+    "a real core start, stop or crash window (only the forced state)",
+    "unassigned=direct after the fix",
+    "explicit Standard members",
+    "the 160-case Global/Enhanced regression, node failure and core stop suites, dedicated entries",
+    "fresh install, boot, simulated sysupgrade, removal",
+    "an enabled upgrade with the 1.0.3-r1 package itself (the test build was used; payload equal apart from version labels)"
+  ]
+}

@@ -1,6 +1,6 @@
 {
   "date": "2026-11-28",
-  "repository_files_scanned": 221,
+  "repository_files_scanned": 227,
   "personal_token_findings": 0,
   "private_node_value_findings": 0,
   "original_reference_values_compared": 9,
@@ -11,7 +11,7 @@
     "source_directory_findings": 0,
     "installed_tree_findings": 0,
     "history_findings": 0,
-    "note": "The installed tree is the 1.0.2-r1 package content produced by the same materialize step as the APK (106 files; their SHA256 equal the APK payload, which adds 3 package-manager metadata files). History covers every commit reachable from the release commit."
+    "note": "The installed tree is the 1.0.3-r1 package content produced by the same materialize step as the APK (106 files; on the test VM 103 of them had the same SHA256 as installed, the other 3 being conffiles kept from the test configuration; the APK adds 3 package-manager metadata files). History covers every commit reachable from the release commit."
   },
   "factory": {
     "nodes": 0,
@@ -29,8 +29,9 @@
     "Loopback, wildcard and protocol-reserved networks",
     "RFC documentation examples",
     "Public service geodata subset with pinned upstream and digest",
-    "Test VM addresses in the acceptance logs: the isolated QEMU network 10.77.2.0/24, RFC 5737 documentation addresses for the test WAN and node, the public addresses the offline fixture serves for test names, and 8.8.4.4, added to the test VM WAN port only during the WAN-address probes"
+    "Test VM addresses in the acceptance logs: the isolated QEMU network 10.77.2.0/24, RFC 5737 documentation addresses for the test WAN and node, the public addresses the offline fixture serves for test names, and 8.8.4.4, added to the test VM WAN port only during the WAN-address probes",
+    "FakeIP answers from the 198.18.0.0/15 benchmarking range in the acceptance logs"
   ],
-  "scope": "All repository source, documentation, hidden GitHub templates and build scripts; the secret scan also covers the 1.0.2-r1 package content (the install tree produced by the same materialize step as the APK; 106 files). Generated build/cache directories, local artifacts and private test credentials are not repository content.",
+  "scope": "All repository source, documentation, hidden GitHub templates and build scripts; the secret scan also covers the 1.0.3-r1 package content (the install tree produced by the same materialize step as the APK; 106 files). Generated build/cache directories, local artifacts and private test credentials are not repository content.",
   "limitations": "Automated scans are combined with template/default review and screenshot inspection; they are not a mathematical proof of the absence of all possible sensitive data."
 }

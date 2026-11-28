@@ -1,0 +1,31 @@
+##### tests/target/rules-check.sh on the VM: new tree 7052c7c (RELEASE 2) against aad799b
+##### rules-check.sh (7052c7c vs aad799b), LaneKeep enabled, 1.0.2-r2 test build installed
+PASS generator without IP rules (xray -test included)
+PASS generator with IP rules (xray -test included)
+PASS previous and new output differ only by the direct group (s0)
+PASS previous and new output differ only by the direct group (s1)
+PASS direct group: members, unknown devices to capture_direct, core config unchanged
+PASS global, enhanced and on-demand chains drop what their inbound cannot take (unassigned standard and direct)
+PASS rules page sequence numbers verified (direct_on)
+PASS nft -c accepts new-s0
+PASS nft -c accepts direct_on
+PASS IP rows separate, guarded and additive
+PASS direct rules last and isolated (s0)
+PASS direct rules last and isolated (s1)
+PASS direct rules last and isolated (direct_on)
+PASS rules page sequence numbers verified (s0)
+PASS rules page sequence numbers verified (s1)
+PASS bad_10_0_0_5 rejected (invalid_ip_rule)
+PASS bad_1_2_3_4_24 rejected (invalid_ip_rule)
+PASS bad_198_18_0_1 rejected (invalid_ip_rule)
+PASS bad_1_2_3 rejected (invalid_ip_rule)
+PASS bad_10_77_2_1 rejected (invalid_ip_rule)
+PASS bad_conflict rejected (conflicting_rule)
+PASS chain_node rejected (ip_rule_chain_forbidden)
+PASS chain_group rejected (ip_rule_chain_forbidden)
+PASS bad_unassigned rejected (generator_internal_error_at_read_current_uci)
+PASS bad_direct_rule rejected (invalid_rule_group)
+PASS bad_direct_cross rejected (member_duplicate_or_cross_group)
+PASS chain control without IP rules accepted
+ALL PASS
+rules_check_rc=0

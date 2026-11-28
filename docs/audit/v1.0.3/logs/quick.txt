@@ -1,0 +1,28 @@
+##### quick suite, Global and Enhanced, no test uplink, 1.0.2-r2 test build, unassigned=standard
+package: luci-app-lanekeep-1.0.2-r2 unassigned=standard gate=OPEN
+W01 global {'proxied': 1, 'tunnel': 1} 198.51.100.2:38334
+W01 enhanced {'proxied': 1, 'tunnel': 1} 198.51.100.2:45605
+W03 global {'proxied': 1, 'tunnel': 1} 198.51.100.2:35808
+W03 enhanced {'proxied': 1, 'tunnel': 1} 198.51.100.2:51374
+W08 global {'proxied': 1, 'tunnel': 1} 198.51.100.2:54757
+W08 enhanced {'proxied': 1, 'tunnel': 1} 198.51.100.2:52391
+verdict W01 global P {'proxied': 1, 'tunnel': 1}
+verdict W01 enhanced P {'proxied': 1, 'tunnel': 1}
+verdict W03 global P {'proxied': 1, 'tunnel': 1}
+verdict W03 enhanced P {'proxied': 1, 'tunnel': 1}
+verdict W08 global P {'proxied': 1, 'tunnel': 1}
+verdict W08 enhanced P {'proxied': 1, 'tunnel': 1}
+verdict_summary {'enhanced': 'PPP', 'global': 'PPP'}
+
+##### tail-drop counters after the quick suite, then lifecycle disable
+# note: the counters were 14 each right after the forced-state test above; the udhcpc lines are stderr of the same command (the test VM takes its LAN address from QEMU DHCP); stderr was printed first.
+udhcpc: started, v1.37.0
+udhcpc: broadcasting discover
+udhcpc: broadcasting select for 10.77.2.15, server 10.77.2.2
+udhcpc: lease of 10.77.2.15 obtained from 10.77.2.2, lease time 86400
+capture_global: meta l4proto { tcp, udp } counter packets 14 bytes 800 drop
+capture_enhanced: meta l4proto { tcp, udp } counter packets 14 bytes 800 drop
+capture_ondemand: meta l4proto { tcp, udp } counter packets 14 bytes 800 drop
+{"ok":true,"enabled":false}
+enabled=0 tables=table inet fw4 
+luci-app-lanekeep-1.0.2-r2

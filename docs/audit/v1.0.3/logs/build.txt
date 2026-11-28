@@ -1,0 +1,44 @@
+##### build log (commit 938c2e9, tools/build/build-apk.py with /sbin/apk.static in the test VM)
+luci-app-lanekeep-1.0.3-r1.apk 54480697beba49c7145a20d802cc60728a89187332fac4dad2771fb5043322ea
+-rw-r--r--    1 root     root        308972 Nov 28 11:44 luci-app-lanekeep-1.0.3-r1.apk
+-rw-r--r--    1 root     root            97 Nov 28 11:44 luci-app-lanekeep-1.0.3-r1.apk.sha256
+
+##### apk add --upgrade of luci-app-lanekeep-1.0.3-r1.apk over the 1.0.2-r2 test build (LaneKeep disabled), then sha256sum of every file apk info -L lists
+apk_rc=0
+  Executing luci-app-lanekeep-1.0.3-r1.post-upgrade
+OK: 108.7 MiB in 236 packages
+pkg=luci-app-lanekeep-1.0.3-r1 enabled=0
+109
+
+##### installed files vs the tree tools/build/materialize.py makes from 938c2e9; tested 1.0.2-r2 payload (7052c7c) vs released 1.0.3-r1 payload
+{
+ "installed_vs_materialized": {
+  "materialized_tree_from_938c2e9": 106,
+  "installed_files_listed_by_apk_info_L": 109,
+  "same_sha256": 103,
+  "differing": [
+   "etc/config/lanekeep",
+   "etc/config/lanekeep_runtime",
+   "etc/lanekeep-proxy/nodes.json"
+  ],
+  "differing_note": "conffiles kept from the test configuration on the VM (test node, members, unassigned=standard, disabled)",
+  "not_installed": [],
+  "installed_not_in_tree": [
+   "lib/apk/packages/luci-app-lanekeep.conffiles",
+   "lib/apk/packages/luci-app-lanekeep.conffiles_static",
+   "lib/apk/packages/luci-app-lanekeep.list"
+  ],
+  "installed_generator_sha256": "896cbb13a18a6b6776fc060700a93eba8eb05a2f7acaf4f64c6d2885104a63df"
+ },
+ "tested_vs_release_payload": {
+  "tested_build": "1.0.2-r2 from 7052c7c (RELEASE set to 2 in the VM only)",
+  "release_build": "1.0.3-r1 from 938c2e9",
+  "normalized": "module namespace v1_0_2_r2 / v1_0_3_r1 and foundation.js var version='1.0.2-r2' / '1.0.3-r1'",
+  "files": [
+   106,
+   106
+  ],
+  "identical_after_normalization": true,
+  "differing_after_normalization": []
+ }
+}
